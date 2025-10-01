@@ -1,0 +1,16 @@
+# Results and generated artifacts
+results/
+outputs/
+trajectory_log*.mat
+floor_demo_artifacts.mat
+external_plot_outputs.mat
+
+# MATLAB cache/temp
+*.asv
+*.mex*
+*.log
+*.tmp
+*.bak
+
+# OS artifacts
+.DS_Store
