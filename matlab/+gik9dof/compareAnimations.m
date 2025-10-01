@@ -1,24 +1,23 @@
 function compareAnimations(logHolistic, logStaged, trajectories, varargin)
-%COMPAREANIMATIONS Side-by-side animation for holistic vs. staged runs.
-%   gik9dof.compareAnimations(logHolistic, logStaged) replays the robot motion
-%   for both control strategies in a 1x2 subplot (left = holistic, right = staged)
-%   using logged joint trajectories and target poses. Obstacles (floor discs)
-%   are rendered if available in the logs.
+%COMPAREANIMATIONS Visualise holistic vs. staged runs side-by-side.
+%   gik9dof.compareAnimations(logHolistic, logStaged) animates both control
+%   strategies in a 1x2 subplot window using their logged joint trajectories
+%   (`qTraj`) and target poses. Obstacles (floor discs) are rendered when stored
+%   in each log.
 %
-%   gik9dof.compareAnimations(logHolistic, logStaged, trajectories) lets you
-%   override the target pose stacks with a struct containing fields
-%   'holistic' and/or 'staged'.
+%   gik9dof.compareAnimations(..., trajectories) lets you override the target
+%   pose stacks with a struct containing fields 'holistic' and/or 'staged'.
 %
-%   Additional name-value options:
+%   Name-value options:
 %       'Robot'         - Preconstructed rigidBodyTree (default from URDF)
 %       'SampleStep'    - Visualise every Nth frame (default 5)
 %       'FrameRate'     - Export framerate (default 30)
-%       'ExportVideo'   - MP4 output path (optional)
-%       'TitleHolistic' - Left subplot title
-%       'TitleStaged'   - Right subplot title
+%       'ExportVideo'   - Optional MP4 output path
+%       'TitleHolistic' - Title for the holistic subplot
+%       'TitleStaged'   - Title for the staged subplot
 %
 %   Example:
-%       compareAnimations(logH, logS, struct(), 'ExportVideo', 'results/comp.mp4');
+%       gik9dof.compareAnimations(logH, logS, struct(), 'ExportVideo', 'results/comp.mp4');
 
 parser = inputParser;
 parser.FunctionName = mfilename;
@@ -34,35 +33,25 @@ opts = parser.Results;
 robot = opts.Robot;
 assert(strcmp(robot.DataFormat, 'column'), 'Robot DataFormat must be column for animation.');
 
-% Extract pose stacks (override when provided)
 posesHolistic = getPoseStack(logHolistic, trajectories, "holistic");
 posesStaged   = getPoseStack(logStaged, trajectories, "staged");
 
-% Compute EE paths
 actualHolistic = computeEEPath(robot, logHolistic.qTraj);
 actualStaged   = computeEEPath(robot, logStaged.qTraj);
 
-% Stage breakdown for staged log (if available)
 stageInfo = extractStageInfo(robot, logStaged);
 
-% Desired path points
-desiredHolistic = squeeze(posesHolistic(1:3,4,:)).';
-desiredStaged   = squeeze(posesStaged(1:3,4,:)).';
+fig = figure('Name','Holistic vs Staged Animation','NumberTitle','off','Color','w');
+set(fig, 'Position', [100 100 1280 640]);
+axHolistic = subplot(1,2,1, 'Parent', fig);
+axStaged   = subplot(1,2,2, 'Parent', fig);
+
+panelHolistic = initPanel(axHolistic, opts.TitleHolistic, logHolistic, robot, logHolistic.qTraj(:,1), posesHolistic, actualHolistic, struct('available', false));
+panelStaged   = initPanel(axStaged,   opts.TitleStaged,   logStaged,   robot, logStaged.qTraj(:,1),   posesStaged,   actualStaged,   stageInfo);
 
 framesHolistic = 1:opts.SampleStep:size(logHolistic.qTraj, 2);
 framesStaged   = 1:opts.SampleStep:size(logStaged.qTraj, 2);
 numFrames = max(numel(framesHolistic), numel(framesStaged));
-
-fig = figure('Name','Holistic vs Staged Animation','NumberTitle','off');
-set(fig, 'Position', [100 100 1280 640], 'Color','w');
-axHolistic = subplot(1,2,1, 'Parent', fig);
-axStaged   = subplot(1,2,2, 'Parent', fig);
-
-setupAxes(axHolistic, opts.TitleHolistic, logHolistic);
-setupAxes(axStaged,   opts.TitleStaged,   logStaged);
-
-legend(axHolistic, 'Location','bestoutside');
-legend(axStaged,   'Location','bestoutside');
 
 movieFrames(numFrames) = struct('cdata', [], 'colormap', []); %#ok<NASGU>
 
@@ -70,10 +59,10 @@ for k = 1:numFrames
     idxH = framesHolistic(min(k, numel(framesHolistic)));
     idxS = framesStaged(min(k, numel(framesStaged)));
 
-    drawScene(axHolistic, robot, logHolistic.qTraj(:, idxH), desiredHolistic, actualHolistic, idxH, logHolistic);
-    drawScene(axStaged,   robot, logStaged.qTraj(:, idxS),   desiredStaged,   actualStaged,   idxS, logStaged, stageInfo);
+    updatePanel(panelHolistic, robot, logHolistic.qTraj(:, idxH), actualHolistic, idxH);
+    updatePanel(panelStaged,   robot, logStaged.qTraj(:, idxS),   actualStaged,   idxS);
 
-    drawnow;
+    drawnow limitrate;
     movieFrames(k) = getframe(fig); %#ok<AGROW>
 end
 
@@ -86,6 +75,44 @@ if strlength(opts.ExportVideo) > 0
     close(writer);
     fprintf('Exported comparison animation to %s\n', exportPath);
 end
+end
+
+function panel = initPanel(ax, titleText, logStruct, robot, qInitial, poses, actualPath, stageInfo)
+setupAxes(ax, titleText);
+plotObstacles(ax, logStruct);
+
+hold(ax, 'on');
+desiredPath = squeeze(poses(1:3,4,:)).';
+panel.hDesired = plot3(ax, desiredPath(:,1), desiredPath(:,2), desiredPath(:,3), 'k-.', 'LineWidth',1.6, 'DisplayName','Desired EE');
+panel.hActual  = plot3(ax, actualPath(1,1), actualPath(1,2), actualPath(1,3), 'Color',[0.15 0.45 0.80], 'LineWidth',1.8, 'DisplayName','Actual EE');
+panel.hCurrent = scatter3(ax, actualPath(1,1), actualPath(1,2), actualPath(1,3), 90, 'filled', 'MarkerFaceColor',[0.85 0.33 0.10], 'DisplayName','Current EE');
+
+if stageInfo.available
+    labels = {'Stage A','Stage B','Stage C'};
+    panel.stageHandles = gobjects(1, numel(stageInfo.paths));
+    panel.stageMarkers = gobjects(1, numel(stageInfo.paths));
+    for i = 1:numel(stageInfo.paths)
+        pts = stageInfo.paths{i};
+        if isempty(pts)
+            continue;
+        end
+        panel.stageHandles(i) = plot3(ax, pts(:,1), pts(:,2), pts(:,3), 'Color', stageInfo.colors{i}, 'LineWidth',1.8, 'LineStyle','-', 'DisplayName',[labels{i} ' path']);
+        panel.stageMarkers(i) = scatter3(ax, pts(end,1), pts(end,2), pts(end,3), 120, stageMarkerShape(i), 'filled', 'MarkerFaceColor', stageInfo.colors{i}, 'MarkerEdgeColor','k', 'DisplayName',[labels{i} ' goal']);
+    end
+else
+    panel.stageHandles = gobjects(0);
+    panel.stageMarkers = gobjects(0);
+end
+
+panel.robotAxes = ax;
+panel.robot = robot;
+show(robot, qInitial, 'Parent', ax, 'PreservePlot', false, 'FastUpdate', true, 'Frames','off', 'Visuals','on');
+end
+
+function updatePanel(panel, robot, qColumn, actualPath, idx)
+set(panel.hActual, 'XData', actualPath(1:idx,1), 'YData', actualPath(1:idx,2), 'ZData', actualPath(1:idx,3));
+set(panel.hCurrent, 'XData', actualPath(idx,1), 'YData', actualPath(idx,2), 'ZData', actualPath(idx,3));
+show(robot, qColumn, 'Parent', panel.robotAxes, 'PreservePlot', false, 'FastUpdate', true, 'Frames','off', 'Visuals','on');
 end
 
 function poses = getPoseStack(logStruct, trajectories, fieldName)
@@ -107,69 +134,39 @@ end
 
 function stageInfo = extractStageInfo(robot, logStaged)
 stageInfo = struct('available', false);
-if isfield(logStaged, 'stageLogs')
-    fields = {'stageA','stageB','stageC'};
-    colors = {[0.95 0.55 0.05], [0.05 0.40 0.90], [0.05 0.65 0.25]};
-    stagePaths = cell(1, numel(fields));
-    stageLengths = zeros(1, numel(fields));
-    for i = 1:numel(fields)
-        if isfield(logStaged.stageLogs, fields{i})
-            q = logStaged.stageLogs.(fields{i}).qTraj;
-            stagePaths{i} = computeEEPath(robot, q);
-            stageLengths(i) = size(q, 2);
-        else
-            stagePaths{i} = [];
-            stageLengths(i) = 0;
-        end
-    end
-    stageInfo.available = true;
-    stageInfo.paths = stagePaths;
-    stageInfo.lengths = stageLengths;
-    stageInfo.colors = colors;
+if ~isfield(logStaged, 'stageLogs')
+    stageInfo.paths = {};
+    stageInfo.colors = {};
+    return;
 end
+fields = {'stageA','stageB','stageC'};
+colors = {[0.95 0.55 0.05], [0.05 0.40 0.90], [0.05 0.65 0.25]};
+paths = cell(1, numel(fields));
+for i = 1:numel(fields)
+    if isfield(logStaged.stageLogs, fields{i}) && ~isempty(logStaged.stageLogs.(fields{i}).qTraj)
+        paths{i} = computeEEPath(robot, logStaged.stageLogs.(fields{i}).qTraj);
+    else
+        paths{i} = [];
+    end
+end
+stageInfo.available = true;
+stageInfo.paths = paths;
+stageInfo.colors = colors;
 end
 
-function setupAxes(ax, titleText, logStruct)
+function setupAxes(ax, titleText)
 cla(ax);
-hold(ax, 'on');
-axis(ax, 'equal');
-view(ax, [45 25]);
+hold(ax,'on');
+grid(ax,'on');
+axis(ax,'equal');
 axis(ax, [-3 3 -3 3 0 2]);
-box(ax, 'on');
-set(ax, 'Color','w');
-xlabel(ax, 'X [m]');
-ylabel(ax, 'Y [m]');
-zlabel(ax, 'Z [m]');
+view(ax,[45 25]);
+axis(ax,'vis3d');
+camproj(ax,'perspective');
+xlabel(ax,'X [m]');
+ylabel(ax,'Y [m]');
+zlabel(ax,'Z [m]');
 title(ax, titleText);
-plotObstacles(ax, logStruct);
-end
-
-function drawScene(ax, robot, q, desiredPath, actualPath, idx, logStruct, stageInfo)
-if nargin < 8
-    stageInfo = struct('available', false);
-end
-
-cla(ax);
-setupAxes(ax, ax.Title.String, logStruct);
-
-plot3(ax, desiredPath(:,1), desiredPath(:,2), desiredPath(:,3), 'k-.', 'LineWidth', 1.5, 'DisplayName','Desired EE');
-plot3(ax, actualPath(:,1), actualPath(:,2), actualPath(:,3), 'Color',[0.15 0.45 0.80], 'LineWidth', 1.8, 'DisplayName','Actual EE');
-scatter3(ax, actualPath(idx,1), actualPath(idx,2), actualPath(idx,3), 80, 'filled', 'MarkerFaceColor',[0.85 0.33 0.10], 'DisplayName','Current EE');
-
-if stageInfo.available
-    offset = 0;
-    for i = 1:numel(stageInfo.paths)
-        pts = stageInfo.paths{i};
-        if isempty(pts)
-            continue;
-        end
-        plot3(ax, pts(:,1), pts(:,2), pts(:,3), 'Color', stageInfo.colors{i}, ...
-            'LineWidth', 1.8, 'DisplayName', sprintf('Stage %c', 'A'+i-1));
-        offset = offset + size(pts,1);
-    end
-end
-
-show(robot, q, 'Parent', ax, 'PreservePlot', false, 'Frames', 'off', 'Visuals', 'on');
 end
 
 function plotObstacles(ax, logStruct)
@@ -180,8 +177,12 @@ if isfield(logStruct, 'floorDiscs') && ~isempty(logStruct.floorDiscs)
         radius = d.Radius + d.SafetyMargin;
         [X, Y, Z] = cylinder(radius, 40);
         Z = Z * 0.05;
-        surf(ax, X + d.Center(1), Y + d.Center(2), Z, 'FaceAlpha', 0.2, ...
-            'EdgeColor', 'none', 'FaceColor', [1.0 0.2 0.2], 'DisplayName','Obstacle');
+        surf(ax, X + d.Center(1), Y + d.Center(2), Z, 'FaceAlpha', 0.25, 'FaceColor',[1.0 0.2 0.2], 'EdgeColor','none', 'DisplayName','Obstacle');
     end
 end
+end
+
+function marker = stageMarkerShape(idx)
+shapes = {'^','s','o'};
+marker = shapes{min(idx, numel(shapes))};
 end
