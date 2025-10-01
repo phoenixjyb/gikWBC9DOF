@@ -2,6 +2,8 @@
 results/
 outputs/
 trajectory_log*.mat
+artifacts_*.mat
+report_*.mat
 floor_demo_artifacts.mat
 external_plot_outputs.mat
 
