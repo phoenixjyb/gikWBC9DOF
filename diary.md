@@ -45,3 +45,4 @@
 - **Notes**:
   - Staged control tightens positional accuracy (lower mean/max) but increases solver effort and constraint violations due to additional sample points.
   - Holistic run maintains small violation margins and shorter runtime with fewer waypoints; staged adds more setpoints which raised average iterations.
+- **Visualization**: Generated side-by-side animation (`results/comparison_holistic_vs_staged.mp4`) showing both runs with desired/actual EE traces and floor-disc obstacles, mirroring the legacy demo styling.
