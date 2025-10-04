@@ -52,6 +52,7 @@ arguments
     options.CommandFcn = []
     options.StopOnFailure (1,1) logical = true
     options.Verbose (1,1) logical = false
+    options.VelocityLimits struct = struct()
 end
 
 poses = trajectory.Poses;
@@ -151,6 +152,10 @@ for k = 1:numWaypoints
         end
     end
 
+    if ~isempty(options.VelocityLimits)
+        qCandidate = applyVelocityLimits(q, qCandidate, options.VelocityLimits, 1/options.RateHz);
+    end
+
     success = isSuccess(stepInfo);
     exitFlag = fetchExitFlag(stepInfo);
     exitFlags(k) = exitFlag;
@@ -224,6 +229,41 @@ log.positionErrorNorm = vecnorm(log.positionError, 2, 1);
 log.time = [0, timestamps];
 log.orientationErrorQuat = orientationErrorQuat;
 log.orientationErrorAngle = orientationErrorAngle;
+end
+
+function qNext = applyVelocityLimits(qCurrent, qCandidate, limits, sampleTime)
+%APPLYVELOCITYLIMITS Clamp joint deltas to respect configured limits.
+if isempty(limits)
+    qNext = qCandidate;
+    return
+end
+
+dq = qCandidate - qCurrent;
+
+if isfield(limits, 'BaseIndices') && numel(limits.BaseIndices) >= 3
+    baseIdx = limits.BaseIndices(1:3);
+    if isfield(limits, 'MaxLinearSpeed') && isfinite(limits.MaxLinearSpeed)
+        maxStep = limits.MaxLinearSpeed * sampleTime;
+        linearStep = dq(baseIdx(1:2));
+        stepNorm = norm(linearStep);
+        if stepNorm > maxStep && stepNorm > 0
+            linearStep = linearStep * (maxStep / stepNorm);
+            dq(baseIdx(1:2)) = linearStep;
+        end
+    end
+    if isfield(limits, 'MaxYawRate') && isfinite(limits.MaxYawRate)
+        maxYaw = limits.MaxYawRate * sampleTime;
+        dq(baseIdx(3)) = max(min(dq(baseIdx(3)), maxYaw), -maxYaw);
+    end
+end
+
+if isfield(limits, 'ArmIndices') && ~isempty(limits.ArmIndices) && ...
+        isfield(limits, 'MaxJointSpeed') && isfinite(limits.MaxJointSpeed)
+    maxJointStep = limits.MaxJointSpeed * sampleTime;
+    dq(limits.ArmIndices) = max(min(dq(limits.ArmIndices), maxJointStep), -maxJointStep);
+end
+
+qNext = qCurrent + dq;
 end
 
 function [targetQuat, eeQuat, errQuat, errAngle] = computeOrientationError(targetPose, eePose)

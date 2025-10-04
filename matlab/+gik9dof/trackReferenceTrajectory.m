@@ -39,6 +39,10 @@ arguments
     options.FloorDiscs (1,:) struct = struct([])
     options.BaseDistanceBody (1,1) string = "abstract_chassis_link"
     options.Mode (1,1) string {mustBeMember(options.Mode, ["holistic","staged"])} = "holistic"
+    options.UseHolisticRamp (1,1) logical = false
+    options.RampMaxLinearSpeed (1,1) double = 1.5
+    options.RampMaxYawRate (1,1) double = 3.0
+    options.RampMaxJointSpeed (1,1) double = 1.0
 end
 
 % Resolve assets and instantiate robot.
@@ -62,6 +66,13 @@ end
 
 q0 = configTools.column(homeStruct);
 
+jointNames = string(configTools.templateJointNames());
+idxX = find(jointNames == "joint_x", 1);
+idxY = find(jointNames == "joint_y", 1);
+idxTheta = find(jointNames == "joint_theta", 1);
+baseIdx = [idxX, idxY, idxTheta];
+armIdx = setdiff(1:numel(q0), baseIdx);
+
 if options.DistanceMargin < 0
     error("gik9dof:trackReferenceTrajectory:InvalidDistanceMargin", ...
         "DistanceMargin must be non-negative.");
@@ -84,7 +95,7 @@ if ~isempty(options.FloorDiscs)
 end
 
 % Attach available collision meshes for downstream checks and visualisation.
-colTools = gik9dof.collisionTools(robot);
+colTools = gik9dof.collisionTools(robot, 'MeshDirectory', 'meshes');
 colTools.apply();
 
 % Instantiate solver bundle.
@@ -101,6 +112,17 @@ if options.EnableAiming
     trajStruct.AimTargets = trajStruct.EndEffectorPositions;
 end
 
+rampInfo = struct();
+if options.Mode == "holistic" && options.UseHolisticRamp
+    rampInfo = gik9dof.generateHolisticRamp(robot, bundle, q0, trajStruct.Poses(:,:,1), ...
+        'SampleTime', 1/options.RateHz, ...
+        'MaxLinearSpeed', options.RampMaxLinearSpeed, ...
+        'MaxYawRate', options.RampMaxYawRate, ...
+        'MaxJointSpeed', options.RampMaxJointSpeed, ...
+        'EndEffectorName', trajStruct.EndEffectorName);
+    trajStruct = prependRampTrajectory(trajStruct, rampInfo, options.EnableAiming);
+end
+
 % Run control according to selected mode.
 commandFcn = options.CommandFcn;
 if ~isempty(commandFcn) && ~isa(commandFcn, "function_handle")
@@ -110,9 +132,15 @@ end
 
 switch options.Mode
     case "holistic"
+        velLimits = struct('BaseIndices', baseIdx, ...
+            'ArmIndices', armIdx, ...
+            'MaxLinearSpeed', options.RampMaxLinearSpeed, ...
+            'MaxYawRate', options.RampMaxYawRate, ...
+            'MaxJointSpeed', options.RampMaxJointSpeed);
         log = gik9dof.runTrajectoryControl(bundle, trajStruct, ...
             "InitialConfiguration", q0, ...
             "RateHz", options.RateHz, ...
+            "VelocityLimits", velLimits, ...
             "CommandFcn", commandFcn, ...
             "Verbose", options.Verbose);
         log.mode = "holistic";
@@ -132,6 +160,36 @@ end
 
 log.floorDiscs = floorDiscInfo;
 log.distanceSpecs = distanceSpecs;
+if options.Mode == "holistic"
+    log.velocityLimits = struct('MaxLinearSpeed', options.RampMaxLinearSpeed, ...
+        'MaxYawRate', options.RampMaxYawRate, ...
+        'MaxJointSpeed', options.RampMaxJointSpeed, ...
+        'SampleTime', 1/options.RateHz);
+    if options.UseHolisticRamp
+        log.ramp = rampInfo;
+        log.rampSamples = rampInfo.NumSteps;
+    end
+end
+
+end
+
+function trajOut = prependRampTrajectory(trajIn, rampInfo, enableAiming)
+%PREPENDRAMPTRAJECTORY Concatenate ramp poses ahead of trajectory.
+trajOut = trajIn;
+
+% Drop the original first pose to avoid duplication.
+rampPoses = rampInfo.Poses;
+rampEE = rampInfo.EndEffectorPositions;
+
+trajOut.Poses = cat(3, rampPoses, trajIn.Poses(:,:,2:end));
+
+if isfield(trajIn, 'EndEffectorPositions') && ~isempty(trajIn.EndEffectorPositions)
+    trajOut.EndEffectorPositions = [rampEE, trajIn.EndEffectorPositions(:,2:end)];
+end
+
+if enableAiming && isfield(trajIn, 'AimTargets') && ~isempty(trajIn.AimTargets)
+    trajOut.AimTargets = [rampEE, trajIn.AimTargets(:,2:end)];
+end
 
 end
 

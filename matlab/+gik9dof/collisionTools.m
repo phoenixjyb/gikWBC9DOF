@@ -98,11 +98,31 @@ tools.catalog = userCatalog;
 end
 
 function catalog = defaultCatalog()
-%DEFAULTCATALOG Default meshes that ship with the project.
-body = {"abstract_chassis_link"; "left_arm_link1"; "left_arm_link2"; ...
-        "left_arm_link3"; "left_arm_link4"; "left_arm_link5"; "left_arm_link6"};
-mesh = {"Rob_base.STL"; "arm_seg1.STL"; "arm_seg2.STL"; ...
-        "arm_seg3.STL"; "arm_seg4.STL"; "arm_seg5.STL"; "arm_seg6.STL"};
+%DEFAULTCATALOG Default meshes aligned with the project URDF.
+body = [
+    "abstract_chassis_link";
+    "left_arm_base_link";
+    "left_arm_link1";
+    "left_arm_link2";
+    "left_arm_link3";
+    "left_arm_link4";
+    "left_arm_link5";
+    "left_arm_link6";
+    "left_gripper_link"
+];
+
+mesh = [
+    "base_link.STL";
+    "arm_base.STL";
+    "arm_seg1.STL";
+    "arm_seg2.STL";
+    "arm_seg3.STL";
+    "arm_seg4.STL";
+    "arm_seg5.STL";
+    "arm_seg6.STL";
+    "end_effector.STL"
+];
+
 catalog = table(body, mesh);
 end
 

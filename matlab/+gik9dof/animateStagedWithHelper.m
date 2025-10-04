@@ -1,5 +1,5 @@
 function animateStagedWithHelper(logStaged, varargin)
-%ANIMATESTAGEDWITHHELPER Use helpers.animate_whole_body for staged runs.
+%ANIMATESTAGEDWITHHELPER Visualise staged runs using internal helper.
 %
 parser = inputParser;
 parser.FunctionName = mfilename;
@@ -54,13 +54,25 @@ end
 helperArgs = [helperArgs, {'StageBoundaries', stageBoundaries}, {'StageLabels', stageLabels}];
 
 if isfield(logStaged, 'floorDiscs') && ~isempty(logStaged.floorDiscs)
-    helperArgs = [helperArgs, {'Obstacles', struct('discs', {logStaged.floorDiscs})}];
+    discs = logStaged.floorDiscs;
+    if isfield(logStaged, 'distanceSpecs') && ~isempty(logStaged.distanceSpecs)
+        specs = logStaged.distanceSpecs;
+        for i = 1:min(numel(discs), numel(specs))
+            lb = specs(i).Bounds(1);
+            safety = 0;
+            if isfield(discs(i), 'SafetyMargin') && ~isempty(discs(i).SafetyMargin)
+                safety = discs(i).SafetyMargin;
+            end
+            discs(i).DistanceMargin = max(lb - discs(i).Radius - safety, 0);
+        end
+    end
+    helperArgs = [helperArgs, {'Obstacles', struct('discs', {discs})}];
 end
 
 robotStruct = copy(robot);
 robotStruct.DataFormat = 'struct';
 
-helpers.animate_whole_body(robotStruct, armJointNames, armTrajectory, armTimes, basePose, baseTimes, eePoses, helperArgs{:});
+gik9dof.viz.animate_whole_body(robotStruct, armJointNames, armTrajectory, armTimes, basePose, baseTimes, eePoses, helperArgs{:});
 end
 
 function t = resolveTimes(logStruct, numSamples)
