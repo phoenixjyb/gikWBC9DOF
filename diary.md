@@ -79,3 +79,9 @@
 - Add a holistic pre-planning step (reuse the Stage B Hybrid A*) so the base can clear Disc 1 before switching to full-body tracking.
 - Evaluate margin/weight combinations that guarantee clearance yet keep the solver feasible; log the resulting clearances to verify.
 - Update the regen helper to preserve existing MP4 timestamps when overwriting, or add an option to skip regeneration for long runs.
+
+## 2025-10-06 – Mesh Refresh & Collision Catalog Cleanup
+
+- Updated `gik9dof.collisionTools` so the default catalog references the canonical meshes under `meshes/` (`base_link.STL`, `left_arm_link*.STL`). The legacy `stl_output/*_reduced.STL` files have been removed, and the warnings about missing reduced meshes are gone when `trackReferenceTrajectory` attaches collision geometry.
+- Verified the new STL set matches the URDF (chassis + arm) and that animation replays pick up the refreshed visuals without needing the reduced assets.
+- Next run of `run_environment_compare_latest` is ready to record fresh logs/MP4s using the updated collision meshes.
