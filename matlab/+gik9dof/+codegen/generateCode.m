@@ -1,14 +1,19 @@
 function generateCode(outputDir)
 %GENERATECODE Run MATLAB Coder to emit C++ for GIK primitives.
 %   gik9dof.codegen.generateCode(outputDir) generates C++ source in the
-%   specified directory (default 'codegen'). Ensure
+%   specified directory (default ''codegen''). Ensure
 %   gik9dof.codegen.generateRobotModelData has been executed beforehand to
 %   cache the rigidBodyTree model.
 
 if nargin < 1 || strlength(outputDir) == 0
     outputDir = "codegen";
 end
-outputDirChar = char(fullfile(pwd, char(outputDir)));
+
+outputDirChar = char(outputDir);
+if isempty(regexp(outputDirChar, '^[A-Za-z]:', 'once')) && ~startsWith(outputDirChar, '\\')
+    outputDirChar = char(fullfile(pwd, outputDirChar));
+end
+fprintf('Using output dir: %s\n', outputDirChar);
 if ~exist(outputDirChar, 'dir')
     mkdir(outputDirChar);
 end
@@ -19,7 +24,18 @@ followEntry = fullfile(packageDir, 'followTrajectory.m');
 
 cfg = coder.config('lib', 'ecoder', false);
 cfg.TargetLang = 'C++';
+cfg.TargetLangStandard = 'C++17 (ISO)';
+cfg.GenCodeOnly = true;
 cfg.GenerateReport = true;
+cfg.HardwareImplementation.ProdHWDeviceType = 'ARM Compatible->ARM 64-bit (LP64)';
+cfg.HardwareImplementation.TargetHWDeviceType = cfg.HardwareImplementation.ProdHWDeviceType;
+cfg.HardwareImplementation.ProdBitPerInt = 32;
+cfg.HardwareImplementation.ProdBitPerLong = 64;
+cfg.HardwareImplementation.ProdBitPerLongLong = 64;
+cfg.HardwareImplementation.ProdBitPerPointer = 64;
+cfg.HardwareImplementation.ProdBitPerSizeT = 64;
+cfg.HardwareImplementation.ProdLargestAtomicInteger = 'Char';
+cfg.HardwareImplementation.ProdLargestAtomicFloat = 'Double';
 
 argsStep = {coder.typeof(0, [9,1], [false,false]), coder.typeof(0, [4,4], [false,false]), coder.typeof(0), coder.typeof(0)};
 codegen('-config', cfg, ...
@@ -37,3 +53,5 @@ codegen('-config', cfg, ...
     '-o', fullfile(outputDirChar, 'followTrajectory'), ...
     '-d', outputDirChar);
 end
+
+

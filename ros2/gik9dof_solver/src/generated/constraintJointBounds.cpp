@@ -1,0 +1,89 @@
+//
+// constraintJointBounds.cpp
+//
+// Code generation for function 'constraintJointBounds'
+//
+
+// Include files
+#include "constraintJointBounds.h"
+#include "RigidBodyTree.h"
+#include "gik9dof_codegen_followTrajectory_types.h"
+#include "rigidBodyTree1.h"
+#include "rt_nonfinite.h"
+#include "coder_array.h"
+
+// Function Definitions
+namespace coder {
+constraintJointBounds::constraintJointBounds() = default;
+
+constraintJointBounds::~constraintJointBounds() = default;
+
+constraintJointBounds *constraintJointBounds::init(rigidBodyTree &rigidbodytree)
+{
+  constraintJointBounds *obj;
+  array<double, 2U> defaultValues_f2;
+  array<double, 2U> limits;
+  int i;
+  int loop_ub;
+  int loop_ub_tmp;
+  obj = this;
+  rigidbodytree.TreeInternal.get_JointPositionLimits(limits);
+  obj->BoundsInternal.set_size(limits.size(0), 2);
+  loop_ub_tmp = limits.size(0) << 1;
+  for (i = 0; i < loop_ub_tmp; i++) {
+    obj->BoundsInternal[i] = limits[i];
+  }
+  obj->NumElements = obj->BoundsInternal.size(0);
+  loop_ub_tmp = static_cast<int>(obj->NumElements);
+  obj->WeightsInternal.set_size(1, loop_ub_tmp);
+  for (i = 0; i < loop_ub_tmp; i++) {
+    obj->WeightsInternal[i] = 1.0;
+  }
+  i = obj->BoundsInternal.size(0);
+  limits.set_size(i, 2);
+  loop_ub = obj->BoundsInternal.size(0) << 1;
+  for (int i1{0}; i1 < loop_ub; i1++) {
+    limits[i1] = obj->BoundsInternal[i1];
+  }
+  loop_ub = obj->WeightsInternal.size(1);
+  defaultValues_f2.set_size(1, loop_ub);
+  loop_ub_tmp = obj->WeightsInternal.size(1);
+  for (int i1{0}; i1 < loop_ub_tmp; i1++) {
+    defaultValues_f2[i1] = obj->WeightsInternal[i1];
+  }
+  obj->ConstructorPropertyDefaultValues.f1.set_size(i, 2);
+  loop_ub_tmp = limits.size(0) << 1;
+  for (i = 0; i < loop_ub_tmp; i++) {
+    obj->ConstructorPropertyDefaultValues.f1[i] = limits[i];
+  }
+  obj->ConstructorPropertyDefaultValues.f2.set_size(1, loop_ub);
+  for (i = 0; i < loop_ub; i++) {
+    obj->ConstructorPropertyDefaultValues.f2[i] = defaultValues_f2[i];
+  }
+  i = obj->ConstructorPropertyDefaultValues.f1.size(0);
+  limits.set_size(i, 2);
+  loop_ub = obj->ConstructorPropertyDefaultValues.f1.size(0) << 1;
+  for (int i1{0}; i1 < loop_ub; i1++) {
+    limits[i1] = obj->ConstructorPropertyDefaultValues.f1[i1];
+  }
+  loop_ub = obj->ConstructorPropertyDefaultValues.f2.size(1);
+  defaultValues_f2.set_size(1, loop_ub);
+  loop_ub_tmp = obj->ConstructorPropertyDefaultValues.f2.size(1);
+  for (int i1{0}; i1 < loop_ub_tmp; i1++) {
+    defaultValues_f2[i1] = obj->ConstructorPropertyDefaultValues.f2[i1];
+  }
+  obj->BoundsInternal.set_size(i, 2);
+  loop_ub_tmp = limits.size(0) << 1;
+  for (i = 0; i < loop_ub_tmp; i++) {
+    obj->BoundsInternal[i] = limits[i];
+  }
+  obj->WeightsInternal.set_size(1, loop_ub);
+  for (i = 0; i < loop_ub; i++) {
+    obj->WeightsInternal[i] = defaultValues_f2[i];
+  }
+  return obj;
+}
+
+} // namespace coder
+
+// End of code generation (constraintJointBounds.cpp)

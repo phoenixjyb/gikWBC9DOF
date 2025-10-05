@@ -1,10 +1,9 @@
 function robot = loadRobotForCodegen()
-%LOADROBOTFORCODEGEN Load rigidBodyTree for C++ code generation.
+%LOADROBOTFORCODEGEN Build rigidBodyTree for C++ code generation.
 %#codegen
 persistent robotPersist
 if isempty(robotPersist)
-    data = coder.load('matlab/+gik9dof/+codegen/robotModel.mat');
-    robotPersist = data.robot;
+    robotPersist = gik9dof.codegen.buildRobotForCodegen();
 end
 robot = robotPersist;
 end

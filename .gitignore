@@ -16,3 +16,11 @@ external_plot_outputs.mat
 
 # OS artifacts
 .DS_Store
+
+# ROS 2 colcon build outputs
+ros2/build/
+ros2/install/
+ros2/log/
+
+# MATLAB codegen working directory
+codegen/linux_arm64/

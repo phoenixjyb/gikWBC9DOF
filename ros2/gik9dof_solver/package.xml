@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>gik9dof_solver</name>
+  <version>0.1.0</version>
+  <description>Wrapper around MATLAB Codegen outputs for the 9-DOF generalized inverse kinematics solver.</description>
+  <maintainer email="placeholder@example.com">GIK Team</maintainer>
+  <license>Proprietary</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
