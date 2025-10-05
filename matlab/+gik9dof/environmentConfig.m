@@ -9,16 +9,38 @@ function env = environmentConfig()
 %       DistanceMargin- Additional radial clearance enforced by the solver.
 %       DistanceWeight- Weight applied to distance constraints.
 
+persistent cachedEnv
+if ~isempty(cachedEnv)
+    env = cachedEnv;
+    return
+end
+
 env = struct();
 
 env.BaseHome = [-2, -2, 0];
 
-env.FloorDiscs = struct( ...
-    'Center',      {[-0.2, 0.3], [0.8, -0.4]}, ...
-    'Radius',      {0.35, 0.25}, ...
-    'SafetyMargin',{0.08, 0.05}, ...
-    'Name',        {"floor_disc_1", "floor_disc_2"});
+radius = 0.10;
+height = 0.15;
 
-env.DistanceMargin = 0.10;
+center1 = [-1, -1];
+
+traj = jsondecode(fileread(fullfile(gik9dof.internal.projectRoot(), '1_pull_world_scaled.json')));
+waypointIdx = min(147, numel(traj.poses));
+wp = traj.poses(waypointIdx).position;
+center2 = [wp(1), wp(2)];
+
+discTemplate = @(center, name) struct( ...
+    'Center', center, ...
+    'Radius', radius, ...
+    'SafetyMargin', 0, ...
+    'Name', string(name), ...
+    'Height', height, ...
+    'height', height);
+
+env.FloorDiscs = [discTemplate(center1, 'floor_disc_1'), discTemplate(center2, 'floor_disc_2')];
+
+env.DistanceMargin = 0.05;
 env.DistanceWeight = 0.5;
+
+cachedEnv = env;
 end

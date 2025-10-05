@@ -44,10 +44,14 @@ if ~isempty(opts.ExportVideo)
     helperArgs = [helperArgs, {'VideoFile', opts.ExportVideo}, {'VideoFrameRate', opts.FrameRate}]; %#ok<AGROW>
 end
 
-% Pass through any helper options provided by the caller
-fields = fieldnames(opts.HelperOptions);
+helperOptions = opts.HelperOptions;
+if isfield(logStaged, 'targetPositions') && ~isempty(logStaged.targetPositions)
+    helperOptions.TargetPath = logStaged.targetPositions.';
+end
+
+fields = fieldnames(helperOptions);
 for i = 1:numel(fields)
-    helperArgs = [helperArgs, {fields{i}, opts.HelperOptions.(fields{i})}]; %#ok<AGROW>
+    helperArgs = [helperArgs, {fields{i}, helperOptions.(fields{i})}]; %#ok<AGROW>
 end
 
 [stageBoundaries, stageLabels] = detectStageBoundaries(logStaged);
@@ -64,6 +68,10 @@ if isfield(logStaged, 'floorDiscs') && ~isempty(logStaged.floorDiscs)
                 safety = discs(i).SafetyMargin;
             end
             discs(i).DistanceMargin = max(lb - discs(i).Radius - safety, 0);
+            if ~isfield(discs(i), 'Height')
+                discs(i).Height = 0.05;
+            end
+            discs(i).height = discs(i).Height;
         end
     end
     helperArgs = [helperArgs, {'Obstacles', struct('discs', {discs})}];
