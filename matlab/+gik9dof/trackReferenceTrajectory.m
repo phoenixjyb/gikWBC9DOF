@@ -43,6 +43,12 @@ arguments
     options.RampMaxLinearSpeed (1,1) double = 1.5
     options.RampMaxYawRate (1,1) double = 3.0
     options.RampMaxJointSpeed (1,1) double = 1.0
+    options.UseStageBHybridAStar (1,1) logical = false
+    options.StageBHybridResolution (1,1) double = 0.1
+    options.StageBHybridSafetyMargin (1,1) double = 0.15
+    options.StageBHybridMinTurningRadius (1,1) double = 0.5
+    options.StageBHybridMotionPrimitiveLength (1,1) double = 0.5
+    options.EnvironmentConfig (1,1) struct = gik9dof.environmentConfig()
 end
 
 % Resolve assets and instantiate robot.
@@ -53,9 +59,16 @@ robot = gik9dof.createRobotModel("Validate", true);
 configTools = gik9dof.configurationTools(robot);
 homeStruct = configTools.struct(configTools.homeConfig());
 
-baseMap = struct('joint_x', options.BaseHome(1), ...
-                 'joint_y', options.BaseHome(2), ...
-                 'joint_theta', options.BaseHome(3));
+envConfig = options.EnvironmentConfig;
+if isfield(envConfig, "BaseHome") && numel(envConfig.BaseHome) == 3
+    baseHome = envConfig.BaseHome;
+else
+    baseHome = options.BaseHome;
+end
+
+baseMap = struct('joint_x', baseHome(1), ...
+                 'joint_y', baseHome(2), ...
+                 'joint_theta', baseHome(3));
 
 for idx = 1:numel(homeStruct)
     name = homeStruct(idx).JointName;
@@ -78,17 +91,37 @@ if options.DistanceMargin < 0
         "DistanceMargin must be non-negative.");
 end
 
+envFloorDiscs = struct([]);
+if isfield(envConfig, "FloorDiscs")
+    envFloorDiscs = envConfig.FloorDiscs;
+end
+
+floorDiscSource = options.FloorDiscs;
+if isempty(floorDiscSource)
+    floorDiscSource = envFloorDiscs;
+end
+
+distanceMargin = options.DistanceMargin;
+if isfield(envConfig, "DistanceMargin")
+    distanceMargin = envConfig.DistanceMargin;
+end
+
+distanceWeight = options.DistanceWeight;
+if isfield(envConfig, "DistanceWeight")
+    distanceWeight = envConfig.DistanceWeight;
+end
+
 floorDiscInfo = struct('Name', {}, 'Radius', {}, 'SafetyMargin', {});
 distanceSpecs = struct([]);
 
-if ~isempty(options.FloorDiscs)
-    floorDiscInfo = gik9dof.addFloorDiscs(robot, options.FloorDiscs);
+if ~isempty(floorDiscSource)
+    floorDiscInfo = gik9dof.addFloorDiscs(robot, floorDiscSource);
     numDiscs = numel(floorDiscInfo);
     distanceSpecs = repmat(struct('Body', options.BaseDistanceBody, ...
-        'ReferenceBody', "", 'Bounds', [0 0], 'Weight', options.DistanceWeight), numDiscs, 1);
+        'ReferenceBody', "", 'Bounds', [0 0], 'Weight', distanceWeight), numDiscs, 1);
     for k = 1:numDiscs
         discName = floorDiscInfo(k).Name;
-        lowerBound = floorDiscInfo(k).Radius + floorDiscInfo(k).SafetyMargin + options.DistanceMargin;
+        lowerBound = floorDiscInfo(k).Radius + floorDiscInfo(k).SafetyMargin + distanceMargin;
         distanceSpecs(k).ReferenceBody = discName;
         distanceSpecs(k).Bounds = [lowerBound, Inf];
     end
@@ -102,7 +135,7 @@ colTools.apply();
 bundle = gik9dof.createGikSolver(robot, ...
     "EnableAiming", options.EnableAiming, ...
     "DistanceSpecs", distanceSpecs, ...
-    "DistanceWeight", options.DistanceWeight);
+    "DistanceWeight", distanceWeight);
 
 % Prepare trajectory struct from JSON file.
 trajStruct = loadJsonTrajectory(jsonPath);
@@ -129,6 +162,10 @@ if ~isempty(commandFcn) && ~isa(commandFcn, "function_handle")
     error("gik9dof:trackReferenceTrajectory:InvalidCommandFcn", ...
         "CommandFcn must be a function handle or empty.");
 end
+stageTurningRadius = options.StageBHybridMinTurningRadius;
+if stageTurningRadius <= 0
+    stageTurningRadius = options.RampMaxLinearSpeed / max(options.RampMaxYawRate, eps);
+end
 
 switch options.Mode
     case "holistic"
@@ -149,10 +186,20 @@ switch options.Mode
             'InitialConfiguration', q0, ...
             'ConfigTools', configTools, ...
             'DistanceSpecs', distanceSpecs, ...
-            'DistanceWeight', options.DistanceWeight, ...
+            'DistanceWeight', distanceWeight, ...
             'RateHz', options.RateHz, ...
             'Verbose', options.Verbose, ...
-            'CommandFcn', commandFcn);
+            'CommandFcn', commandFcn, ...
+            'FloorDiscs', floorDiscInfo, ...
+            'UseStageBHybridAStar', options.UseStageBHybridAStar, ...
+            'StageBHybridResolution', options.StageBHybridResolution, ...
+            'StageBHybridSafetyMargin', options.StageBHybridSafetyMargin, ...
+            'StageBHybridMinTurningRadius', stageTurningRadius, ...
+            'StageBHybridMotionPrimitiveLength', options.StageBHybridMotionPrimitiveLength, ...
+            'StageBMaxLinearSpeed', options.RampMaxLinearSpeed, ...
+            'StageBMaxYawRate', options.RampMaxYawRate, ...
+            'StageBMaxJointSpeed', options.RampMaxJointSpeed, ...
+            'EnvironmentConfig', envConfig);
         log = pipeline;
     otherwise
         error("gik9dof:trackReferenceTrajectory:UnknownMode", options.Mode);
@@ -160,6 +207,7 @@ end
 
 log.floorDiscs = floorDiscInfo;
 log.distanceSpecs = distanceSpecs;
+log.environment = envConfig;
 if options.Mode == "holistic"
     log.velocityLimits = struct('MaxLinearSpeed', options.RampMaxLinearSpeed, ...
         'MaxYawRate', options.RampMaxYawRate, ...

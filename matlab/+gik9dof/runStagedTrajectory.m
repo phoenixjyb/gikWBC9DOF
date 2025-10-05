@@ -26,6 +26,16 @@ arguments
     options.RateHz (1,1) double {mustBePositive} = 100
     options.Verbose (1,1) logical = false
     options.CommandFcn = []
+    options.FloorDiscs struct = struct([])
+    options.UseStageBHybridAStar (1,1) logical = false
+    options.StageBHybridResolution (1,1) double = 0.1
+    options.StageBHybridSafetyMargin (1,1) double = 0.15
+    options.StageBHybridMinTurningRadius (1,1) double = 0.5
+    options.StageBHybridMotionPrimitiveLength (1,1) double = 0.5
+    options.StageBMaxLinearSpeed (1,1) double = 1.5
+    options.StageBMaxYawRate (1,1) double = 3.0
+    options.StageBMaxJointSpeed (1,1) double = 1.0
+    options.EnvironmentConfig struct = struct()
 end
 
 configTools = options.ConfigTools;
@@ -39,6 +49,12 @@ idx_y = find(jointNames == "joint_y", 1);
 idx_theta = find(jointNames == "joint_theta", 1);
 baseIdx = [idx_x, idx_y, idx_theta];
 armIdx = setdiff(1:numel(jointNames), baseIdx);
+
+velLimits = struct('BaseIndices', baseIdx, ...
+    'ArmIndices', armIdx, ...
+    'MaxLinearSpeed', options.StageBMaxLinearSpeed, ...
+    'MaxYawRate', options.StageBMaxYawRate, ...
+    'MaxJointSpeed', options.StageBMaxJointSpeed);
 
 % Extract first desired pose
 TrefAll = trajStruct.Poses;
@@ -60,13 +76,34 @@ logA = gik9dof.runTrajectoryControl(bundleA, trajA, ...
     'InitialConfiguration', q0, ...
     'RateHz', options.RateHz, ...
     'CommandFcn', options.CommandFcn, ...
-    'Verbose', options.Verbose);
+    'Verbose', options.Verbose, ...
+    'VelocityLimits', velLimits);
 
 qA_end = logA.qTraj(:, end);
 
 %% Stage B: base-only alignment of x-y while arm frozen
 stageBStart = getTransform(robot, qA_end, trajStruct.EndEffectorName);
-stageBPoses = generateStagePoses(stageBStart, T1, NB, 'base');
+if options.UseStageBHybridAStar
+    try
+        stageBStates = planStageBHybridAStarPath(qA_end, baseIdx, T1, options, robot, trajStruct.EndEffectorName, options.FloorDiscs);
+    catch plannerErr
+        if ~isempty(plannerErr.stack)
+            origin = sprintf('%s:%d', plannerErr.stack(1).name, plannerErr.stack(1).line);
+        else
+            origin = 'unknown origin';
+        end
+        warning('gik9dof:runStagedTrajectory:HybridAStarFailed', ...
+            'Stage B hybrid A* failed (%s at %s); falling back to interpolation.', plannerErr.message, origin);
+        stageBStates = [];
+    end
+    if isempty(stageBStates)
+        stageBPoses = generateStagePoses(stageBStart, T1, NB, 'base');
+    else
+        stageBPoses = statesToEndEffectorPoses(robot, qA_end, baseIdx, stageBStates, trajStruct.EndEffectorName);
+    end
+else
+    stageBPoses = generateStagePoses(stageBStart, T1, NB, 'base');
+end
 trajB = struct('Poses', stageBPoses);
 trajB.EndEffectorName = trajStruct.EndEffectorName;
 
@@ -77,7 +114,8 @@ logB = gik9dof.runTrajectoryControl(bundleB, trajB, ...
     'InitialConfiguration', qA_end, ...
     'RateHz', options.RateHz, ...
     'CommandFcn', options.CommandFcn, ...
-    'Verbose', options.Verbose);
+    'Verbose', options.Verbose, ...
+    'VelocityLimits', velLimits);
 
 qB_end = logB.qTraj(:, end);
 
@@ -85,14 +123,15 @@ qB_end = logB.qTraj(:, end);
 bundleC = gik9dof.createGikSolver(robot, ...
     'DistanceSpecs', options.DistanceSpecs);
 
-trajC = sliceTrajectoryStruct(trajStruct, 2);
+trajC = trajStruct;
 logC = struct();
 if ~isempty(trajC.Poses)
     logC = gik9dof.runTrajectoryControl(bundleC, trajC, ...
         'InitialConfiguration', qB_end, ...
         'RateHz', options.RateHz, ...
         'CommandFcn', options.CommandFcn, ...
-        'Verbose', options.Verbose);
+        'Verbose', options.Verbose, ...
+        'VelocityLimits', velLimits);
 else
     % No remaining waypoints; synthesise empty log
     logC = emptyLog(robot, qB_end, options.RateHz);
@@ -104,6 +143,8 @@ pipeline.mode = "staged";
 pipeline.stageLogs = struct('stageA', logA, 'stageB', logB, 'stageC', logC);
 pipeline.distanceSpecs = options.DistanceSpecs;
 pipeline.rateHz = options.RateHz;
+pipeline.referenceTrajectory = trajStruct;
+pipeline.environment = options.EnvironmentConfig;
 end
 
 function lockJointBounds(jointConstraint, indices, values)
@@ -275,4 +316,224 @@ combined.positionErrorNorm = positionErrorNorm;
 combined.orientationErrorQuat = orientationErrorQuat;
 combined.orientationErrorAngle = orientationErrorAngle;
 combined.time = time;
+end
+
+function states = planStageBHybridAStarPath(qStart, baseIdx, targetPose, options, robot, eeName, floorDiscs)
+%PLANSTAGEBHYBRIDASTARPATH Plan a base trajectory using Hybrid A*.
+startBase = reshape(qStart(baseIdx), 1, []);
+nJoints = numel(qStart);
+armIdx = setdiff(1:nJoints, baseIdx);
+
+goalBundle = gik9dof.createGikSolver(robot, "EndEffector", eeName);
+lockJointBounds(goalBundle.constraints.joint, armIdx, qStart);
+[qGoal, info] = goalBundle.solve(qStart, "TargetPose", targetPose);
+exitFlag = nan;
+if isstruct(info) && isfield(info, "ExitFlag")
+    exitFlag = double(info.ExitFlag);
+end
+if ~(isfinite(exitFlag) && exitFlag > 0)
+    error("gik9dof:runStagedTrajectory:HybridAStarGoalIK", ...
+        "Failed to resolve Stage B base goal configuration (ExitFlag=%g).", exitFlag);
+end
+goalBase = reshape(qGoal(baseIdx), 1, []);
+
+resolution = options.StageBHybridResolution;
+safetyMargin = options.StageBHybridSafetyMargin;
+occMap = buildStageBOccupancyMap(startBase, goalBase, floorDiscs, resolution, safetyMargin);
+
+startState = [startBase(1:2), wrapToPi(startBase(3))];
+goalState = [goalBase(1:2), wrapToPi(goalBase(3))];
+
+startOcc = checkOccupancy(occMap, startState(1:2));
+if startOcc < 0
+    startOcc = 0;
+end
+if startOcc >= occMap.OccupiedThreshold
+    error("gik9dof:runStagedTrajectory:HybridAStarStartOccupied", ...
+        "Stage B start pose lies inside an occupied region.");
+end
+goalOcc = checkOccupancy(occMap, goalState(1:2));
+if goalOcc < 0
+    goalOcc = 0;
+end
+if goalOcc >= occMap.OccupiedThreshold
+    error("gik9dof:runStagedTrajectory:HybridAStarGoalOccupied", ...
+        "Stage B goal pose lies inside an occupied region.");
+end
+
+ss = stateSpaceSE2;
+ss.StateBounds = [occMap.XWorldLimits; occMap.YWorldLimits; -pi pi];
+
+validator = validatorOccupancyMap(ss);
+validator.Map = occMap;
+validator.ValidationDistance = resolution / 2;
+
+planner = plannerHybridAStar(validator);
+planner.MotionPrimitiveLength = options.StageBHybridMotionPrimitiveLength;
+minTurningLowerBound = (2 * planner.MotionPrimitiveLength) / pi;
+planner.MinTurningRadius = max(options.StageBHybridMinTurningRadius, minTurningLowerBound);
+
+if isfield(options, "Verbose") && options.Verbose
+    fprintf("[Stage B] Hybrid A* planning with resolution %.2f m and safety margin %.2f m...\n", resolution, safetyMargin);
+end
+
+pathObj = plan(planner, startState, goalState);
+statesRaw = pathObj.States;
+if isempty(statesRaw)
+    error("gik9dof:runStagedTrajectory:HybridAStarEmpty", ...
+        "Hybrid A* returned an empty path.");
+end
+
+rateHz = options.RateHz;
+if isempty(rateHz) || ~isscalar(rateHz) || rateHz <= 0
+    rateHz = 100;
+end
+maxLinearStep = options.StageBMaxLinearSpeed / rateHz;
+maxYawStep = options.StageBMaxYawRate / rateHz;
+
+states = densifyHybridStates(statesRaw, maxLinearStep, maxYawStep);
+end
+
+function map = buildStageBOccupancyMap(startBase, goalBase, floorDiscs, resolution, safetyMargin)
+%BUILDSTAGEBOCCUPANCYMAP Construct occupancy map covering path region.
+points = [startBase(1:2); goalBase(1:2)];
+maxDiscRadius = 0;
+if ~isempty(floorDiscs)
+    centers = reshape([floorDiscs.Center], 2, []).';
+    points = [points; centers]; %#ok<AGROW>
+    discRadii = arrayfun(@(d) d.Radius + d.SafetyMargin + safetyMargin, floorDiscs);
+    maxDiscRadius = max(discRadii);
+else
+    discRadii = []; %#ok<NASGU>
+end
+
+padding = max(1.0, 2*maxDiscRadius);
+minXY = min(points, [], 1) - padding;
+maxXY = max(points, [], 1) + padding;
+
+width = max(maxXY(1) - minXY(1), resolution);
+height = max(maxXY(2) - minXY(2), resolution);
+
+cellsPerMeter = 1 / max(resolution, eps);
+binMap = occupancyMap(width, height, cellsPerMeter);
+binMap.GridLocationInWorld = minXY;
+setOccupancy(binMap, zeros(binMap.GridSize));
+
+if ~isempty(floorDiscs)
+    for idx = 1:numel(floorDiscs)
+        disc = floorDiscs(idx);
+        inflatedRadius = disc.Radius + disc.SafetyMargin + safetyMargin;
+        markDiscOnBinaryMap(binMap, disc.Center, inflatedRadius);
+    end
+end
+
+map = binMap;
+end
+
+function markDiscOnBinaryMap(binMap, center, radius)
+%MARKDISCONBINARYMAP Stamp a circular obstacle into the map.
+if radius <= 0
+    return
+end
+
+xRange = center(1) + [-radius, radius];
+yRange = center(2) + [-radius, radius];
+
+idxMinRowCol = world2grid(binMap, [xRange(1), yRange(1)]);
+idxMaxRowCol = world2grid(binMap, [xRange(2), yRange(2)]);
+
+if any(~isfinite([idxMinRowCol, idxMaxRowCol]))
+    return
+end
+
+rowBounds = sort([idxMinRowCol(1), idxMaxRowCol(1)]);
+colBounds = sort([idxMinRowCol(2), idxMaxRowCol(2)]);
+
+rowLo = max(1, floor(rowBounds(1)));
+rowHi = min(binMap.GridSize(1), ceil(rowBounds(2)));
+colLo = max(1, floor(colBounds(1)));
+colHi = min(binMap.GridSize(2), ceil(colBounds(2)));
+
+if rowLo > rowHi || colLo > colHi
+    return
+end
+
+rows = rowLo:rowHi;
+cols = colLo:colHi;
+
+if isempty(rows) || isempty(cols)
+    return
+end
+
+[rowGrid, colGrid] = ndgrid(rows, cols);
+worldPts = grid2world(binMap, [rowGrid(:), colGrid(:)]);
+xWorld = worldPts(:,1);
+yWorld = worldPts(:,2);
+
+dx = xWorld - center(1);
+dy = yWorld - center(2);
+cellPadding = 0.5 / binMap.Resolution;
+mask = (dx.^2 + dy.^2) <= (radius + cellPadding)^2;
+
+if any(mask)
+    occupiedPoints = [xWorld(mask), yWorld(mask)];
+    setOccupancy(binMap, occupiedPoints, 1, "world");
+end
+end
+
+function states = densifyHybridStates(statesIn, maxLinearStep, maxYawStep)
+%DENSIFYHYBRIDSTATES Insert intermediate samples to respect rate limits.
+if isempty(statesIn)
+    states = statesIn;
+    return
+end
+
+if ~isfinite(maxLinearStep) || maxLinearStep <= 0
+    maxLinearStep = Inf;
+end
+if ~isfinite(maxYawStep) || maxYawStep <= 0
+    maxYawStep = Inf;
+end
+
+states = zeros(0, 3);
+currentState = [statesIn(1,1:2), wrapToPi(statesIn(1,3))];
+states(end+1, :) = currentState; %#ok<AGROW>
+
+for idx = 1:size(statesIn,1)-1
+    nextState = [statesIn(idx+1,1:2), wrapToPi(statesIn(idx+1,3))];
+    delta = nextState(1:2) - currentState(1:2);
+    linearDist = hypot(delta(1), delta(2));
+    yawDelta = wrapToPi(nextState(3) - currentState(3));
+    stepsLinear = ceil(linearDist / maxLinearStep);
+    stepsYaw = ceil(abs(yawDelta) / maxYawStep);
+    numSegments = max([1, stepsLinear, stepsYaw]);
+
+    for s = 1:numSegments-1
+        tau = s / numSegments;
+        interpXY = currentState(1:2) + delta * tau;
+        interpYaw = wrapToPi(currentState(3) + yawDelta * tau);
+        states(end+1, :) = [interpXY, interpYaw]; %#ok<AGROW>
+    end
+
+    states(end+1, :) = nextState; %#ok<AGROW>
+    currentState = nextState;
+end
+
+% Remove potential duplicates introduced by zero-length segments.
+if size(states,1) >= 2
+    diffStates = diff(states);
+    keepMask = [true; any(abs(diffStates) > 1e-9, 2)];
+    states = states(keepMask, :);
+end
+end
+
+function poses = statesToEndEffectorPoses(robot, qTemplate, baseIdx, states, eeName)
+%STATESTOENDEFFECTORPOSES Convert base states to EE poses with frozen arm.
+nStates = size(states, 1);
+poses = repmat(eye(4), 1, 1, nStates);
+q = qTemplate;
+for k = 1:nStates
+    q(baseIdx) = states(k, :).';
+    poses(:,:,k) = getTransform(robot, q, eeName);
+end
 end
