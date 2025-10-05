@@ -21,26 +21,29 @@ env.BaseHome = [-2, -2, 0];
 
 radius = 0.10;
 height = 0.15;
+safetyMargin = 0.05;
+distanceMargin = 0.15;
+distanceWeight = 5.0;
 
 center1 = [-1, -1];
 
 traj = jsondecode(fileread(fullfile(gik9dof.internal.projectRoot(), '1_pull_world_scaled.json')));
-waypointIdx = min(147, numel(traj.poses));
+waypointIdx = min(112, numel(traj.poses));
 wp = traj.poses(waypointIdx).position;
 center2 = [wp(1), wp(2)];
 
 discTemplate = @(center, name) struct( ...
     'Center', center, ...
     'Radius', radius, ...
-    'SafetyMargin', 0, ...
+    'SafetyMargin', safetyMargin, ...
     'Name', string(name), ...
     'Height', height, ...
     'height', height);
 
 env.FloorDiscs = [discTemplate(center1, 'floor_disc_1'), discTemplate(center2, 'floor_disc_2')];
 
-env.DistanceMargin = 0.05;
-env.DistanceWeight = 0.5;
+env.DistanceMargin = distanceMargin;
+env.DistanceWeight = distanceWeight;
 
 cachedEnv = env;
 end

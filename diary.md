@@ -67,3 +67,15 @@
 - Tighten pure-pursuit parameters (lookahead, velocity) per chassis configuration; add automated handover trigger once `status.isFinished` is asserted.
 - Record unified commands inside `runTrajectoryControl` during live runs (currently only accessible via staged replay); consider adding a logging hook for holistic Stage C as well.
 - Integrate `unified_chassis_replay` into ROS notebook/tests so Stage B velocity commands can be validated against real odometry before firmware execution.
+
+## 2025-10-05 (evening) – Disk Obstacle Regression + Compare Harness v2
+
+- **EnvironmentConfig** now programmatically anchors Disc 2 at waypoint 112 of the JSON reference path, sets uniform radius/height (0.10 m / 0.15 m), and applies safety + distance margins (0.05 m + 0.15 m) with a stronger weight (5.0). This ensures both holistic and staged runs share the exact obstacle definition when the config is fetched.
+- **Visualization helpers** (`animateHolisticWithHelper`, `animateStagedWithHelper`) now inject target paths and obstacle metadata so regenerated animations carry the full desired EE ribbon, chassis plan, and inflated disc halos. Legends no longer default to “Data1/Data2” when videos are rebuilt from logs.
+- **Batch harness** (`run_environment_compare` / `run_environment_compare_latest`) drives both controllers at 50 Hz, exports staged-style MP4s, and drops arm/chassis diagnostic PNGs through `generateLogPlots`. Results land in timestamped folders; `regenerate_animations_from_logs.m` rebuilds artifacts later without re-simulating.
+- **Latest compare (results/20251005_225256_compare)** shows the staged pipeline respecting both discs (min clearance ~0.70 m on disc 1), whereas the holistic controller still collides with disc 1 (−0.14 m clearance) and consequently halts mid-route. This confirms that tighter obstacles require either a planned base motion in holistic mode or relaxed distance constraints.
+
+**Still in progress**
+- Add a holistic pre-planning step (reuse the Stage B Hybrid A*) so the base can clear Disc 1 before switching to full-body tracking.
+- Evaluate margin/weight combinations that guarantee clearance yet keep the solver feasible; log the resulting clearances to verify.
+- Update the regen helper to preserve existing MP4 timestamps when overwriting, or add an option to skip regeneration for long runs.
