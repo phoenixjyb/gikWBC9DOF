@@ -1,19 +1,17 @@
 function summary = run_environment_compare(options)
 %RUN_ENVIRONMENT_COMPARE Execute holistic vs staged runs with shared config.
 %   summary = run_environment_compare() runs both controllers using
-%   gik9dof.environmentConfig(), saves logs/videos to results/, and prints a
-%   comparison summary. Name-value options:
-%       RunLabel        - Text appended to result files (default 'compare').
+%   gik9dof.environmentConfig(), saves logs/videos to a timestamped results
+%   directory, and prints a comparison summary. Name-value options:
+%       RunLabel        - Text appended to result folder (default 'compare').
 %       SampleStep      - Frame subsampling for animations (default 4).
 %       FrameRate       - Animation frame rate in Hz (default 20).
 %       SaveAnimations  - Logical flag to write MP4 outputs (default true).
 %       FigureScale     - Scaling passed to staged helper (default 0.5).
 %
-%   Example (from MATLAB):
+%   Example:
 %       summary = run_environment_compare('RunLabel','nightly');
 %
-%   Example (non-interactive):
-%       matlab -batch "run_environment_compare";
 arguments
     options.RunLabel (1,1) string = "compare"
     options.SampleStep (1,1) double {mustBePositive, mustBeInteger} = 4
@@ -26,13 +24,8 @@ currentDir = fileparts(mfilename('fullpath'));
 projectRoot = fileparts(currentDir);
 addpath(genpath(fullfile(projectRoot, 'matlab')));
 
-resultsDir = fullfile(projectRoot, 'results');
-if ~isfolder(resultsDir)
-    mkdir(resultsDir);
-end
-
-runStamp = datetime('now', 'Format', 'yyyyMMdd_HHmmss');
-runTag = options.RunLabel + "_" + string(runStamp);
+runDir = gik9dof.internal.createResultsFolder(options.RunLabel);
+resultsDir = char(runDir);
 
 env = gik9dof.environmentConfig();
 
@@ -47,14 +40,15 @@ logStaged = gik9dof.trackReferenceTrajectory( ...
     'UseStageBHybridAStar', true, ...
     'EnvironmentConfig', env);
 
-holisticPath = fullfile(resultsDir, "log_holistic_" + runTag + ".mat");
-stagedPath = fullfile(resultsDir, "log_staged_" + runTag + ".mat");
+holisticPath = fullfile(resultsDir, "log_holistic.mat");
+stagedPath = fullfile(resultsDir, "log_staged.mat");
 save(holisticPath, 'logHolistic');
 save(stagedPath, 'logStaged');
 
 summary = struct();
-summary.timestamp = char(runStamp);
+summary.timestamp = char(datetime('now', 'Format', 'yyyy-MM-dd HH:mm:ss'));
 summary.runLabel = char(options.RunLabel);
+summary.resultsDir = resultsDir;
 summary.holisticLog = holisticPath;
 summary.stagedLog = stagedPath;
 summary.discsIdentical = isequal(logHolistic.floorDiscs, logStaged.floorDiscs);
@@ -66,6 +60,7 @@ summary.finalErrorStaged = norm(logStaged.positionError(:, end));
 summary.environment = env;
 
 fprintf('\n=== Environment Comparison (%s) ===\n', summary.timestamp);
+fprintf('Results dir: %s\n', resultsDir);
 fprintf('Holistic log: %s\n', holisticPath);
 fprintf('Staged log:   %s\n', stagedPath);
 fprintf('Disc geometry identical: %s\n', logicalToString(summary.discsIdentical));
@@ -76,7 +71,7 @@ fprintf('Final EE error (holistic): %.6f\n', summary.finalErrorHolistic);
 fprintf('Final EE error (staged):   %.6f\n', summary.finalErrorStaged);
 
 if options.SaveAnimations
-    holVideo = fullfile(resultsDir, "holistic_" + runTag + ".mp4");
+    holVideo = fullfile(resultsDir, "holistic.mp4");
     gik9dof.animateTrajectory(logHolistic, ...
         'OutputVideo', holVideo, ...
         'FrameRate', options.FrameRate, ...
@@ -84,7 +79,7 @@ if options.SaveAnimations
     summary.holisticVideo = holVideo;
     fprintf('Holistic animation saved to %s\n', holVideo);
 
-    stagedVideo = fullfile(resultsDir, "staged_" + runTag + ".mp4");
+    stagedVideo = fullfile(resultsDir, "staged.mp4");
     helperOpts = struct('FigureScale', options.FigureScale);
     gik9dof.animateStagedWithHelper(logStaged, ...
         'SampleStep', options.SampleStep, ...
@@ -95,12 +90,14 @@ if options.SaveAnimations
     fprintf('Staged animation saved to %s\n', stagedVideo);
 end
 
-goalDiff = logStaged.stageLogs.stageC.targetPositions - logHolistic.targetPositions;
-summary.goalDifferenceStats = struct('max', max(goalDiff, [], 2), 'min', min(goalDiff, [], 2));
+% Diagnostic plots
+summary.holisticPlots = gik9dof.generateLogPlots(logHolistic, fullfile(resultsDir, 'holistic'));
+summary.stagedPlots = gik9dof.generateLogPlots(logStaged, fullfile(resultsDir, 'staged'));
+
 summary.runOptions = options;
 
 if nargout == 0
-    clear summary
+    assignin('base', 'runEnvSummary', summary);
 end
 end
 

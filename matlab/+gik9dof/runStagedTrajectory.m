@@ -103,6 +103,7 @@ if options.UseStageBHybridAStar
     end
 else
     stageBPoses = generateStagePoses(stageBStart, T1, NB, 'base');
+    stageBStates = [];
 end
 trajB = struct('Poses', stageBPoses);
 trajB.EndEffectorName = trajStruct.EndEffectorName;
@@ -116,6 +117,14 @@ logB = gik9dof.runTrajectoryControl(bundleB, trajB, ...
     'CommandFcn', options.CommandFcn, ...
     'Verbose', options.Verbose, ...
     'VelocityLimits', velLimits);
+
+if isempty(stageBStates)
+    % Fallback: reconstruct base states from executed trajectory
+    baseStates = logB.qTraj(baseIdx, :)';
+else
+    baseStates = stageBStates;
+end
+logB.pathStates = baseStates;
 
 qB_end = logB.qTraj(:, end);
 

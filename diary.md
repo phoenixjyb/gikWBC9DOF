@@ -55,3 +55,15 @@
 - added velocity-limited ramp generation (`gik9dof.generateHolisticRamp`) and velocity clamping in `runTrajectoryControl`; holistic logs now carry ramp/limit metadata
 - pulled the animation helper into `gik9dof/viz`, pointing at repo meshes (with optional `mesh/stl_output` reduced files) and added `FigureScale`, inflated-disc visualization, and live EE error readout
 - reran holistic scenario (`results/log_holistic_latest_fullres.mat`) and produced `results/holistic_latest_fullres.mp4`; chassis/arm visuals match URDF and no mesh warnings remain
+
+## 2025-10-05 – Unified Chassis Control, Stage-B Follower & Batch Harness
+
+- Implemented `gik9dof.control.unifiedChassisCtrl`, `clampYawByWheelLimit`, `defaultUnifiedParams`, plus offline replay (`unified_chassis_replay`) so holistic and staged pipelines emit a single `(Vx,0,Wz)` interface while logging wheel-feasible yaw limits.
+- Dropped in an in-repo pure‑pursuit follower (`gik9dof.control.purePursuitFollower`) and wired Stage B to expose the Hybrid A* path as `stageLogs.stageB.pathStates`. The replay tool now recovers Stage B chassis commands via the same follower logic.
+- Refreshed `run_environment_compare` to create timestamped result dirs, export holistic/staged animations, and call the new `gik9dof.generateLogPlots` helper for arm/chassis plots. Added a top-level `run_environment_compare_latest.m` convenience script.
+- Latest batch run (`results/20251005_171238_holistic_staged/`) contains matched holistic & staged logs, MP4 animations, arm joint plots, and chassis velocity plots. Staged run still shows higher final EE error than holistic (0.7059 vs 1.6971) but now benefits from unified logging and the stored Stage B path for future tuning.
+
+### Outstanding Items
+- Tighten pure-pursuit parameters (lookahead, velocity) per chassis configuration; add automated handover trigger once `status.isFinished` is asserted.
+- Record unified commands inside `runTrajectoryControl` during live runs (currently only accessible via staged replay); consider adding a logging hook for holistic Stage C as well.
+- Integrate `unified_chassis_replay` into ROS notebook/tests so Stage B velocity commands can be validated against real odometry before firmware execution.

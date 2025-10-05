@@ -222,20 +222,20 @@
         <parent link="abstract_chassis_link"/>
         <child link="left_arm_base_link"/>
         <origin rpy="0.00000000  0.00000000 -1.57080000" xyz="0.15995000 0.00000000 0.94650000"/>
-        <axis xyz="100"/>
+        <axis xyz="1 0 0"/>
     </joint>
     <joint name="joint_theta" type="revolute">
         <parent link="base_link_y"/>
         <child link="abstract_chassis_link"/>
         <origin rpy="0.00000000 0.00000000 0.00000000" xyz="0.00000000 0.00000000 0.00000000"/>
         <axis xyz="0.00000000 0.00000000 1.00000000"/>
-        <limit lower="-Inf" upper="Inf" effort="0" velocity="0"/>
+        <limit lower="-Inf" upper="Inf" effort="0" velocity="1.6"/>
     </joint>
     <joint name="joint_x" type="prismatic">
         <parent link="base"/>
         <child link="base_link_x"/>
         <origin rpy="0.00000000 0.00000000 0.00000000" xyz="0.00000000 0.00000000 0.00000000"/>
-        <axis xyz="0.00000000 0.00000000 1.00000000"/>
+        <axis xyz="1.00000000 0.00000000 0.00000000"/>
         <limit lower="-50.00000000" upper="50.00000000" effort="0" velocity="0"/>
     </joint>
     <joint name="joint_y" type="prismatic">
