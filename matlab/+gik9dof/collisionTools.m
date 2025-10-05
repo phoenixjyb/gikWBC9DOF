@@ -112,15 +112,15 @@ body = [
 ];
 
 mesh = [
-    "base_link.STL";
-    "arm_base.STL";
-    "arm_seg1.STL";
-    "arm_seg2.STL";
-    "arm_seg3.STL";
-    "arm_seg4.STL";
-    "arm_seg5.STL";
-    "arm_seg6.STL";
-    "end_effector.STL"
+    "stl_output/base_link_reduced.STL";
+    "stl_output/left_arm_base_link_reduced.STL";
+    "stl_output/left_arm_link1_reduced.STL";
+    "stl_output/left_arm_link2_reduced.STL";
+    "stl_output/left_arm_link3_reduced.STL";
+    "stl_output/left_arm_link4_reduced.STL";
+    "stl_output/left_arm_link5_reduced.STL";
+    "stl_output/left_arm_link6_reduced.STL";
+    "stl_output/end_effector_reduced.STL"
 ];
 
 catalog = table(body, mesh);

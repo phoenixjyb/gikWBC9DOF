@@ -47,3 +47,11 @@
   - Holistic run maintains small violation margins and shorter runtime with fewer waypoints; staged adds more setpoints which raised average iterations.
 - **Visualization**: Generated side-by-side animation (`results/comparison_holistic_vs_staged.mp4`) showing both runs with desired/actual EE traces and floor-disc obstacles, mirroring the legacy demo styling.
   Updated animation now mirrors the legacy demo (fixed camera, stage overlays, obstacles, robot meshes) and is saved at `results/comparison_holistic_vs_staged.mp4` (~265 KB).
+
+## 2025-10-04 – Holistic Ramp & Visualization refresh
+
+- aligned `mobile_manipulator_PPR_base_corrected.urdf` with the new STL assets under `meshes/`; confirmed visuals via direct `importrobot` preview
+- updated `gik9dof.collisionTools` catalog so collision checks use `base_link.STL`, `left_arm_link*.STL`, `end_effector.STL`; `trackReferenceTrajectory` now resolves meshes from `meshes/`
+- added velocity-limited ramp generation (`gik9dof.generateHolisticRamp`) and velocity clamping in `runTrajectoryControl`; holistic logs now carry ramp/limit metadata
+- pulled the animation helper into `gik9dof/viz`, pointing at repo meshes (with optional `mesh/stl_output` reduced files) and added `FigureScale`, inflated-disc visualization, and live EE error readout
+- reran holistic scenario (`results/log_holistic_latest_fullres.mat`) and produced `results/holistic_latest_fullres.mp4`; chassis/arm visuals match URDF and no mesh warnings remain

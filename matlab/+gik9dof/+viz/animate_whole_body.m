@@ -54,6 +54,7 @@ arguments
     options.TargetPath double = []
     options.ArmMeshDirectory string = ""
     options.ArmMeshColor (1,3) double = [0.78 0.82 0.93]
+    options.FigureScale double = 1.0
 end
 
 if options.VisualAlpha < 0 || options.VisualAlpha > 1
@@ -181,8 +182,11 @@ baseYawUnwrapped = interp1(baseTimes, unwrap(basePose(:,3)), armTimes, 'linear',
 baseYaw = wrapToPi(baseYawUnwrapped);
 
 % Prepare figure
+scale = max(options.FigureScale, 0.1);
+baseSize = [1120 840];
+figSize = round(baseSize * scale);
 fig = figure('Name', 'Whole-Body Animation', 'Color', [0.15 0.15 0.15], ...
-    'Units', 'pixels', 'Position', [100 100 1120 840], 'Resize', 'off');
+    'Units', 'pixels', 'Position', [100 100 figSize], 'Resize', 'off');
 ax = axes('Parent', fig, 'Color', [0.05 0.05 0.05], 'XColor', [0.9 0.9 0.9], ...
     'YColor', [0.9 0.9 0.9], 'ZColor', [0.9 0.9 0.9], 'GridColor', [0.35 0.35 0.35]);
 hold(ax, 'on'); grid(ax, 'on'); axis(ax, 'equal');
@@ -242,13 +246,31 @@ hg = hgtransform('Parent', ax);
 chassisPatch = [];
 robotHandlesPrev = [];
 
+helpersDir = fileparts(mfilename('fullpath'));
+matlabDir = fileparts(helpersDir);
+meshRoot = fullfile(matlabDir, '..', '..', 'meshes');
+meshOutputs = fullfile(meshRoot, 'outputs');
+
 % Attempt to load chassis/support mesh once so it follows the base hgtransform
 meshPath = string(options.ChassisMesh);
 if strlength(meshPath) == 0
-    helpersDir = fileparts(mfilename('fullpath')); % .../matlab/+helpers
-    matlabDir = fileparts(helpersDir);
-    defaultMesh = fullfile(matlabDir, '..', '..', 'meshes', 'base_link.STL');
-    meshPath = string(defaultMesh);
+    chassisCandidates = {
+        fullfile(meshOutputs, 'base_link_reduced.STL');
+        fullfile(meshOutputs, 'base_link_reduced.stl');
+        fullfile(meshOutputs, 'base_link.STL');
+        fullfile(meshRoot, 'base_link.STL')
+        };
+    meshPath = "";
+    for idxCand = 1:numel(chassisCandidates)
+        cand = chassisCandidates{idxCand};
+        if exist(cand, 'file')
+            meshPath = string(cand);
+            break
+        end
+    end
+    if strlength(meshPath) == 0
+        meshPath = string(chassisCandidates{end});
+    end
 end
 if exist(meshPath, 'file') == 2
     try
@@ -488,10 +510,18 @@ for idx = 1:numel(bodyNames)
         continue
     end
 
-    candidates = {
-        fullfile(meshDirChar, [bodyName, '.STL']), ...
-        fullfile(meshDirChar, [bodyName, '.stl']) ...
-    };
+outputsDir = fullfile(meshDirChar, 'stl_output');
+    candidates = {};
+    if exist(outputsDir, 'dir')
+        candidates = [candidates, ...
+            {fullfile(outputsDir, [bodyName, '_reduced.STL'])}, ...
+            {fullfile(outputsDir, [bodyName, '_reduced.stl'])}, ...
+            {fullfile(outputsDir, [bodyName, '.STL'])}, ...
+            {fullfile(outputsDir, [bodyName, '.stl'])}]; %#ok<AGROW>
+    end
+    candidates = [candidates, ...
+        {fullfile(meshDirChar, [bodyName, '.STL'])}, ...
+        {fullfile(meshDirChar, [bodyName, '.stl'])}]; %#ok<AGROW>
     meshPath = '';
     for cIdx = 1:numel(candidates)
         if exist(candidates{cIdx}, 'file') == 2
