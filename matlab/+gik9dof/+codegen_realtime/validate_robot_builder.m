@@ -96,8 +96,8 @@ try
     % Distance constraint (required since solver has 'distance' in ConstraintInputs)
     distanceConstraint = constraintDistanceBounds('left_gripper_link');
     distanceConstraint.ReferenceBody = robot.BaseName;
-    distanceConstraint.Bounds = [0, inf];  % No minimum distance for validation test
-    distanceConstraint.Weights = 0.1;      % Low weight for validation test
+    distanceConstraint.Bounds = [0, 10];  % 0 to 10 meters (effectively no upper limit for validation)
+    distanceConstraint.Weights = 0.1;     % Low weight for validation test
     
     [qSol, solverInfo] = solver(q0, poseConstraint, jointConstraint, distanceConstraint);
     

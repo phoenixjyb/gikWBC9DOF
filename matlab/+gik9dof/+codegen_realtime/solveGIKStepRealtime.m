@@ -42,7 +42,9 @@ else
     w = distanceWeight;
 end
 
-distanceConstraint.Bounds = [lowerBound, inf];
+% Use large finite upper bound instead of inf (MATLAB constraint system requires finite bounds)
+% 100 meters is effectively unlimited for a mobile manipulator
+distanceConstraint.Bounds = [lowerBound, 100.0];
 distanceConstraint.Weights = w;
 
 % Solve IK
