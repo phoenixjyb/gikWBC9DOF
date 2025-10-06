@@ -37,14 +37,12 @@ cfg.CppNamespace = 'gik9dof';
 cfg.CppInterfaceStyle = 'Methods';
 cfg.CppInterfaceClassName = 'GIKSolver';
 
-% ARM64 specific settings
-cfg.Hardware = coder.hardware('NVIDIA Jetson');
-cfg.Hardware.ProdHWDeviceType = 'ARM Compatible->ARM Cortex-A';
+% Note: Hardware-specific settings are applied during cross-compilation on target
+% For now, generate generic ARM64-compatible C++ code
 
 % Optimization settings for real-time performance
 cfg.OptimizationLevel = 'O3';
 cfg.EnableOpenMP = true;
-cfg.InstructionSetExtensions = 'NEON';
 
 % Memory settings for real-time safety
 cfg.DynamicMemoryAllocation = 'Off';
@@ -69,11 +67,12 @@ fprintf('Target function: gik9dof.codegen_realtime.solveGIKStepWrapper\n');
 fprintf('Output directory: %s\n', CODEGEN_OUTPUT);
 fprintf('Configuration:\n');
 fprintf('  - Language: C++17\n');
-fprintf('  - Architecture: ARM64 (Cortex-A)\n');
-fprintf('  - SIMD: NEON\n');
+fprintf('  - Architecture: Generic (ARM64-compatible)\n');
 fprintf('  - OpenMP: Enabled\n');
 fprintf('  - Dynamic Memory: Disabled\n');
 fprintf('  - Optimization: O3\n');
+fprintf('  - Build Tool: CMake\n');
+fprintf('Note: ARM64-specific optimizations (NEON) applied during cross-compile\n');
 fprintf('===================================================\n\n');
 
 % Generate code
