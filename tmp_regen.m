@@ -1,0 +1,1 @@
+runFolder='results/20251006_141413_compare'; regenerate_animations_from_logs

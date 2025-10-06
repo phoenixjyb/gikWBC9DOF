@@ -181,50 +181,68 @@ baseY = interp1(baseTimes, basePose(:,2), armTimes, 'linear', 'extrap');
 baseYawUnwrapped = interp1(baseTimes, unwrap(basePose(:,3)), armTimes, 'linear', 'extrap');
 baseYaw = wrapToPi(baseYawUnwrapped);
 
-% Prepare figure
+% Prepare figure: left = 3D perspective, right = top view
 scale = max(options.FigureScale, 0.1);
 baseSize = [1120 840];
-figSize = round(baseSize * scale);
-fig = figure('Name', 'Whole-Body Animation', 'Color', [0.15 0.15 0.15], ...
+canvasSize = [baseSize(1) * 2, baseSize(2)];
+figSize = round(canvasSize * scale);
+fig = figure('Name', 'Whole-Body Animation', 'Color', [0.12 0.12 0.12], ...
     'Units', 'pixels', 'Position', [100 100 figSize], 'Resize', 'off');
-ax = axes('Parent', fig, 'Color', [0.05 0.05 0.05], 'XColor', [0.9 0.9 0.9], ...
-    'YColor', [0.9 0.9 0.9], 'ZColor', [0.9 0.9 0.9], 'GridColor', [0.35 0.35 0.35]);
-hold(ax, 'on'); grid(ax, 'on'); axis(ax, 'equal');
-xlabel(ax, 'X (m)', 'Color', [0.9 0.9 0.9]);
-ylabel(ax, 'Y (m)', 'Color', [0.9 0.9 0.9]);
-zlabel(ax, 'Z (m)', 'Color', [0.9 0.9 0.9]);
-view(ax, 45, 25);
+
+axPersp = subplot(1,2,1, 'Parent', fig);
+axTop   = subplot(1,2,2, 'Parent', fig);
+set(axPersp, 'Position', [0.05 0.1 0.42 0.82]);
+set(axTop,   'Position', [0.55 0.1 0.42 0.82]);
+
+setupAxes(axPersp, [0.05 0.05 0.05], false);
+setupAxes(axTop,   [0.05 0.05 0.05], true);
+
+view(axPersp, 45, 25);
+view(axTop,   0, 90);
+title(axPersp, '3D Perspective', 'Color', [0.95 0.95 0.95]);
+title(axTop,   'Top View', 'Color', [0.95 0.95 0.95]);
 
 % Plot reference paths
-plot(ax, basePose(:,1), basePose(:,2), '--', 'Color', [0.85 0.7 0.1], 'LineWidth', 1.0, 'DisplayName', 'Chassis path');
+plot(axPersp, basePose(:,1), basePose(:,2), '--', 'Color', [0.85 0.7 0.1], 'LineWidth', 1.0, 'DisplayName', 'Chassis path');
+plot(axTop,   basePose(:,1), basePose(:,2), '--', 'Color', [0.85 0.7 0.1], 'LineWidth', 1.0, 'DisplayName', 'Chassis path');
 if ~isempty(eePoses) && size(eePoses,2) >= 3
-    plot3(ax, eePoses(:,1), eePoses(:,2), eePoses(:,3), 'r-.', 'LineWidth', 1.0, 'DisplayName', 'Desired EE path');
+    plot3(axPersp, eePoses(:,1), eePoses(:,2), eePoses(:,3), 'r-.', 'LineWidth', 1.0, 'DisplayName', 'Desired EE path');
+    plot(axTop,   eePoses(:,1), eePoses(:,2), 'r-.', 'LineWidth', 1.0, 'DisplayName', 'Desired EE path');
 end
 if ~isempty(options.TargetPath)
     tp = options.TargetPath;
-    plot(ax, tp(:,1), tp(:,2), 'm:', 'LineWidth', 1.4, 'DisplayName', 'Planned chassis path');
+    plot(axPersp, tp(:,1), tp(:,2), 'm:', 'LineWidth', 1.4, 'DisplayName', 'Planned chassis path');
+    plot(axTop,   tp(:,1), tp(:,2), 'm:', 'LineWidth', 1.4, 'DisplayName', 'Planned chassis path');
 end
 actualEE = nan(numSteps,3);
-actualLine = plot3(ax, nan, nan, nan, 'Color', [0 0.7 0.2], 'LineWidth', 1.5, 'DisplayName', 'Actual EE path');
-leg = legend(ax, 'Location', 'bestoutside');
+actualLinePersp = plot3(axPersp, nan, nan, nan, 'Color', [0 0.7 0.2], 'LineWidth', 1.5, 'DisplayName', 'Actual EE path');
+actualLineTop   = plot(axTop, nan, nan, 'Color', [0 0.7 0.2], 'LineWidth', 1.5, 'DisplayName', 'Actual EE path');
+leg = legend(axPersp, 'Location', 'bestoutside');
 set(leg, 'TextColor', [0.95 0.95 0.95], 'Color', [0.2 0.2 0.2]);
 
 % Markers for current pose
-baseMarker = plot3(ax, baseX(1), baseY(1), 0, 'bo', 'MarkerFaceColor', 'b');
+baseMarkerPersp = plot3(axPersp, baseX(1), baseY(1), 0, 'bo', 'MarkerFaceColor', 'b');
+baseMarkerTop   = plot(axTop,   baseX(1), baseY(1), 'bo', 'MarkerFaceColor', 'b');
 headingLen = options.ArrowLength;
-headingLine = plot3(ax, [baseX(1), baseX(1)+headingLen*cos(baseYaw(1))], ...
+headingLinePersp = plot3(axPersp, [baseX(1), baseX(1)+headingLen*cos(baseYaw(1))], ...
                       [baseY(1), baseY(1)+headingLen*sin(baseYaw(1))], ...
                       [0 0], 'b-', 'LineWidth', 2);
+headingLineTop = plot(axTop, [baseX(1), baseX(1)+headingLen*cos(baseYaw(1))], ...
+                         [baseY(1), baseY(1)+headingLen*sin(baseYaw(1))], ...
+                         'b-', 'LineWidth', 2);
 if ~isempty(eePoses) && size(eePoses,2) >= 3
-    eeMarker = plot3(ax, eePoses(1,1), eePoses(1,2), eePoses(1,3), 'ro', 'MarkerFaceColor', 'r', 'DisplayName', 'Desired EE waypoint');
+    eeMarkerPersp = plot3(axPersp, eePoses(1,1), eePoses(1,2), eePoses(1,3), 'ro', 'MarkerFaceColor', 'r', 'DisplayName', 'Desired EE waypoint');
+    eeMarkerTop   = plot(axTop,   eePoses(1,1), eePoses(1,2), 'ro', 'MarkerFaceColor', 'r');
 else
-    eeMarker = [];
+    eeMarkerPersp = [];
+    eeMarkerTop   = [];
 end
-actualMarker = plot3(ax, baseX(1), baseY(1), 0, 's', 'Color', [0.0 0.6 0.2], 'MarkerFaceColor', [0.0 0.6 0.2], 'DisplayName', 'Actual EE');
-stageText = text(ax, 'Units', 'normalized', 'Position', [0.02 0.95 0], ...
+actualMarkerPersp = plot3(axPersp, baseX(1), baseY(1), 0, 's', 'Color', [0.0 0.6 0.2], 'MarkerFaceColor', [0.0 0.6 0.2], 'DisplayName', 'Actual EE');
+actualMarkerTop   = plot(axTop,   baseX(1), baseY(1), 's', 'Color', [0.0 0.6 0.2], 'MarkerFaceColor', [0.0 0.6 0.2]);
+stageText = text(axPersp, 'Units', 'normalized', 'Position', [0.02 0.95 0], ...
     'String', '', 'Color', [0.95 0.95 0.95], 'FontSize', 12, 'FontWeight', 'bold', ...
     'BackgroundColor', [0.1 0.1 0.1], 'Margin', 4, 'HorizontalAlignment', 'left');
-eeErrorText = text(ax, 'Units', 'normalized', 'Position', [0.72 0.05 0], ...
+eeErrorText = text(axPersp, 'Units', 'normalized', 'Position', [0.72 0.05 0], ...
     'String', 'EE pos err: n/a', 'Color', [0.95 0.95 0.95], 'FontSize', 10, ...
     'BackgroundColor', [0.1 0.1 0.1], 'Margin', 4, 'HorizontalAlignment', 'right');
 
@@ -242,9 +260,12 @@ for j = 1:numel(armJointNames)
 end
 
 % Animation loop
-hg = hgtransform('Parent', ax);
-chassisPatch = [];
-robotHandlesPrev = [];
+hgPersp = hgtransform('Parent', axPersp);
+hgTop = hgtransform('Parent', axTop);
+chassisPatchPersp = [];
+chassisPatchTop = [];
+robotHandlesPrevPersp = [];
+robotHandlesPrevTop = [];
 
 helpersDir = fileparts(mfilename('fullpath'));
 matlabDir = fileparts(helpersDir);
@@ -257,7 +278,6 @@ if strlength(meshPath) == 0
     chassisCandidates = {
         fullfile(meshOutputs, 'base_link_reduced.STL');
         fullfile(meshOutputs, 'base_link_reduced.stl');
-        fullfile(meshOutputs, 'base_link.STL');
         fullfile(meshRoot, 'base_link.STL')
         };
     meshPath = "";
@@ -276,14 +296,19 @@ if exist(meshPath, 'file') == 2
     try
         triData = stlread(meshPath);
         chassisVertices = triData.Points * options.ChassisScale;
-        chassisPatch = patch('Parent', hg, 'Faces', triData.ConnectivityList, ...
+        chassisPatchPersp = patch('Parent', hgPersp, 'Faces', triData.ConnectivityList, ...
             'Vertices', chassisVertices, 'FaceColor', options.ChassisColor, ...
             'FaceAlpha', options.ChassisAlpha, 'EdgeColor', 'none', ...
             'DisplayName', 'Chassis model');
+        chassisPatchTop = patch('Parent', hgTop, 'Faces', triData.ConnectivityList, ...
+            'Vertices', chassisVertices, 'FaceColor', options.ChassisColor, ...
+            'FaceAlpha', options.ChassisAlpha, 'EdgeColor', 'none', ...
+            'HandleVisibility', 'off');
     catch ME
         warning('animate_whole_body:ChassisMeshFailed', ...
             'Failed to load chassis mesh from %s (%s).', meshPath, ME.message);
-        chassisPatch = [];
+        chassisPatchPersp = [];
+        chassisPatchTop = [];
     end
 else
     warning('animate_whole_body:ChassisMeshMissing', ...
@@ -304,81 +329,17 @@ end
 
 % Draw obstacles as translucent primitives
 obstacles = normalizeObstacles(options.Obstacles);
-if ~isempty(obstacles)
-    haveLegendActual = false;
-    haveLegendInflated = false;
-    for obsIdx = 1:numel(obstacles)
-        obs = obstacles(obsIdx);
-        color = obs.color;
-        if numel(color) < 3
-            color = [1.0 0.2 0.2];
-        else
-            color = color(1:3);
-        end
-        switch lower(obs.type)
-            case {'circle','disc','disk'}
-                actualR = obs.radius;
-                inflatedR = obs.radiusInflated;
-                safetyR = obs.radiusSafety;
-                if inflatedR > actualR + 1e-6
-                    [Xi, Yi, Zi] = cylinder(inflatedR, 80);
-                    Zi = Zi * obs.height;
-                    safetyColor = lightenColor(color, 0.4);
-                    surfInflated = surf(ax, Xi + obs.center(1), Yi + obs.center(2), Zi, ...
-                        'FaceAlpha', 0.1, 'FaceColor', safetyColor, 'EdgeColor', safetyColor, ...
-                        'LineStyle', '--');
-                    if ~haveLegendInflated
-                        set(surfInflated, 'DisplayName', 'Safety zone');
-                        haveLegendInflated = true;
-                    else
-                        set(surfInflated, 'HandleVisibility', 'off');
-                    end
-                end
-                if safetyR > actualR + 1e-6 && safetyR < inflatedR - 1e-6
-                    [Xs, Ys, Zs] = cylinder(safetyR, 80);
-                    Zs = Zs * obs.height;
-                    surfSafety = surf(ax, Xs + obs.center(1), Ys + obs.center(2), Zs, ...
-                        'FaceAlpha', 0.15, 'FaceColor', lightenColor(color, 0.2), 'EdgeColor', 'none');
-                    set(surfSafety, 'HandleVisibility', 'off');
-                end
-                [Xa, Ya, Za] = cylinder(actualR, 60);
-                Za = Za * obs.height;
-                surfActual = surf(ax, Xa + obs.center(1), Ya + obs.center(2), Za, ...
-                    'FaceAlpha', 0.35, 'FaceColor', color, 'EdgeColor', 'none');
-                if strlength(obs.label) > 0 && ~haveLegendActual
-                    set(surfActual, 'DisplayName', char(obs.label));
-                    haveLegendActual = true;
-                elseif ~haveLegendActual
-                    set(surfActual, 'DisplayName', 'Obstacle');
-                    haveLegendActual = true;
-                else
-                    set(surfActual, 'HandleVisibility', 'off');
-                end
-            case {'rectangle','box','aabb'}
-                bounds = obs.bounds;
-                xRect = [bounds(1) bounds(2) bounds(2) bounds(1) bounds(1)];
-                yRect = [bounds(3) bounds(3) bounds(4) bounds(4) bounds(3)];
-                surfHandle = fill3(ax, xRect, yRect, obs.height * ones(size(xRect)), color, ...
-                    'FaceAlpha', 0.25, 'EdgeColor', 'none');
-                if strlength(obs.label) > 0 && ~haveLegendActual
-                    set(surfHandle, 'DisplayName', char(obs.label));
-                    haveLegendActual = true;
-                elseif ~haveLegendActual
-                    set(surfHandle, 'DisplayName', 'Obstacle');
-                    haveLegendActual = true;
-                else
-                    set(surfHandle, 'HandleVisibility', 'off');
-                end
-            otherwise
-                % ignore unknown types
-        end
-    end
-end
+drawObstacles(axPersp, obstacles, false);
+drawObstacles(axTop, obstacles, true);
 
 for k = 1:numSteps
-    if ~isempty(robotHandlesPrev)
-        delete(robotHandlesPrev(ishghandle(robotHandlesPrev)));
-        robotHandlesPrev = [];
+    if ~isempty(robotHandlesPrevPersp)
+        delete(robotHandlesPrevPersp(ishghandle(robotHandlesPrevPersp)));
+        robotHandlesPrevPersp = [];
+    end
+    if ~isempty(robotHandlesPrevTop)
+        delete(robotHandlesPrevTop(ishghandle(robotHandlesPrevTop)));
+        robotHandlesPrevTop = [];
     end
 
     for j = 1:numel(armIdx)
@@ -386,16 +347,16 @@ for k = 1:numSteps
     end
     % Draw robot (positions shown relative to chassis frame with base pose)
     Tbase = trvec2tform([baseX(k), baseY(k), 0]) * axang2tform([0 0 1 baseYaw(k)]);
-    show(robot, config, 'Parent', ax, 'PreservePlot', false, ...
+    show(robot, config, 'Parent', axPersp, 'PreservePlot', false, ...
         'Frames', 'off', 'Visuals', 'on', 'FastUpdate', false);
 
-    robotHandles = findall(ax, '-regexp', 'Tag', '^DO_NOT_EDIT');
-    for h = reshape(robotHandles,1,[])
+    robotHandlesPersp = findall(axPersp, '-regexp', 'Tag', '^DO_NOT_EDIT');
+    for h = reshape(robotHandlesPersp,1,[])
         if ~ishghandle(h)
             continue;
         end
-        if get(h, 'Parent') ~= hg
-            set(h, 'Parent', hg);
+        if get(h, 'Parent') ~= hgPersp
+            set(h, 'Parent', hgPersp);
         end
         if isprop(h, 'FaceAlpha')
             set(h, 'FaceAlpha', options.VisualAlpha);
@@ -404,17 +365,41 @@ for k = 1:numSteps
             set(h, 'EdgeAlpha', options.VisualAlpha);
         end
     end
-    set(hg, 'Matrix', Tbase);
-    robotHandlesPrev = robotHandles;
+    robotHandlesPrevPersp = robotHandlesPersp;
+
+    show(robot, config, 'Parent', axTop, 'PreservePlot', false, ...
+        'Frames', 'off', 'Visuals', 'on', 'FastUpdate', false);
+
+    robotHandlesTop = findall(axTop, '-regexp', 'Tag', '^DO_NOT_EDIT');
+    for h = reshape(robotHandlesTop,1,[])
+        if ~ishghandle(h)
+            continue;
+        end
+        if get(h, 'Parent') ~= hgTop
+            set(h, 'Parent', hgTop);
+        end
+        if isprop(h, 'FaceAlpha')
+            set(h, 'FaceAlpha', options.VisualAlpha);
+        end
+        if isprop(h, 'EdgeAlpha')
+            set(h, 'EdgeAlpha', options.VisualAlpha);
+        end
+        if isgraphics(h)
+            set(h, 'HandleVisibility', 'off');
+        end
+    end
+    robotHandlesPrevTop = robotHandlesTop;
+
+    set(hgPersp, 'Matrix', Tbase);
+    set(hgTop, 'Matrix', Tbase);
 
     % Update markers
-    set(baseMarker, 'XData', baseX(k), 'YData', baseY(k), 'ZData', 0);
-    set(headingLine, 'XData', [baseX(k), baseX(k)+headingLen*cos(baseYaw(k))], ...
-                     'YData', [baseY(k), baseY(k)+headingLen*sin(baseYaw(k))], ...
-                     'ZData', [0, 0]);
-    if ~isempty(eeMarker)
+    updateMarkers(k);
+
+    if ~isempty(eeMarkerPersp)
         idx = min(k, size(eePoses,1));
-        set(eeMarker, 'XData', eePoses(idx,1), 'YData', eePoses(idx,2), 'ZData', eePoses(idx,3));
+        set(eeMarkerPersp, 'XData', eePoses(idx,1), 'YData', eePoses(idx,2), 'ZData', eePoses(idx,3));
+        set(eeMarkerTop,   'XData', eePoses(idx,1), 'YData', eePoses(idx,2));
     end
 
     try
@@ -424,8 +409,10 @@ for k = 1:numSteps
     end
     TeeWorld = Tbase * Tee;
     actualEE(k, :) = TeeWorld(1:3,4)';
-    set(actualMarker, 'XData', actualEE(k,1), 'YData', actualEE(k,2), 'ZData', actualEE(k,3));
-    set(actualLine, 'XData', actualEE(1:k,1), 'YData', actualEE(1:k,2), 'ZData', actualEE(1:k,3));
+    set(actualMarkerPersp, 'XData', actualEE(k,1), 'YData', actualEE(k,2), 'ZData', actualEE(k,3));
+    set(actualMarkerTop,   'XData', actualEE(k,1), 'YData', actualEE(k,2));
+    set(actualLinePersp, 'XData', actualEE(1:k,1), 'YData', actualEE(1:k,2), 'ZData', actualEE(1:k,3));
+    set(actualLineTop,   'XData', actualEE(1:k,1), 'YData', actualEE(1:k,2));
 
     stageIdx = find(k <= stageBoundariesActive, 1, 'first');
     if isempty(stageIdx)
@@ -462,6 +449,119 @@ end
 if ~isempty(videoWriter)
     close(videoWriter);
 end
+
+    function updateMarkers(idx)
+        set(baseMarkerPersp, 'XData', baseX(idx), 'YData', baseY(idx), 'ZData', 0);
+        set(baseMarkerTop,   'XData', baseX(idx), 'YData', baseY(idx));
+        set(headingLinePersp, 'XData', [baseX(idx), baseX(idx)+headingLen*cos(baseYaw(idx))], ...
+                               'YData', [baseY(idx), baseY(idx)+headingLen*sin(baseYaw(idx))], ...
+                               'ZData', [0 0]);
+        set(headingLineTop, 'XData', [baseX(idx), baseX(idx)+headingLen*cos(baseYaw(idx))], ...
+                             'YData', [baseY(idx), baseY(idx)+headingLen*sin(baseYaw(idx))]);
+    end
+
+    function drawObstacles(ax, obstaclesLocal, isTop)
+        if nargin < 3
+            isTop = false;
+        end
+        if isempty(obstaclesLocal)
+            return
+        end
+        hold(ax, 'on');
+        haveLegendActual = false;
+        haveLegendInflated = false;
+        for obsIdx = 1:numel(obstaclesLocal)
+            obs = obstaclesLocal(obsIdx);
+            color = obs.color;
+            if numel(color) < 3
+                color = [1.0 0.2 0.2];
+            else
+                color = color(1:3);
+            end
+            switch lower(obs.type)
+                case {'circle','disc','disk'}
+                    actualR = obs.radius;
+                    inflatedR = obs.radiusInflated;
+                    safetyR = obs.radiusSafety;
+                    if inflatedR > actualR + 1e-6
+                        [Xi, Yi, Zi] = cylinder(inflatedR, 80);
+                        Zi = Zi * obs.height;
+                        safetyColor = lightenColor(color, 0.4);
+                        surfInflated = surf(ax, Xi + obs.center(1), Yi + obs.center(2), Zi, ...
+                            'FaceAlpha', 0.1, 'FaceColor', safetyColor, 'EdgeColor', safetyColor, ...
+                            'LineStyle', '--');
+                        if ~haveLegendInflated
+                            set(surfInflated, 'DisplayName', 'Safety zone');
+                            haveLegendInflated = true;
+                        else
+                            set(surfInflated, 'HandleVisibility', 'off');
+                        end
+                    end
+                    if safetyR > actualR + 1e-6 && safetyR < inflatedR - 1e-6
+                        [Xs, Ys, Zs] = cylinder(safetyR, 80);
+                        Zs = Zs * obs.height;
+                        surf(ax, Xs + obs.center(1), Ys + obs.center(2), Zs, ...
+                            'FaceAlpha', 0.15, 'FaceColor', lightenColor(color, 0.2), 'EdgeColor', 'none', ...
+                            'HandleVisibility', 'off');
+                    end
+                    [Xa, Ya, Za] = cylinder(actualR, 60);
+                    Za = Za * obs.height;
+                    surfActual = surf(ax, Xa + obs.center(1), Ya + obs.center(2), Za, ...
+                        'FaceAlpha', 0.35, 'FaceColor', color, 'EdgeColor', 'none');
+                    if strlength(obs.label) > 0 && ~haveLegendActual
+                        set(surfActual, 'DisplayName', char(obs.label));
+                        haveLegendActual = true;
+                    elseif ~haveLegendActual
+                        set(surfActual, 'DisplayName', 'Obstacle');
+                        haveLegendActual = true;
+                    else
+                        set(surfActual, 'HandleVisibility', 'off');
+                    end
+                    if isTop
+                        theta = linspace(0, 2*pi, 240);
+                        circleX = obs.center(1) + actualR * cos(theta);
+                        circleY = obs.center(2) + actualR * sin(theta);
+                        circleLine = plot3(ax, circleX, circleY, zeros(size(circleX)), '-', ...
+                            'Color', color, 'LineWidth', 1.4);
+                        set(circleLine, 'HandleVisibility', 'off');
+                    end
+                case {'rectangle','box','aabb'}
+                    bounds = obs.bounds;
+                    xRect = [bounds(1) bounds(2) bounds(2) bounds(1) bounds(1)];
+                    yRect = [bounds(3) bounds(3) bounds(4) bounds(4) bounds(3)];
+                    surfHandle = fill3(ax, xRect, yRect, obs.height * ones(size(xRect)), color, ...
+                        'FaceAlpha', 0.25, 'EdgeColor', 'none');
+                    if strlength(obs.label) > 0 && ~haveLegendActual
+                        set(surfHandle, 'DisplayName', char(obs.label));
+                        haveLegendActual = true;
+                    elseif ~haveLegendActual
+                        set(surfHandle, 'DisplayName', 'Obstacle');
+                        haveLegendActual = true;
+                    else
+                        set(surfHandle, 'HandleVisibility', 'off');
+                    end
+                otherwise
+                    % ignore unknown types
+            end
+        end
+    end
+
+    function setupAxes(ax, color, isTop)
+        if nargin < 3
+            isTop = false;
+        end
+        set(ax, 'Color', color, 'XColor', [0.9 0.9 0.9], 'YColor', [0.9 0.9 0.9], ...
+            'ZColor', [0.9 0.9 0.9], 'GridColor', [0.35 0.35 0.35]);
+        hold(ax, 'on'); grid(ax, 'on'); axis(ax, 'equal');
+        xlabel(ax, 'X (m)', 'Color', [0.9 0.9 0.9]);
+        ylabel(ax, 'Y (m)', 'Color', [0.9 0.9 0.9]);
+        if ~isTop
+            zlabel(ax, 'Z (m)', 'Color', [0.9 0.9 0.9]);
+        else
+            zlabel(ax, '');
+            set(ax, 'Projection', 'orthographic');
+        end
+    end
 end
 
 function robot = ensureArmVisuals(robot, armJointNames, meshDirOption, meshColor)
