@@ -25,13 +25,16 @@ expectedJoints = {'joint_x', 'joint_y', 'joint_theta', ...
                   'left_arm_joint4', 'left_arm_joint5', 'left_arm_joint6'};
 
 numBodies = length(robot.Bodies);
-fprintf('  - Number of bodies: %d (expected: 10)\n', numBodies);
+fprintf('  - Number of bodies: %d (includes base frame)\n', numBodies);
 
-if numBodies ~= 10
-    error('  ✗ FAILED: Expected 10 bodies, got %d', numBodies);
+% rigidBodyTree always has base frame + robot bodies
+% Expected: base + 3 base links + 1 arm base + 6 arm links = 11 bodies
+expectedBodies = 11;
+if numBodies ~= expectedBodies
+    error('  ✗ FAILED: Expected %d bodies (including base), got %d', expectedBodies, numBodies);
 end
 
-fprintf('  - Number of joints: %d (expected: 9 movable)\n', numBodies);
+fprintf('  - Number of DOF: %d (expected: 9)\n', robot.NumBodies - 1);
 fprintf('  ✓ Structure validated\n');
 
 %% Test 3: Check joint limits
