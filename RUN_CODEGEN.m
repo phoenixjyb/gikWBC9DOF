@@ -44,8 +44,8 @@ fprintf('This may take 5-15 minutes...\n\n');
 
 tic;
 try
-    % Run the code generation script directly (it's a script, not a function)
-    run(fullfile(projectRoot, 'matlab', '+gik9dof', '+codegen_realtime', 'generateCodeARM64.m'));
+    % Run the code generation script at project root
+    generate_code_arm64;
     genTime = toc;
     fprintf('\n  ✓ Code generation completed in %.1f seconds\n\n', genTime);
 catch ME
