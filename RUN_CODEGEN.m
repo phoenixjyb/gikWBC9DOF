@@ -56,8 +56,10 @@ end
 fprintf('Step 3: Verifying generated files...\n');
 
 requiredFiles = {
-    fullfile(codegenOutput, 'solveGIKStepWrapper.h')
-    fullfile(codegenOutput, 'solveGIKStepWrapper.cpp')
+    fullfile(codegenOutput, 'GIKSolver.h')
+    fullfile(codegenOutput, 'GIKSolver.cpp')
+    fullfile(codegenOutput, 'solveGIKStepRealtime.h')
+    fullfile(codegenOutput, 'solveGIKStepRealtime.cpp')
 };
 
 allPresent = true;
