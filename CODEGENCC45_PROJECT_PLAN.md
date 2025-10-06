@@ -318,20 +318,40 @@ ros2/
 
 ---
 
-## Additional Information Needed
+## Requirements Clarification (Answered)
 
-To proceed with implementation, please clarify:
+✅ **Robot URDF**: `mobile_manipulator_PPR_base_corrected.urdf` (confirmed for initial implementation, STL optimization planned for later)
 
-1. **Robot URDF Location**: Path to the final URDF file for the mobile manipulator
-2. **Mesh Files**: Confirm STL files in `/meshes` are final and optimized
-3. **Trajectory Input**: How will target EE trajectories be provided? (Action server, topic, service?)
-4. **Control Frequency**: What's the hardware controller update rate?
-5. **Sensor Frequencies**: SLAM odometry Hz? Joint state feedback Hz?
-6. **Nav2 Integration**: Should we integrate with Nav2 for base planning, or custom planner?
-7. **Obstacle Format**: What format will perception provide obstacles? (PointCloud2, OccupancyGrid, costmap?)
-8. **MATLAB Version**: Confirm MATLAB R2024b with Robotics System Toolbox
-9. **Testing Hardware**: Is AGX Orin available for testing, or simulation first?
-10. **Existing Infrastructure**: Any existing ROS2 packages we need to interface with?
+✅ **Mesh Files**: Current STLs in `/meshes` are approved for development. Future optimization with sparser patches will be drop-in replacement.
+
+✅ **Trajectory Input**: ROS2 topic-based trajectory streaming
+- **Approach**: Publish next few goal points to track (rolling window)
+- **Rationale**: More flexible than complete static trajectory, suitable for online processing
+- **Topic**: `/target/end_effector_trajectory` (custom message with waypoint array)
+- **Note**: MATLAB simulation uses static JSON (not suitable for deployment)
+
+✅ **Control Frequency**: 10 Hz (100ms control loop period)
+
+✅ **Sensor Frequencies**: 
+- SLAM odometry: 10 Hz initially (design for 50 Hz future expansion)
+- Joint state feedback: 10 Hz initially (design for 50 Hz future expansion)
+- **Design requirement**: Make frequencies configurable via parameters
+
+✅ **Navigation Integration**: Use Navigation Toolbox components where available (not full Nav2 stack initially)
+
+✅ **Obstacle Format**: OccupancyGrid with 10cm (0.1m) grid resolution
+
+✅ **MATLAB Version**: R2024b with Robotics System Toolbox (installed and confirmed)
+
+✅ **Testing Approach**: 
+- AGX Orin available for hardware testing
+- **Dual track**: Simulation verification + hardware validation in parallel
+
+✅ **Existing ROS2 Infrastructure**:
+- Perception modules (publishing OccupancyGrid)
+- Trajectory modules (task planning)
+- Robot control modules (hardware interfaces)
+- **Integration requirement**: Ensure message compatibility with existing stack
 
 ---
 

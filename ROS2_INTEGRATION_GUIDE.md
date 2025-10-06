@@ -15,44 +15,73 @@ Create custom message types for trajectory control and diagnostics:
 #### 1. EndEffectorTrajectory.msg
 
 ```msg
-# End-effector trajectory message
+# Rolling window trajectory for end-effector tracking
+# Publisher sends next 5-10 waypoints, controller tracks first and requests more
+
 Header header
 
-# Array of target poses
+# Waypoint array (typically 5-10 points, first is immediate target)
 geometry_msgs/PoseStamped[] waypoints
 
-# Timing information
-float64[] timestamps  # Time for each waypoint (relative to header.stamp)
-
-# Constraint parameters
-float64 distance_lower_bound  # Minimum distance from obstacles (m)
-float64 distance_weight       # Weight for distance constraint
+# Relative time to reach each waypoint (seconds from header.stamp)
+float64[] timestamps
 
 # Execution parameters
-string control_mode  # "holistic" or "staged"
-float64 timeout      # Maximum execution time (s)
+string mode  # "tracking", "goal", "hold"
+bool blocking  # Wait for completion vs continuous tracking
+
+# Constraint parameters
+float64 distance_lower_bound  # Minimum distance from obstacles (m), default 0.2
+float64 distance_weight       # Weight for distance constraint, default 0.5
+
+# Request flag (set by controller to request more waypoints)
+bool request_more_waypoints
 ```
+
+**Design Rationale**:
+- **Rolling window**: Continuously updated trajectory, not static waypoint list
+- **Fixed-size arrays**: Codegen-friendly (max 50 waypoints, typically 5-10)
+- **Timestamped**: Each waypoint has target time for velocity planning
+- **Request flag**: Controller signals when it needs more waypoints (predictive buffering)
 
 #### 2. SolverDiagnostics.msg
 
 ```msg
-# IK solver diagnostic information
+# IK solver diagnostic information for monitoring and debugging
 Header header
 
 # Solver status
 bool converged
 int32 iterations
 float64 solve_time_ms
+float64 control_loop_time_ms  # Total cycle time including ROS overhead
 
 # Error metrics
-float64 position_error  # m
-float64 orientation_error  # rad
-float64 joint_limit_violation  # rad (max violation)
+float64 position_error_m      # Current position error
+float64 orientation_error_rad # Current orientation error
+float64 joint_limit_violation_rad  # Maximum joint limit violation (0 if none)
 
-# Current state
-float64[] joint_positions  # Current joint configuration
+# Current state (9 DOF: 3 base + 6 arm)
+float64[] joint_positions
+float64[] joint_velocities  # Computed from IK solver
 geometry_msgs/Pose current_ee_pose
+geometry_msgs/Pose target_ee_pose
+
+# Trajectory tracking status
+int32 waypoints_remaining
+float64 trajectory_completion_percent
+
+# Safety and health monitoring
+bool sensor_timeout         # Odometry or joint state timeout detected
+bool velocity_limited       # Command was clamped due to limits
+bool emergency_stop         # E-stop active
+string warning_message      # Human-readable warning (empty if OK)
 ```
+
+**Usage**:
+- Published at 10 Hz (or 1 Hz for bandwidth saving)
+- Monitor via `/gik9dof/solver_diagnostics`
+- Integrate with ROS2 diagnostics aggregator for system health
 
 #### 3. ChassisCommand.msg
 
