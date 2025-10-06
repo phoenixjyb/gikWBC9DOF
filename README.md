@@ -55,7 +55,14 @@ Visual 3-tier workflow with validation gates
 | 1️⃣2️⃣ | [`ROS2_INTEGRATION_GUIDE.md`](ROS2_INTEGRATION_GUIDE.md) | ROS2 node implementation | Writing ROS2 code |
 | 1️⃣3️⃣ | [`ORIGIN_MAIN_MERGE_ANALYSIS.md`](ORIGIN_MAIN_MERGE_ANALYSIS.md) | What changed in origin/main | After merge conflicts |
 
-### **Phase 5: Reference (Optional)**
+### **Phase 5: Continuation & Handoff**
+
+| Document | Purpose | Read When |
+|----------|---------|-----------|
+| [`CONTEXT_HANDOFF.md`](CONTEXT_HANDOFF.md) | **Complete project context for new conversations** | Hit context window limit |
+| [`HOW_TO_USE_CONTEXT_HANDOFF.md`](HOW_TO_USE_CONTEXT_HANDOFF.md) | How to use handoff document | Before starting new conversation |
+
+### **Phase 6: Reference (Optional)**
 
 | Document | Purpose | Read When |
 |----------|---------|-----------|
@@ -90,6 +97,11 @@ Visual 3-tier workflow with validation gates
 1. [`QUICK_START.md`](QUICK_START.md) - 15-minute overview
 2. [`VALIDATION_WORKFLOW.md`](VALIDATION_WORKFLOW.md) - Visual workflow diagram
 3. [`WSL_INTEGRATION_SUMMARY.md`](WSL_INTEGRATION_SUMMARY.md) - Why WSL matters
+
+### "I'm Switching Conversations (Context Window Full)"
+1. Open [`CONTEXT_HANDOFF.md`](CONTEXT_HANDOFF.md) - Copy entire file (504 lines)
+2. Read [`HOW_TO_USE_CONTEXT_HANDOFF.md`](HOW_TO_USE_CONTEXT_HANDOFF.md) - Usage instructions
+3. Paste in new conversation with your current status
 
 ---
 
