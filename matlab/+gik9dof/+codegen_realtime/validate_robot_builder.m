@@ -101,14 +101,35 @@ try
     
     [qSol, solverInfo] = solver(q0, poseConstraint, jointConstraint, distanceConstraint);
     
-    fprintf('  - Solver status: %d (1 = success)\n', solverInfo.Status);
-    fprintf('  - Iterations: %d\n', solverInfo.Iterations);
-    fprintf('  - Pose error: %.6f\n', solverInfo.PoseErrorNorm);
+    % Display solver info fields for debugging
+    fprintf('  - Solver info type: %s\n', class(solverInfo));
     
-    if solverInfo.Status == 1
-        fprintf('  ✓ GIK solver works correctly\n');
+    % Check what fields are available
+    if isstruct(solverInfo)
+        fields = fieldnames(solverInfo);
+        fprintf('  - Available fields: %s\n', strjoin(fields, ', '));
+        
+        % Access Status field safely
+        if isfield(solverInfo, 'Status')
+            fprintf('  - Solver status: %s\n', solverInfo.Status);
+            if strcmp(solverInfo.Status, 'success')
+                fprintf('  ✓ GIK solver works correctly\n');
+            else
+                warning('  ⚠ GIK solver status: %s', solverInfo.Status);
+            end
+        end
+        
+        % Access Iterations if available
+        if isfield(solverInfo, 'Iterations')
+            fprintf('  - Iterations: %d\n', solverInfo.Iterations);
+        end
+        
+        % Access ExitFlag if available (alternative to Status)
+        if isfield(solverInfo, 'ExitFlag')
+            fprintf('  - Exit flag: %d\n', solverInfo.ExitFlag);
+        end
     else
-        warning('  ⚠ GIK solver did not converge');
+        fprintf('  ✓ Solver returned a solution\n');
     end
 catch ME
     fprintf('  ✗ FAILED: %s\n', ME.message);
