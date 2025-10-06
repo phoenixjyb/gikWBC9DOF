@@ -42,11 +42,22 @@ try
     [qNext, info] = gik9dof.codegen_realtime.solveGIKStepWrapper(...
         q0, targetPose, 0.1, 1.0);
     
-    if info.Status == 1
-        fprintf('  ✓ Solver converged in %d iterations\n', info.Iterations);
-        fprintf('  ✓ Pose error: %.6f\n\n', info.PoseErrorNorm);
+    % Check if solver succeeded (Status is a string: 'success' or other)
+    if isfield(info, 'Status') && strcmp(info.Status, 'success')
+        fprintf('  ✓ Solver converged (status: %s)\n', info.Status);
+        if isfield(info, 'Iterations')
+            fprintf('  ✓ Iterations: %d\n', info.Iterations);
+        end
+        if isfield(info, 'ExitFlag')
+            fprintf('  ✓ Exit flag: %d\n', info.ExitFlag);
+        end
+        fprintf('\n');
     else
-        warning('Solver did not converge (status: %d)', info.Status);
+        if isfield(info, 'Status')
+            warning('Solver did not converge (status: %s)', info.Status);
+        else
+            warning('Solver info structure unexpected');
+        end
     end
 catch ME
     fprintf('  ✗ Solver test FAILED\n');
