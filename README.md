@@ -47,6 +47,13 @@ Visual 3-tier workflow with validation gates
 | 9️⃣ | [`WSL_VALIDATION_GUIDE.md`](WSL_VALIDATION_GUIDE.md) | Complete WSL build/test guide | First WSL build |
 | 🔟 | [`WSL_QUICK_REFERENCE.md`](WSL_QUICK_REFERENCE.md) | Copy/paste commands | During WSL testing |
 
+### **Phase 3.5: AGX Orin Deployment** ⭐ **CURRENT PHASE**
+
+| Order | Document | Purpose | Read When |
+|-------|----------|---------|-----------|
+| 🎯 | [`ORIN_NEXT_STEPS.md`](ORIN_NEXT_STEPS.md) | **Quick checklist for Orin** | Ready to deploy to Orin |
+| 🔧 | [`docs/ORIN_MATLAB_INTEGRATION.md`](docs/ORIN_MATLAB_INTEGRATION.md) | Complete MATLAB solver integration | Integrating solver code |
+
 ### **Phase 4: Technical Details**
 
 | Order | Document | Purpose | Read When |
