@@ -9,7 +9,8 @@ function robot = buildRobotForCodegen()
 %#codegen
 
 % Create rigid body tree with column data format (required for GIK)
-robot = rigidBodyTree('DataFormat', 'column');
+% MaxNumBodies is required for code generation (base + 10 bodies = 11)
+robot = rigidBodyTree('DataFormat', 'column', 'MaxNumBodies', 11);
 robot.Gravity = [0 0 -9.81];
 
 %% BASE JOINTS (3 DOF planar base: x, y, theta)

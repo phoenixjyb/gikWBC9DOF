@@ -41,7 +41,7 @@ cfg.CppInterfaceClassName = 'GIKSolver';
 % For now, generate generic ARM64-compatible C++ code
 
 % Memory settings for real-time safety
-cfg.DynamicMemoryAllocation = 'Off';
+cfg.EnableDynamicMemoryAllocation = false;  % Use new property name
 cfg.EnableOpenMP = true;
 
 % Code generation settings
