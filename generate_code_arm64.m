@@ -40,19 +40,13 @@ cfg.CppInterfaceClassName = 'GIKSolver';
 % Note: Hardware-specific settings are applied during cross-compilation on target
 % For now, generate generic ARM64-compatible C++ code
 
-% Optimization settings for real-time performance
-cfg.OptimizationLevel = 'O3';
-cfg.EnableOpenMP = true;
-
 % Memory settings for real-time safety
 cfg.DynamicMemoryAllocation = 'Off';
-cfg.MaxStackSize = 1048576; % 1 MB stack
+cfg.EnableOpenMP = true;
 
 % Code generation settings
 cfg.GenerateReport = true;
 cfg.LaunchReport = false;
-cfg.GenCodeOnly = false;
-cfg.GenerateMakefile = true;
 
 % Build configuration
 cfg.BuildConfiguration = 'Faster Runs';
