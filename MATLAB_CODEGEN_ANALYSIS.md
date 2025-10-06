@@ -39,13 +39,15 @@ This document analyzes the MATLAB codebase to identify which functions are essen
 | `unifiedChassisCtrl.m` | ✅ Keep | Main controller converting pose refs to (Vx, Wz) | ⚠️ Needs minor fixes |
 | `clampYawByWheelLimit.m` | ✅ Keep | Velocity clamping based on differential drive limits | ✅ Yes |
 | `defaultUnifiedParams.m` | ⚠️ Modify | Returns default parameters - needs to be data-only | ⚠️ Convert to config |
-| `purePursuitFollower.m` | ❌ Remove | Pure pursuit for Stage B - replace with Nav2 | ❌ No |
+| `purePursuitFollower.m` | ⚠️ Simulation Only | Pure pursuit for Stage B - MATLAB simulation/validation | ❌ No (see note) |
 
 **Key Actions**:
 1. 🔧 `unifiedChassisCtrl.m` - Remove persistent state, use explicit state struct
 2. ✅ `clampYawByWheelLimit.m` - Should be ready
 3. 🔧 `defaultUnifiedParams.m` - Convert to YAML config file, load in ROS2
-4. ❌ Remove `purePursuitFollower.m` - Not needed for holistic control
+4. 📝 `purePursuitFollower.m` - **Keep for MATLAB simulation**, don't generate C++ (real robot uses ROS2 Nav2)
+
+**Note (Updated Oct 6, 2025)**: `purePursuitFollower.m` merged from `origin/main` is used for desktop simulation and validation only. Real AGX Orin deployment uses existing ROS2 navigation stack.
 
 ---
 
@@ -119,12 +121,16 @@ environmentConfig.m
 addFloorDiscs.m
 demoFloorDiscs.m
 generateHolisticRamp.m
+simulatePurePursuit()  ← NEW (Oct 6, 2025): in runStagedTrajectory.m
+export_all_commands.m  ← NEW (Oct 6, 2025): root directory utility
 ```
 
 **Reason**: 
 - Static obstacles replaced by live perception
 - Trajectory generation handled externally (task planner)
 - Demo functions not needed in deployment
+- **Pure pursuit simulation** - Desktop validation only (real robot uses ROS2 Nav2)
+- **Command export** - Post-processing utility for log analysis
 
 ---
 

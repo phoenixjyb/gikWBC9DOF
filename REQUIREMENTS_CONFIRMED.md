@@ -94,9 +94,24 @@ gik9dof_controllers:
 
 **Decision**: Use MATLAB Navigation Toolbox components initially, not full ROS2 Nav2
 
+**UPDATE (Oct 6, 2025)**: Clarified simulation vs. deployment paths
+
+#### MATLAB Simulation Path
+- ✅ `purePursuitFollower` class for Stage B base-only navigation
+- ✅ Forward kinematic simulation with (v, w) commands
+- ✅ Desktop validation and animation generation
+- ✅ Algorithm parameter tuning before hardware deployment
+
+#### AGX Orin Deployment Path
+- ✅ Existing ROS2 trajectory manager publishes target EE trajectory
+- ✅ IK solver focuses on whole-body coordination, not path planning
+- ✅ Base navigation handled by existing ROS2 stack
+- ❌ Pure pursuit NOT code-generated (simulation only)
+
 #### Phase 1 (Current Scope)
 - ✅ Unified chassis controller (from MATLAB)
 - ✅ Holistic whole-body control
+- ✅ Rolling window trajectory following
 - ❌ No Nav2 costmap integration yet
 - ❌ No Nav2 path planner yet
 
@@ -104,11 +119,13 @@ gik9dof_controllers:
 - 🔄 Integrate Nav2 costmap for obstacle representation
 - 🔄 Add Nav2 path planner for staged base-only motion
 - 🔄 DWB controller for local planning (if needed)
+- 🔄 Optionally generate C++ for pure pursuit if ROS2 Nav2 insufficient
 
 **Rationale**: 
-- Start simple with holistic control
-- Perception already provides OccupancyGrid
-- Add Nav2 integration after core functionality proven
+- Separation of concerns: IK solver ≠ path planner
+- Existing infrastructure: Leverage ROS2 Nav2 / trajectory manager
+- Time constraint: 2-day deadline - focus on core IK
+- MATLAB pure pursuit: Useful for desktop validation only
 
 ### 5. Obstacle Representation
 

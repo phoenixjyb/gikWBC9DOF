@@ -7,6 +7,21 @@ You have **2 days** to get the 9-DOF IK solver running on AGX Orin. This guide p
 
 ## 📋 DAY 1: MATLAB Code Generation + Initial ROS2 Setup
 
+### ⚠️ **IMPORTANT: Simulation vs. Deployment Clarification**
+
+**Recent Update (Oct 6, 2025):** The codebase now includes pure pursuit follower for **MATLAB simulation only**. This does NOT affect the 2-day deployment:
+
+- ✅ **Generate C++ for:** IK solver (`solveGIKStepWrapper`)
+- ✅ **Generate C++ for:** Robot builder (`buildRobotForCodegen`)
+- ❌ **Skip code generation for:** Pure pursuit (`purePursuitFollower.m`)
+- ❌ **Skip code generation for:** Stage B planner (`simulatePurePursuit`)
+
+**Why?** Real AGX Orin deployment uses existing ROS2 navigation stack. Pure pursuit is for desktop validation and animation only.
+
+**Proceed with original plan** - focus on IK solver deployment.
+
+---
+
 ### Morning (4 hours): MATLAB Code Preparation
 
 #### Step 1: Validate Robot Builder (30 min)
