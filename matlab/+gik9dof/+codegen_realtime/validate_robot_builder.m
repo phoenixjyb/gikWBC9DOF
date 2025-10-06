@@ -93,7 +93,13 @@ try
     poseConstraint.TargetTransform = targetPose;
     jointConstraint = constraintJointBounds(robot);
     
-    [qSol, solverInfo] = solver(q0, poseConstraint, jointConstraint);
+    % Distance constraint (required since solver has 'distance' in ConstraintInputs)
+    distanceConstraint = constraintDistanceBounds('left_gripper_link');
+    distanceConstraint.ReferenceBody = robot.BaseName;
+    distanceConstraint.Bounds = [0, inf];  % No minimum distance for validation test
+    distanceConstraint.Weights = 0.1;      % Low weight for validation test
+    
+    [qSol, solverInfo] = solver(q0, poseConstraint, jointConstraint, distanceConstraint);
     
     fprintf('  - Solver status: %d (1 = success)\n', solverInfo.Status);
     fprintf('  - Iterations: %d\n', solverInfo.Iterations);
