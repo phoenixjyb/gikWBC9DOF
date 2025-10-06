@@ -29,7 +29,11 @@ try
     q0 = zeros(9, 1);
     T = eye(4); T(1:3, 4) = [0.5; 0.2; 0.8];
     [~, info] = gik9dof.codegen_realtime.solveGIKStepWrapper(q0, T, 0.1, 1.0);
-    fprintf('  ✓ Solver works (status: %d)\n\n', info.Status);
+    if isfield(info, 'Status')
+        fprintf('  ✓ Solver works (status: %s)\n\n', info.Status);
+    else
+        fprintf('  ✓ Solver works\n\n');
+    end
 catch ME
     error('Solver failed: %s', ME.message);
 end
@@ -38,19 +42,15 @@ end
 fprintf('Step 2: Generating C++ code for ARM64...\n');
 fprintf('This may take 5-15 minutes...\n\n');
 
-cd(fullfile(projectRoot, 'matlab', '+gik9dof', '+codegen_realtime'));
-
 tic;
 try
-    generateCodeARM64;
+    % Run the code generation script directly (it's a script, not a function)
+    run(fullfile(projectRoot, 'matlab', '+gik9dof', '+codegen_realtime', 'generateCodeARM64.m'));
     genTime = toc;
     fprintf('\n  ✓ Code generation completed in %.1f seconds\n\n', genTime);
 catch ME
-    cd(projectRoot);
     error('Code generation failed: %s\nCheck codegen/arm64_realtime/html/report.mldatx', ME.message);
 end
-
-cd(projectRoot);
 
 %% Step 3: Verify generated files
 fprintf('Step 3: Verifying generated files...\n');
