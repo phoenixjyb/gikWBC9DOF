@@ -35,6 +35,9 @@ arguments
     options.StageBMaxLinearSpeed (1,1) double = 1.5
     options.StageBMaxYawRate (1,1) double = 3.0
     options.StageBMaxJointSpeed (1,1) double = 1.0
+    options.StageBLookaheadDistance (1,1) double {mustBePositive} = 0.6
+    options.StageBDesiredLinearVelocity (1,1) double = 0.6
+    options.StageBMaxAngularVelocity (1,1) double {mustBePositive} = 2.5
     options.EnvironmentConfig struct = struct()
 end
 
@@ -96,14 +99,25 @@ if options.UseStageBHybridAStar
             'Stage B hybrid A* failed (%s at %s); falling back to interpolation.', plannerErr.message, origin);
         stageBStates = [];
     end
+    cmdLogPP = [];
     if isempty(stageBStates)
         stageBPoses = generateStagePoses(stageBStart, T1, NB, 'base');
     else
-        stageBPoses = statesToEndEffectorPoses(robot, qA_end, baseIdx, stageBStates, trajStruct.EndEffectorName);
+        dt = 1 / options.RateHz;
+        [statesPP, cmdLogPP] = simulatePurePursuit(stageBStates, qA_end(baseIdx), dt, options);
+        if isempty(statesPP)
+            stageBPoses = generateStagePoses(stageBStart, T1, NB, 'base');
+            stageBStates = [];
+            cmdLogPP = [];
+        else
+            stageBStates = statesPP;
+            stageBPoses = statesToEndEffectorPoses(robot, qA_end, baseIdx, stageBStates, trajStruct.EndEffectorName);
+        end
     end
 else
     stageBPoses = generateStagePoses(stageBStart, T1, NB, 'base');
     stageBStates = [];
+    cmdLogPP = [];
 end
 trajB = struct('Poses', stageBPoses);
 trajB.EndEffectorName = trajStruct.EndEffectorName;
@@ -125,6 +139,9 @@ else
     baseStates = stageBStates;
 end
 logB.pathStates = baseStates;
+if ~isempty(cmdLogPP)
+    logB.cmdLog = array2table(cmdLogPP, 'VariableNames', {'time','Vx','Wz'});
+end
 
 qB_end = logB.qTraj(:, end);
 
@@ -545,4 +562,37 @@ for k = 1:nStates
     q(baseIdx) = states(k, :).';
     poses(:,:,k) = getTransform(robot, q, eeName);
 end
+end
+
+function [statesOut, cmdLog] = simulatePurePursuit(pathStates, baseStart, dt, options)
+%SIMULATEPUREPURSUIT Follow planner states with pure pursuit integration.
+follower = gik9dof.control.purePursuitFollower(pathStates, ...
+    'LookaheadDistance', options.StageBLookaheadDistance, ...
+    'DesiredLinearVelocity', options.StageBDesiredLinearVelocity, ...
+    'MaxAngularVelocity', options.StageBMaxAngularVelocity);
+
+pose = baseStart(:)';
+statesOut = pose;
+cmdLog = zeros(0,3);
+
+maxSteps = max(ceil(size(pathStates,1) * 2), 50);
+for step = 0:maxSteps
+    [v, w, status] = follower.step(pose);
+    v = max(-options.StageBMaxLinearSpeed, min(options.StageBMaxLinearSpeed, v));
+    w = max(-options.StageBMaxAngularVelocity, min(options.StageBMaxAngularVelocity, w));
+    cmdLog(end+1, :) = [step*dt, v, w]; %#ok<AGROW>
+
+    pose(1) = pose(1) + v * cos(pose(3)) * dt;
+    pose(2) = pose(2) + v * sin(pose(3)) * dt;
+    pose(3) = wrapToPi(pose(3) + w * dt);
+    statesOut(end+1, :) = pose; %#ok<AGROW>
+
+    if status.isFinished
+        break
+    end
+end
+
+% remove duplicated initial row
+statesOut = statesOut(2:end, :);
+cmdLog(:,1) = (0:size(cmdLog,1)-1).' * dt;
 end

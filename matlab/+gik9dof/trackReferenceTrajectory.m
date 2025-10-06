@@ -48,6 +48,9 @@ arguments
     options.StageBHybridSafetyMargin (1,1) double = 0.15
     options.StageBHybridMinTurningRadius (1,1) double = 0.5
     options.StageBHybridMotionPrimitiveLength (1,1) double = 0.5
+    options.StageBLookaheadDistance (1,1) double {mustBePositive} = 0.6
+    options.StageBDesiredLinearVelocity (1,1) double = 0.6
+    options.StageBMaxAngularVelocity (1,1) double {mustBePositive} = 2.5
     options.EnvironmentConfig (1,1) struct = gik9dof.environmentConfig()
 end
 
@@ -199,6 +202,9 @@ switch options.Mode
             'StageBMaxLinearSpeed', options.RampMaxLinearSpeed, ...
             'StageBMaxYawRate', options.RampMaxYawRate, ...
             'StageBMaxJointSpeed', options.RampMaxJointSpeed, ...
+            'StageBLookaheadDistance', options.StageBLookaheadDistance, ...
+            'StageBDesiredLinearVelocity', options.StageBDesiredLinearVelocity, ...
+            'StageBMaxAngularVelocity', options.StageBMaxAngularVelocity, ...
             'EnvironmentConfig', envConfig);
         log = pipeline;
     otherwise

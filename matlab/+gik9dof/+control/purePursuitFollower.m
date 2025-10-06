@@ -37,10 +37,26 @@ classdef purePursuitFollower < handle
 
     methods
         function obj = purePursuitFollower(pathStates, varargin)
-            if nargin < 1, pathStates = zeros(0,3); end
-            if ~isempty(varargin)
-                set(obj, varargin{:});
+            if nargin < 1
+                pathStates = zeros(0,3);
             end
+
+            parser = inputParser;
+            addParameter(parser, 'LookaheadDistance', obj.LookaheadDistance, @(x) isnumeric(x) && isscalar(x) && x > 0);
+            addParameter(parser, 'DesiredLinearVelocity', obj.DesiredLinearVelocity, @(x) isnumeric(x) && isscalar(x));
+            addParameter(parser, 'MaxAngularVelocity', obj.MaxAngularVelocity, @(x) isnumeric(x) && isscalar(x) && x > 0);
+            addParameter(parser, 'GoalRadius', obj.GoalRadius, @(x) isnumeric(x) && isscalar(x) && x > 0);
+            addParameter(parser, 'ReverseAllowed', obj.ReverseAllowed, @(x) islogical(x) && isscalar(x));
+            addParameter(parser, 'CloseLoopOnHeading', obj.CloseLoopOnHeading, @(x) islogical(x) && isscalar(x));
+            parse(parser, varargin{:});
+
+            obj.LookaheadDistance = parser.Results.LookaheadDistance;
+            obj.DesiredLinearVelocity = parser.Results.DesiredLinearVelocity;
+            obj.MaxAngularVelocity = parser.Results.MaxAngularVelocity;
+            obj.GoalRadius = parser.Results.GoalRadius;
+            obj.ReverseAllowed = parser.Results.ReverseAllowed;
+            obj.CloseLoopOnHeading = parser.Results.CloseLoopOnHeading;
+
             obj.setPath(pathStates);
         end
 
