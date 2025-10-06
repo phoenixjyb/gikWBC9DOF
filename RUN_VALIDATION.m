@@ -16,20 +16,17 @@ fprintf('  ✓ Paths added\n\n');
 
 %% Step 2: Validate robot builder
 fprintf('Step 2: Running robot builder validation...\n');
-cd(fullfile(projectRoot, 'matlab', '+gik9dof', '+codegen_realtime'));
 
 try
-    validate_robot_builder;
+    gik9dof.codegen_realtime.validate_robot_builder;
     fprintf('  ✓ Robot builder validation PASSED\n\n');
 catch ME
     fprintf('  ✗ Robot builder validation FAILED\n');
     fprintf('  Error: %s\n', ME.message);
     fprintf('  Location: %s (line %d)\n\n', ME.stack(1).file, ME.stack(1).line);
-    cd(projectRoot);
     error('Validation failed. Fix errors before proceeding.');
 end
 
-cd(projectRoot);
 
 %% Step 3: Quick IK solver test
 fprintf('Step 3: Testing IK solver convergence...\n');
