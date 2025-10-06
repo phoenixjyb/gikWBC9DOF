@@ -40,8 +40,11 @@ cfg.CppInterfaceClassName = 'GIKSolver';
 % Note: Hardware-specific settings are applied during cross-compilation on target
 % For now, generate generic ARM64-compatible C++ code
 
-% Memory settings for real-time safety
-cfg.EnableDynamicMemoryAllocation = false;  % Use new property name
+% Memory settings
+% Enable dynamic allocation for MATLAB handle classes (constraints, solver)
+% This is necessary for generalizedInverseKinematics and constraint objects
+cfg.EnableDynamicMemoryAllocation = true;
+cfg.DynamicMemoryAllocationThreshold = 65536; % 64KB threshold
 cfg.EnableOpenMP = true;
 
 % Code generation settings
@@ -61,8 +64,8 @@ fprintf('Configuration:\n');
 fprintf('  - Language: C++17\n');
 fprintf('  - Architecture: Generic (ARM64-compatible)\n');
 fprintf('  - OpenMP: Enabled\n');
-fprintf('  - Dynamic Memory: Disabled\n');
-fprintf('  - Optimization: O3\n');
+fprintf('  - Dynamic Memory: Enabled (required for IK constraints)\n');
+fprintf('  - Dynamic Memory Threshold: 64KB\n');
 fprintf('  - Build Tool: CMake\n');
 fprintf('Note: ARM64-specific optimizations (NEON) applied during cross-compile\n');
 fprintf('===================================================\n\n');
