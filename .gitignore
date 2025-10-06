@@ -16,3 +16,29 @@ external_plot_outputs.mat
 
 # OS artifacts
 .DS_Store
+
+# IDE settings
+.vscode/
+
+# MATLAB Codegen build artifacts
+*.obj
+*.lib
+codegen/arm64_realtime/*.cpp
+codegen/arm64_realtime/*.c
+codegen/arm64_realtime/*.bat
+codegen/arm64_realtime/*.mk
+codegen/arm64_realtime/*.rsp
+codegen/arm64_realtime/*.tmw
+codegen/arm64_realtime/*.txt
+codegen/arm64_realtime/interface/*.cpp
+codegen/arm64_realtime/html/
+codegen/arm64_realtime/examples/
+codegen/linux_arm64/
+
+# Deployment packages
+deployment_package/
+
+# ROS2 build artifacts
+ros2/build/
+ros2/install/
+ros2/log/
