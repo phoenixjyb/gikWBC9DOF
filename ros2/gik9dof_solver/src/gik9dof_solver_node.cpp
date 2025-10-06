@@ -21,8 +21,9 @@
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 
-// MATLAB Coder generated headers (to be included after code generation)
-// #include "gik9dof/GIKSolver.h"
+// MATLAB Coder generated headers
+#include "GIKSolver.h"
+#include "gik9dof_codegen_realtime_solveGIKStepWrapper_types.h"
 
 using namespace std::chrono_literals;
 
@@ -77,7 +78,11 @@ public:
             timer_period,
             std::bind(&GIK9DOFSolverNode::controlLoop, this));
         
+        // Initialize MATLAB solver
+        matlab_solver_ = std::make_unique<gik9dof::GIKSolver>();
+        
         RCLCPP_INFO(this->get_logger(), "GIK9DOF Solver Node initialized");
+        RCLCPP_INFO(this->get_logger(), "MATLAB solver initialized");
         RCLCPP_INFO(this->get_logger(), "Control rate: %.1f Hz", control_rate_);
         RCLCPP_INFO(this->get_logger(), "Max solve time: %.0f ms", max_solve_time_ * 1000.0);
     }
@@ -85,6 +90,8 @@ public:
 private:
     void jointStateCallback(const sensor_msgs::msg::JointState::SharedPtr msg)
     {
+        RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
+                            "jointStateCallback FIRED: received %zu joints", msg->position.size());
         // Update arm joint states (6 DOF)
         // Assumes message contains joints in order: left_arm_joint1-6
         if (msg->position.size() >= 6) {
@@ -93,11 +100,15 @@ private:
                 current_config_[3 + i] = msg->position[i];  // Arm starts at index 3
             }
             arm_state_received_ = true;
+            RCLCPP_INFO_ONCE(this->get_logger(), "✅ Arm state received and set!");
         }
     }
     
     void odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg)
     {
+        RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
+                            "odomCallback FIRED: x=%.2f, y=%.2f", 
+                            msg->pose.pose.position.x, msg->pose.pose.position.y);
         // Update base state (3 DOF: x, y, theta)
         std::lock_guard<std::mutex> lock(state_mutex_);
         current_config_[0] = msg->pose.pose.position.x;
@@ -112,6 +123,7 @@ private:
                                         1.0 - 2.0 * (qy * qy + qz * qz));
         
         base_state_received_ = true;
+        RCLCPP_INFO_ONCE(this->get_logger(), "✅ Base odom received and set!");
     }
     
     void trajectoryCallback(const gik9dof_msgs::msg::EndEffectorTrajectory::SharedPtr msg)
@@ -172,48 +184,83 @@ private:
     
     bool solveIK(const geometry_msgs::msg::Pose& target_pose)
     {
-        // Convert ROS Pose to 4x4 homogeneous transform
-        Eigen::Matrix4d target_transform = Eigen::Matrix4d::Identity();
+        // Prepare current configuration (9 DOF)
+        double q_current[9];
+        {
+            std::lock_guard<std::mutex> lock(state_mutex_);
+            std::copy(current_config_.begin(), current_config_.end(), q_current);
+        }
         
-        // Position
-        target_transform(0, 3) = target_pose.position.x;
-        target_transform(1, 3) = target_pose.position.y;
-        target_transform(2, 3) = target_pose.position.z;
+        // Convert ROS Pose to 4x4 homogeneous transform (column-major for MATLAB)
+        double target_matrix[16];
         
-        // Orientation (quaternion to rotation matrix)
+        // Create quaternion and extract rotation matrix
         Eigen::Quaterniond q(target_pose.orientation.w,
                              target_pose.orientation.x,
                              target_pose.orientation.y,
                              target_pose.orientation.z);
-        target_transform.block<3, 3>(0, 0) = q.toRotationMatrix();
+        Eigen::Matrix3d R = q.toRotationMatrix();
         
-        // TODO: Call MATLAB Coder generated function
-        // Example (actual signature depends on code generation):
-        // double q_current[9];
-        // double q_next[9];
-        // double target_matrix[16];
-        // 
-        // // Copy current config to C array
-        // std::copy(current_config_.begin(), current_config_.end(), q_current);
-        // 
-        // // Flatten target transform (column-major for MATLAB)
-        // for (int i = 0; i < 16; ++i) {
-        //     target_matrix[i] = target_transform.data()[i];
-        // }
-        // 
-        // // Call generated solver
-        // gik9dof::GIKSolver solver;
-        // solver.solveGIKStepWrapper(q_current, target_matrix, 
-        //                           distance_lower_, distance_weight_, q_next);
-        // 
-        // // Copy result
-        // std::copy(q_next, q_next + 9, target_config_.begin());
+        // Fill column-major 4x4 matrix
+        // Column 0: [R(0,0), R(1,0), R(2,0), 0]
+        target_matrix[0] = R(0, 0);
+        target_matrix[1] = R(1, 0);
+        target_matrix[2] = R(2, 0);
+        target_matrix[3] = 0.0;
         
-        // PLACEHOLDER: For now, just copy current config (replace when code is generated)
-        std::lock_guard<std::mutex> lock(state_mutex_);
-        target_config_ = current_config_;
+        // Column 1: [R(0,1), R(1,1), R(2,1), 0]
+        target_matrix[4] = R(0, 1);
+        target_matrix[5] = R(1, 1);
+        target_matrix[6] = R(2, 1);
+        target_matrix[7] = 0.0;
         
-        return true;  // Replace with actual solver status
+        // Column 2: [R(0,2), R(1,2), R(2,2), 0]
+        target_matrix[8] = R(0, 2);
+        target_matrix[9] = R(1, 2);
+        target_matrix[10] = R(2, 2);
+        target_matrix[11] = 0.0;
+        
+        // Column 3: [x, y, z, 1]
+        target_matrix[12] = target_pose.position.x;
+        target_matrix[13] = target_pose.position.y;
+        target_matrix[14] = target_pose.position.z;
+        target_matrix[15] = 1.0;
+        
+        // Output arrays
+        double q_next[9];
+        gik9dof::struct0_T solver_info;
+        
+        // Call MATLAB-generated solver
+        matlab_solver_->gik9dof_codegen_realtime_solveGIKStepWrapper(
+            q_current,
+            target_matrix,
+            distance_lower_,
+            distance_weight_,
+            q_next,
+            &solver_info
+        );
+        
+        // Extract status string
+        std::string status_str(solver_info.Status.data, 
+                              solver_info.Status.size[1]);
+        
+        // Store result and solver info
+        {
+            std::lock_guard<std::mutex> lock(state_mutex_);
+            std::copy(q_next, q_next + 9, target_config_.begin());
+            last_solver_iterations_ = static_cast<int>(solver_info.Iterations);
+            last_solver_status_ = status_str;
+            last_exit_flag_ = static_cast<int>(solver_info.ExitFlag);
+        }
+        
+        // Log if failed
+        if (status_str != "success") {
+            RCLCPP_WARN(this->get_logger(), 
+                       "Solver failed: status='%s', iterations=%d, exit_flag=%d",
+                       status_str.c_str(), last_solver_iterations_, last_exit_flag_);
+        }
+        
+        return (status_str == "success");
     }
     
     void publishJointCommand()
@@ -238,11 +285,12 @@ private:
         auto msg = gik9dof_msgs::msg::SolverDiagnostics();
         msg.header.stamp = this->now();
         msg.solve_time_ms = solve_time_ms;
-        msg.status = 1;  // TODO: Get from solver
-        msg.iterations = 0;  // TODO: Get from solver
-        msg.pose_error_norm = 0.0;  // TODO: Calculate
         
         std::lock_guard<std::mutex> lock(state_mutex_);
+        msg.status = last_solver_status_.empty() ? "unknown" : last_solver_status_;
+        msg.iterations = last_solver_iterations_;
+        msg.exit_flag = last_exit_flag_;
+        msg.pose_error_norm = 0.0;  // TODO: Calculate if needed
         msg.current_config = current_config_;
         msg.target_config = target_config_;
         msg.target_ee_pose = target_pose;
@@ -272,12 +320,20 @@ private:
     bool arm_state_received_ = false;
     bool base_state_received_ = false;
     
+    // Solver diagnostics
+    int last_solver_iterations_ = 0;
+    int last_exit_flag_ = 0;
+    std::string last_solver_status_ = "not_started";
+    
     // Parameters
     double control_rate_;
     double max_solve_time_;
     double distance_lower_;
     double distance_weight_;
     bool publish_diagnostics_;
+    
+    // MATLAB solver instance (persistent robot/solver state)
+    std::unique_ptr<gik9dof::GIKSolver> matlab_solver_;
 };
 
 int main(int argc, char** argv)

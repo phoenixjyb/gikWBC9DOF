@@ -27,23 +27,34 @@ find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 # Include directories
 include_directories(
   include
-  ${CMAKE_CURRENT_SOURCE_DIR}/matlab_codegen/include  # MATLAB generated headers
+  include/shared_robotics  # MATLAB Robotics System Toolbox collision headers
 )
 
-# MATLAB Coder generated library
-# After running MATLAB code generation, copy the generated files to:
-#   - matlab_codegen/include/*.h
-#   - matlab_codegen/lib/*.a (or *.so)
-#
-# Uncomment after code generation:
-# add_library(gik_solver_lib STATIC IMPORTED)
-# set_target_properties(gik_solver_lib PROPERTIES
-#   IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/matlab_codegen/lib/libsolveGIKStepWrapper.a
-# )
+# MATLAB Coder generated source files
+set(MATLAB_SOLVER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../matlab_solver/codegen")
+include_directories(${MATLAB_SOLVER_DIR})
+
+# Collect all MATLAB generated source files (exclude .obj, interface/, examples/)
+file(GLOB MATLAB_SOURCES 
+  "${MATLAB_SOLVER_DIR}/*.cpp"
+  "${MATLAB_SOLVER_DIR}/*.c"
+)
+
+# Create MATLAB solver library from source files
+add_library(gik_matlab_solver STATIC ${MATLAB_SOURCES})
+target_include_directories(gik_matlab_solver PUBLIC
+  ${MATLAB_SOLVER_DIR}
+)
+target_link_libraries(gik_matlab_solver
+  OpenMP::OpenMP_CXX
+)
+# Disable warnings for MATLAB generated code
+target_compile_options(gik_matlab_solver PRIVATE -w)
 
 # Solver node executable
 add_executable(gik9dof_solver_node
   src/gik9dof_solver_node.cpp
+  src/collisioncodegen_stubs.cpp  # Stub implementations for MATLAB collision functions
 )
 
 ament_target_dependencies(gik9dof_solver_node
@@ -55,9 +66,9 @@ ament_target_dependencies(gik9dof_solver_node
 )
 
 target_link_libraries(gik9dof_solver_node
+  gik_matlab_solver  # MATLAB generated solver library
   Eigen3::Eigen
   OpenMP::OpenMP_CXX
-  # gik_solver_lib  # Uncomment after MATLAB code generation
 )
 
 # Install

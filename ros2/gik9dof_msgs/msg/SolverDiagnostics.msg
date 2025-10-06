@@ -5,8 +5,9 @@
 std_msgs/Header header
 
 # Solver performance
-uint8 status                 # 0=failed, 1=success, 2=max_iter, 3=timeout
+string status                # Solver status: "success", "failed", "max_iterations", etc.
 uint32 iterations            # Number of iterations taken
+int32 exit_flag              # Solver exit flag (MATLAB solver specific)
 float64 solve_time_ms        # Actual solve time (milliseconds)
 float64 pose_error_norm      # Final pose error magnitude
 
