@@ -50,8 +50,6 @@ cfg.LaunchReport = false;
 
 % Build configuration
 cfg.BuildConfiguration = 'Faster Runs';
-cfg.Toolchain = 'CMake';
-cfg.EnableDebugging = false;
 
 %% Code generation execution
 fprintf('===================================================\n');
