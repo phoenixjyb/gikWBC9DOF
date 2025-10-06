@@ -21,9 +21,21 @@
 
 ---
 
-## 🚀 START NOW - 3 Simple Commands
+## 🚀 START NOW - 4 Steps (Windows → WSL → Orin)
 
-### Step 1: Validate (5 minutes)
+### Why WSL First?
+
+**Smart Strategy**: Use WSL Ubuntu 22.04 as intermediate validation before AGX Orin deployment:
+- ✅ Same OS (Ubuntu 22.04) and ROS2 (Humble) as Orin
+- ✅ Catch 80% of build errors, dependency issues, ROS2 bugs **before** touching robot
+- ✅ Fast iteration (no SCP to Orin for every test)
+- ✅ Safe testing environment (can't damage real robot)
+
+**See `WSL_VALIDATION_GUIDE.md` for complete WSL instructions.**
+
+---
+
+### Step 1: Validate on Windows (5 minutes)
 
 Open MATLAB R2024b:
 ```matlab
@@ -113,7 +125,76 @@ Step 5: Creating deployment package...
 
 ---
 
-### Step 3: Deploy to AGX Orin (5 minutes)
+### Step 3: Build and Test on WSL (20-30 minutes) 🔧
+
+**Copy deployment package to WSL** (from Windows PowerShell):
+
+```powershell
+# Find latest deployment package
+$latestZip = Get-ChildItem -Path . -Filter "gik9dof_deployment_*.zip" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+
+# Copy to WSL
+wsl cp "/mnt/c/Users/yanbo/wSpace/codegenGIKsample/Trial/gikWBC9DOF/$($latestZip.Name)" ~/gik9dof_deployment.zip
+```
+
+**Build on WSL** (in WSL terminal):
+
+```bash
+# Extract package
+cd ~
+mkdir -p gik9dof_test
+cd gik9dof_test
+unzip ~/gik9dof_deployment.zip
+
+# Source ROS2
+source /opt/ros/humble/setup.bash
+
+# Build messages first (dependency)
+colcon build --packages-select gik9dof_msgs
+source install/setup.bash
+
+# Build solver node
+colcon build --packages-select gik9dof_solver
+source install/setup.bash
+```
+
+**Test with mock inputs** (TWO WSL terminals):
+
+Terminal 1 - Launch solver:
+```bash
+cd ~/gik9dof_test/gik9dof_deployment
+source /opt/ros/humble/setup.bash
+source install/setup.bash
+ros2 launch gik9dof_solver test_solver.launch.py
+```
+
+Terminal 2 - Run mock publisher:
+```bash
+cd ~/gik9dof_test/gik9dof_deployment
+source /opt/ros/humble/setup.bash
+source install/setup.bash
+ros2 run gik9dof_solver test_mock_inputs.py
+```
+
+**Expected output** (Terminal 1):
+```
+[gik9dof_solver_node]: Received initial robot state (6 joints)
+[gik9dof_solver_node]: Solver diagnostics: status=1, solve_time=4.2ms
+```
+
+**Success criteria:**
+- ✅ Build completes without errors
+- ✅ Solver node starts without crash
+- ✅ Diagnostics show `status=1` (success)
+- ✅ `solve_time_ms < 50` (meets 10 Hz requirement)
+
+**If WSL tests fail**: Check `WSL_VALIDATION_GUIDE.md` for troubleshooting. Fix on WSL before deploying to Orin!
+
+---
+
+### Step 4: Deploy to AGX Orin (5 minutes) 🚀
+
+**Only proceed if WSL tests passed!**
 
 In PowerShell (replace `<orin-ip>` with actual IP):
 ```powershell
@@ -127,7 +208,7 @@ cd C:\Users\yanbo\wSpace\codegenGIKsample\Trial\gikWBC9DOF
 ```
 
 **What It Does:**
-1. ✅ Finds latest deployment package
+1. ✅ Finds latest deployment package (already validated on WSL)
 2. ✅ Tests SSH connection
 3. ✅ Transfers ZIP file via SCP
 4. ✅ Extracts on AGX Orin
@@ -136,6 +217,8 @@ cd C:\Users\yanbo\wSpace\codegenGIKsample\Trial\gikWBC9DOF
 ---
 
 ## 🖥️ On AGX Orin - Build & Test (30-60 minutes)
+
+**Note**: This should be almost identical to WSL build (same OS, same ROS2).
 
 SSH to your AGX Orin:
 ```bash
