@@ -31,10 +31,10 @@ include_directories(
 )
 
 # MATLAB Coder generated source files
-set(MATLAB_SOLVER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../matlab_solver/codegen")
+set(MATLAB_SOLVER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/matlab_codegen/include")
 include_directories(${MATLAB_SOLVER_DIR})
 
-# Collect all MATLAB generated source files (exclude .obj, interface/, examples/)
+# Collect all MATLAB generated source files
 file(GLOB MATLAB_SOURCES 
   "${MATLAB_SOLVER_DIR}/*.cpp"
   "${MATLAB_SOLVER_DIR}/*.c"
@@ -44,7 +44,27 @@ file(GLOB MATLAB_SOURCES
 add_library(gik_matlab_solver STATIC ${MATLAB_SOURCES})
 target_include_directories(gik_matlab_solver PUBLIC
   ${MATLAB_SOLVER_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/matlab_codegen/include
 )
+
+# Detect architecture and set appropriate flags
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64|ARM64")
+  message(STATUS "Building for ARM64 architecture")
+  # Disable x86 intrinsics on ARM
+  target_compile_definitions(gik_matlab_solver PRIVATE 
+    __SSE2__=0
+    __AVX__=0
+    __AVX2__=0
+  )
+  # Enable ARM NEON optimizations
+  target_compile_options(gik_matlab_solver PRIVATE 
+    -march=armv8-a
+    -mtune=cortex-a78
+  )
+else()
+  message(STATUS "Building for x86_64 architecture")
+endif()
+
 target_link_libraries(gik_matlab_solver
   OpenMP::OpenMP_CXX
 )
@@ -55,6 +75,7 @@ target_compile_options(gik_matlab_solver PRIVATE -w)
 add_executable(gik9dof_solver_node
   src/gik9dof_solver_node.cpp
   src/collisioncodegen_stubs.cpp  # Stub implementations for MATLAB collision functions
+  src/coder_posix_time_stubs.cpp  # Stub implementations for MATLAB POSIX time functions
 )
 
 ament_target_dependencies(gik9dof_solver_node

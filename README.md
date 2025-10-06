@@ -12,7 +12,21 @@
 **Project**: MATLAB-Generated C++ IK Solver for ROS2  
 **Branch**: `codegencc45`  
 **Target**: NVIDIA AGX Orin, Ubuntu 22.04, ROS2 Humble, ARM64  
-**Status**: ✅ MATLAB-to-ROS2 Integration Complete
+**Status**: ✅ MATLAB-to-ROS2 Integration Complete  
+**Platform Support**: ✅ x86_64 (Windows/WSL) | ✅ ARM64 (AGX Orin)
+
+---
+
+## Platform Support
+
+| Platform | Architecture | Status | Notes |
+|----------|-------------|--------|-------|
+| **Windows** | x86_64 | ✅ Validated | MATLAB codegen + validation |
+| **WSL2 Ubuntu 22.04** | x86_64 | ✅ Validated | ROS2 build and testing |
+| **AGX Orin** | ARM64/aarch64 | ✅ **NEW: Working** | Built with compatibility layer |
+
+**Latest**: Successfully deployed to ARM64 with SSE intrinsics compatibility fixes (Oct 2025).  
+See [ARM64 Deployment Guide](docs/deployment/ARM64_DEPLOYMENT_GUIDE.md) for details.
 
 ---
 
@@ -40,6 +54,7 @@ All documentation has been organized into logical categories:
 
 ### 🚀 Deployment
 - [Orin Next Steps](docs/deployment/ORIN_NEXT_STEPS.md) - **Deploy to AGX Orin**
+- [ARM64 Deployment Guide](docs/deployment/ARM64_DEPLOYMENT_GUIDE.md) - **✨ NEW: ARM64/Orin deployment**
 - [CodegenCC45 README](docs/deployment/README_CODEGENCC45.md) - Deployment overview
 
 #### WSL Workflow
@@ -89,9 +104,10 @@ All documentation has been organized into logical categories:
 2. Troubleshooting: [WSL Validation Guide](docs/deployment/wsl/WSL_VALIDATION_GUIDE.md)
 
 ### "I'm Deploying to AGX Orin"
-1. Read [Orin Next Steps](docs/deployment/ORIN_NEXT_STEPS.md)
-2. Run `deploy_to_orin.ps1 <orin-ip>`
-3. Follow build instructions on target
+1. **NEW**: Read [ARM64 Deployment Guide](docs/deployment/ARM64_DEPLOYMENT_GUIDE.md) - **Complete ARM64 build instructions**
+2. Read [Orin Next Steps](docs/deployment/ORIN_NEXT_STEPS.md)
+3. Transfer files to Orin using deployment script
+4. Build on target following ARM64 guide
 
 ### "I'm Stuck / Troubleshooting"
 1. Check [Fast Track 2-Day](docs/planning/FAST_TRACK_2DAY.md) → Troubleshooting section
