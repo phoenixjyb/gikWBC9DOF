@@ -7,77 +7,75 @@
 
 ---
 
-## 🚀 START HERE - Quick Navigation
+# 9-DOF Whole-Body IK Solver for Mobile Manipulator
 
-### **I'm Ready to Execute → Go to [`START_HERE.md`](START_HERE.md)**
-Complete execution guide with 4 steps (Windows → WSL → AGX Orin)
-
-### **I Need a Quick Overview → Go to [`QUICK_START.md`](QUICK_START.md)**
-15-minute project overview and quick reference
-
-### **I Want the Workflow Diagram → Go to [`VALIDATION_WORKFLOW.md`](VALIDATION_WORKFLOW.md)**
-Visual 3-tier workflow with validation gates
+**Project**: MATLAB-Generated C++ IK Solver for ROS2  
+**Branch**: `codegencc45`  
+**Target**: NVIDIA AGX Orin, Ubuntu 22.04, ROS2 Humble, ARM64  
+**Status**: ✅ MATLAB-to-ROS2 Integration Complete
 
 ---
 
-## 📚 Documentation Roadmap (Read in This Order)
+## 🚀 Quick Start
 
-### **Phase 1: Understanding the Project**
+### New to This Project?
+👉 **Start here:** [`START_HERE.md`](START_HERE.md) - Complete execution guide
 
-| Order | Document | Purpose | Read When |
-|-------|----------|---------|-----------|
-| 1️⃣ | [`README.md`](README.md) | **YOU ARE HERE** - Navigation hub | Start here always |
-| 2️⃣ | [`QUICK_START.md`](QUICK_START.md) | 15-minute overview | First time in project |
-| 3️⃣ | [`CODEGENCC45_PROJECT_PLAN.md`](CODEGENCC45_PROJECT_PLAN.md) | Master architecture document | Understanding big picture |
-| 4️⃣ | [`REQUIREMENTS_CONFIRMED.md`](REQUIREMENTS_CONFIRMED.md) | All requirements Q&A (441 lines) | Understanding decisions |
-
-### **Phase 2: Execution Planning**
-
-| Order | Document | Purpose | Read When |
-|-------|----------|---------|-----------|
-| 5️⃣ | [`START_HERE.md`](START_HERE.md) | **Main execution guide** (4 steps) | Ready to start coding |
-| 6️⃣ | [`FAST_TRACK_2DAY.md`](FAST_TRACK_2DAY.md) | Hour-by-hour 2-day plan | Need detailed schedule |
-| 7️⃣ | [`VALIDATION_WORKFLOW.md`](VALIDATION_WORKFLOW.md) | 3-tier validation strategy | Understanding workflow |
-
-### **Phase 3: WSL Intermediate Validation**
-
-| Order | Document | Purpose | Read When |
-|-------|----------|---------|-----------|
-| 8️⃣ | [`WSL_INTEGRATION_SUMMARY.md`](WSL_INTEGRATION_SUMMARY.md) | Why use WSL, workflow changes | Understanding WSL role |
-| 9️⃣ | [`WSL_VALIDATION_GUIDE.md`](WSL_VALIDATION_GUIDE.md) | Complete WSL build/test guide | First WSL build |
-| 🔟 | [`WSL_QUICK_REFERENCE.md`](WSL_QUICK_REFERENCE.md) | Copy/paste commands | During WSL testing |
-
-### **Phase 3.5: AGX Orin Deployment** ⭐ **CURRENT PHASE**
-
-| Order | Document | Purpose | Read When |
-|-------|----------|---------|-----------|
-| 🎯 | [`ORIN_NEXT_STEPS.md`](ORIN_NEXT_STEPS.md) | **Quick checklist for Orin** | Ready to deploy to Orin |
-| 🔧 | [`docs/ORIN_MATLAB_INTEGRATION.md`](docs/ORIN_MATLAB_INTEGRATION.md) | Complete MATLAB solver integration | Integrating solver code |
-
-### **Phase 4: Technical Details**
-
-| Order | Document | Purpose | Read When |
-|-------|----------|---------|-----------|
-| 1️⃣1️⃣ | [`MATLAB_CODEGEN_ANALYSIS.md`](MATLAB_CODEGEN_ANALYSIS.md) | Which MATLAB files to generate | Understanding codegen scope |
-| 1️⃣2️⃣ | [`ROS2_INTEGRATION_GUIDE.md`](ROS2_INTEGRATION_GUIDE.md) | ROS2 node implementation | Writing ROS2 code |
-| 1️⃣3️⃣ | [`ORIGIN_MAIN_MERGE_ANALYSIS.md`](ORIGIN_MAIN_MERGE_ANALYSIS.md) | What changed in origin/main | After merge conflicts |
-
-### **Phase 5: Continuation & Handoff**
-
-| Document | Purpose | Read When |
-|----------|---------|-----------|
-| [`CONTEXT_HANDOFF.md`](CONTEXT_HANDOFF.md) | **Complete project context for new conversations** | Hit context window limit |
-| [`HOW_TO_USE_CONTEXT_HANDOFF.md`](HOW_TO_USE_CONTEXT_HANDOFF.md) | How to use handoff document | Before starting new conversation |
-
-### **Phase 6: Reference (Optional)**
-
-| Document | Purpose | Read When |
-|----------|---------|-----------|
-| [`IMPLEMENTATION_ROADMAP.md`](IMPLEMENTATION_ROADMAP.md) | Original 6-8 week plan | Historical reference |
-| [`WEEK1_IMPLEMENTATION_GUIDE.md`](WEEK1_IMPLEMENTATION_GUIDE.md) | Week 1 detailed plan | Historical reference |
-| [`README_CODEGENCC45.md`](README_CODEGENCC45.md) | Project overview | Alternative intro |
+### Need Quick Reference?
+- 📖 [Quick Start Guide](docs/guides/QUICK_START.md) - 15-minute overview
+- 🔄 [Validation Workflow](docs/guides/VALIDATION_WORKFLOW.md) - Testing strategy
+- 🚀 [Orin Deployment](docs/deployment/ORIN_NEXT_STEPS.md) - Deploy to AGX Orin
 
 ---
+
+## 📚 Documentation Structure
+
+All documentation has been organized into logical categories:
+
+### 📘 Guides (User-Facing)
+- [ROS2 Integration Guide](docs/guides/ROS2_INTEGRATION_GUIDE.md) - How to integrate with ROS2
+- [Validation Workflow](docs/guides/VALIDATION_WORKFLOW.md) - Complete testing strategy
+- [Quick Start](docs/guides/QUICK_START.md) - Fast project overview
+- [Development Guidelines](docs/guides/guideline.md) - Coding standards
+
+### 🚀 Deployment
+- [Orin Next Steps](docs/deployment/ORIN_NEXT_STEPS.md) - **Deploy to AGX Orin**
+- [CodegenCC45 README](docs/deployment/README_CODEGENCC45.md) - Deployment overview
+
+#### WSL Workflow
+- [WSL Integration Summary](docs/deployment/wsl/WSL_INTEGRATION_SUMMARY.md) - Why use WSL
+- [WSL Validation Guide](docs/deployment/wsl/WSL_VALIDATION_GUIDE.md) - Complete WSL testing
+- [WSL Quick Reference](docs/deployment/wsl/WSL_QUICK_REFERENCE.md) - Command cheatsheet
+
+### 🔧 Technical Reference
+- [CODEGEN Structure](docs/technical/CODEGEN_STRUCTURE.md) - **Understanding codegen directories**
+- [CODEGEN Analysis](docs/technical/CODEGEN.md) - MATLAB code generation details
+- [MATLAB Codegen Analysis](docs/technical/MATLAB_CODEGEN_ANALYSIS.md) - What to generate
+- [Unified Chassis Summary](docs/technical/unified_chassis_controller_summary.md) - Controller details
+
+### 📋 Project Planning
+- [Project Plan](docs/planning/CODEGENCC45_PROJECT_PLAN.md) - Master architecture
+- [Implementation Roadmap](docs/planning/IMPLEMENTATION_ROADMAP.md) - Original 6-8 week plan
+- [Implementation Summary](docs/planning/IMPLEMENTATION_SUMMARY.md) - What was built
+- [Week 1 Guide](docs/planning/WEEK1_IMPLEMENTATION_GUIDE.md) - Week 1 details
+- [Fast Track 2-Day](docs/planning/FAST_TRACK_2DAY.md) - Hour-by-hour plan
+- [Requirements Confirmed](docs/planning/REQUIREMENTS_CONFIRMED.md) - All design decisions
+
+### 📦 Archive (Historical)
+- [Context Handoff](docs/archive/CONTEXT_HANDOFF.md) - Project context for conversations
+- [How to Use Context Handoff](docs/archive/HOW_TO_USE_CONTEXT_HANDOFF.md)
+- [Project Overview](docs/archive/PROJECT_OVERVIEW.md) - Historical overview
+- [Development Diary](docs/archive/diary.md) - Development log
+- [Origin Main Merge Analysis](docs/archive/ORIGIN_MAIN_MERGE_ANALYSIS.md)
+
+### 📄 Additional Documentation
+- [Reorganization Plan](docs/REORGANIZATION_PLAN.md) - How docs were organized
+- [Orin MATLAB Integration](docs/ORIN_MATLAB_INTEGRATION.md) - MATLAB solver integration
+- [Validation Workflow](docs/VALIDATION_WORKFLOW.md) - Testing documentation
+
+---
+
+## 🎯 Quick Access by Task
 
 ## 🎯 Quick Access by Task
 
@@ -87,28 +85,29 @@ Visual 3-tier workflow with validation gates
 3. Follow the 4-step workflow
 
 ### "I Need to Build on WSL"
-1. Read [`WSL_QUICK_REFERENCE.md`](WSL_QUICK_REFERENCE.md) (copy/paste commands)
-2. Troubleshooting: [`WSL_VALIDATION_GUIDE.md`](WSL_VALIDATION_GUIDE.md)
+1. Read [WSL Quick Reference](docs/deployment/wsl/WSL_QUICK_REFERENCE.md) (copy/paste commands)
+2. Troubleshooting: [WSL Validation Guide](docs/deployment/wsl/WSL_VALIDATION_GUIDE.md)
+
+### "I'm Deploying to AGX Orin"
+1. Read [Orin Next Steps](docs/deployment/ORIN_NEXT_STEPS.md)
+2. Run `deploy_to_orin.ps1 <orin-ip>`
+3. Follow build instructions on target
 
 ### "I'm Stuck / Troubleshooting"
-1. Check [`FAST_TRACK_2DAY.md`](FAST_TRACK_2DAY.md) → Troubleshooting section
-2. Check [`WSL_VALIDATION_GUIDE.md`](WSL_VALIDATION_GUIDE.md) → Common Issues
-3. Check [`VALIDATION_WORKFLOW.md`](VALIDATION_WORKFLOW.md) → Failure Recovery Paths
+1. Check [Fast Track 2-Day](docs/planning/FAST_TRACK_2DAY.md) → Troubleshooting section
+2. Check [WSL Validation Guide](docs/deployment/wsl/WSL_VALIDATION_GUIDE.md) → Common Issues
+3. Check [Validation Workflow](docs/guides/VALIDATION_WORKFLOW.md) → Failure Recovery Paths
 
 ### "I Need Architecture Details"
-1. [`CODEGENCC45_PROJECT_PLAN.md`](CODEGENCC45_PROJECT_PLAN.md) - Overall architecture
-2. [`REQUIREMENTS_CONFIRMED.md`](REQUIREMENTS_CONFIRMED.md) - All design decisions
-3. [`ROS2_INTEGRATION_GUIDE.md`](ROS2_INTEGRATION_GUIDE.md) - ROS2 specifics
+1. [Project Plan](docs/planning/CODEGENCC45_PROJECT_PLAN.md) - Overall architecture
+2. [Requirements Confirmed](docs/planning/REQUIREMENTS_CONFIRMED.md) - All design decisions
+3. [ROS2 Integration Guide](docs/guides/ROS2_INTEGRATION_GUIDE.md) - ROS2 specifics
+4. [CODEGEN Structure](docs/technical/CODEGEN_STRUCTURE.md) - Directory organization
 
 ### "I Need to Explain This to Someone"
-1. [`QUICK_START.md`](QUICK_START.md) - 15-minute overview
-2. [`VALIDATION_WORKFLOW.md`](VALIDATION_WORKFLOW.md) - Visual workflow diagram
-3. [`WSL_INTEGRATION_SUMMARY.md`](WSL_INTEGRATION_SUMMARY.md) - Why WSL matters
-
-### "I'm Switching Conversations (Context Window Full)"
-1. Open [`CONTEXT_HANDOFF.md`](CONTEXT_HANDOFF.md) - Copy entire file (504 lines)
-2. Read [`HOW_TO_USE_CONTEXT_HANDOFF.md`](HOW_TO_USE_CONTEXT_HANDOFF.md) - Usage instructions
-3. Paste in new conversation with your current status
+1. [Quick Start](docs/guides/QUICK_START.md) - 15-minute overview
+2. [Validation Workflow](docs/guides/VALIDATION_WORKFLOW.md) - Visual workflow diagram
+3. [WSL Integration Summary](docs/deployment/wsl/WSL_INTEGRATION_SUMMARY.md) - Why WSL matters
 
 ---
 
@@ -217,23 +216,15 @@ gikWBC9DOF/
 
 ## 💡 Pro Tips
 
-### **Bookmark These 3 Files**
+### **Bookmark These Files**
 1. **[`README.md`](README.md)** - Always start here when lost
 2. **[`START_HERE.md`](START_HERE.md)** - Your execution playbook
-3. **[`WSL_QUICK_REFERENCE.md`](WSL_QUICK_REFERENCE.md)** - Keep open during WSL testing
-
-### **Print This Checklist**
-Copy the "Execution Checklist" above to a text file and track your progress
+3. **[WSL Quick Reference](docs/deployment/wsl/WSL_QUICK_REFERENCE.md)** - Keep open during testing
+4. **[CODEGEN Structure](docs/technical/CODEGEN_STRUCTURE.md)** - Understanding the codebase
 
 ### **Open These Side-by-Side**
 - Left monitor: VSCode with MATLAB/C++ code
-- Right monitor: `WSL_QUICK_REFERENCE.md` in browser (for copy/paste)
-
-### **Keep Terminal History**
-On WSL, save your working commands:
-```bash
-history > ~/gik9dof_build_commands.txt
-```
+- Right monitor: Relevant guide in browser (for copy/paste)
 
 ---
 
@@ -243,33 +234,51 @@ history > ~/gik9dof_build_commands.txt
 → Check [`START_HERE.md`](START_HERE.md) → Troubleshooting section
 
 ### **Error During Code Generation**
-→ Check `codegen/html/report.mldatx` in MATLAB
-→ See [`FAST_TRACK_2DAY.md`](FAST_TRACK_2DAY.md) → Day 1 Hour 2
+→ Check `codegen/html/report.mldatx` in MATLAB  
+→ See [Fast Track 2-Day](docs/planning/FAST_TRACK_2DAY.md) → Day 1 Hour 2
 
 ### **Error During WSL Build**
-→ Check [`WSL_VALIDATION_GUIDE.md`](WSL_VALIDATION_GUIDE.md) → Common Issues
+→ Check [WSL Validation Guide](docs/deployment/wsl/WSL_VALIDATION_GUIDE.md) → Common Issues  
 → Most common: Missing dependencies (libeigen3-dev, libomp-dev)
 
 ### **Error During AGX Orin Build**
-→ Should be same as WSL! Check same issues as WSL
-→ If Orin-specific: Check [`VALIDATION_WORKFLOW.md`](VALIDATION_WORKFLOW.md) → Gate 4
+→ Should be same as WSL! Check same issues as WSL  
+→ If Orin-specific: Check [Validation Workflow](docs/guides/VALIDATION_WORKFLOW.md) → Gate 4
 
 ### **Solver Not Converging**
-→ Check [`FAST_TRACK_2DAY.md`](FAST_TRACK_2DAY.md) → Day 2 Hour 4
+→ Check [Fast Track 2-Day](docs/planning/FAST_TRACK_2DAY.md) → Day 2 Hour 4  
 → Tune constraints, increase max iterations
 
 ---
 
-## 📊 Project Metrics
+## 📊 Project Status
 
-| Metric | Value |
-|--------|-------|
-| **Total Documentation** | 15 markdown files, ~4500 lines |
-| **MATLAB Code** | 5 files, ~600 lines (codegen-ready) |
-| **ROS2 Code** | 1 C++ node, 2 messages, 1 launch file, 1 test script |
-| **Automation Scripts** | 3 files (validation, codegen, deployment) |
-| **Estimated Timeline** | 1.5-2 hours to robot integration |
-| **Success Rate** | 95% with 3-tier validation (Windows→WSL→Orin) |
+| Component | Status | Files | Details |
+|-----------|--------|-------|---------|
+| **MATLAB Solver** | ✅ Complete | 203 C++ files | ARM64 optimized, validated |
+| **ROS2 Integration** | ✅ Complete | 4 topics | Builds in 54.8s, 0 errors |
+| **Validation Framework** | ✅ Complete | 12 test files | CLI-based testing works |
+| **Documentation** | ✅ Organized | 26 MD files | Reorganized into logical folders |
+| **WSL Support** | ✅ Ready | 3 guides | Ubuntu 22.04, tested |
+| **AGX Orin Deployment** | ⏳ Ready | Scripts ready | Awaiting hardware |
+
+**Current Phase**: Post-Integration Validation  
+**Next Step**: Deploy to AGX Orin or create C++ test node
+
+---
+
+## 📚 Documentation Organization
+
+All documentation has been reorganized (October 6, 2025):
+
+- **Root**: Only `README.md` and `START_HERE.md`
+- **docs/guides/**: User-facing guides (4 files)
+- **docs/deployment/**: Deployment guides + WSL subfolder (5 files)
+- **docs/technical/**: Technical reference (4 files)
+- **docs/planning/**: Project planning (6 files)
+- **docs/archive/**: Historical documents (5 files)
+
+See [Reorganization Plan](docs/REORGANIZATION_PLAN.md) for details.
 
 ---
 
@@ -278,37 +287,44 @@ history > ~/gik9dof_build_commands.txt
 **If you're new to this project**, read in this order:
 
 1. **5 minutes**: [`README.md`](README.md) (you are here) - Navigation
-2. **15 minutes**: [`QUICK_START.md`](QUICK_START.md) - Overview
-3. **10 minutes**: [`VALIDATION_WORKFLOW.md`](VALIDATION_WORKFLOW.md) - Workflow
+2. **15 minutes**: [Quick Start](docs/guides/QUICK_START.md) - Overview
+3. **10 minutes**: [Validation Workflow](docs/guides/VALIDATION_WORKFLOW.md) - Testing strategy
 4. **20 minutes**: [`START_HERE.md`](START_HERE.md) - Execution guide
-5. **Ready to start!** → Open MATLAB, run `RUN_VALIDATION`
+5. **Ready to start!** → Follow deployment guides
 
 **Total onboarding time**: ~50 minutes
 
 ---
 
-## 🔄 Updates and Maintenance
+## 🔄 Recent Updates
 
 **Last Updated**: October 6, 2025  
 **Branch**: `codegencc45`  
-**Commits**: 11 commits (all pushed to GitHub)
 
-**Recent Changes**:
-- ✅ WSL Ubuntu 22.04 integration (4 new docs)
-- ✅ 3-tier validation workflow
-- ✅ Merged origin/main (pure pursuit integration)
-- ✅ Complete automation scripts
-- ✅ Testing infrastructure
+**Latest Changes**:
+- ✅ **Complete MATLAB-to-ROS2 integration** (218 files committed)
+- ✅ **Documentation reorganization** (26 MD files → organized structure)
+- ✅ **Validation framework** (automated + manual testing)
+- ✅ **Clean .gitignore** (build artifacts properly ignored)
+- ✅ **CODEGEN structure documented** (understand directory layout)
+
+**Recent Commits**:
+```
+130eb83 chore: Ignore clang-format file in codegen
+5b7ea91 chore: Add comprehensive .gitignore for build artifacts
+5574edf feat: Complete MATLAB-to-ROS2 integration with validation framework
+```
 
 ---
 
 ## 📞 Need Help?
 
 1. **Documentation Navigation**: Always come back to this [`README.md`](README.md)
-2. **Quick Questions**: Check [`QUICK_START.md`](QUICK_START.md)
+2. **Quick Questions**: Check [Quick Start](docs/guides/QUICK_START.md)
 3. **Execution Issues**: Check [`START_HERE.md`](START_HERE.md) → Troubleshooting
-4. **WSL Issues**: Check [`WSL_VALIDATION_GUIDE.md`](WSL_VALIDATION_GUIDE.md) → Common Issues
-5. **Architecture Questions**: Check [`CODEGENCC45_PROJECT_PLAN.md`](CODEGENCC45_PROJECT_PLAN.md)
+4. **WSL Issues**: Check [WSL Validation Guide](docs/deployment/wsl/WSL_VALIDATION_GUIDE.md)
+5. **Architecture Questions**: Check [Project Plan](docs/planning/CODEGENCC45_PROJECT_PLAN.md)
+6. **Code Organization**: Check [CODEGEN Structure](docs/technical/CODEGEN_STRUCTURE.md)
 
 ---
 
@@ -317,11 +333,11 @@ history > ~/gik9dof_build_commands.txt
 **Your next step:**
 
 1. Read [`START_HERE.md`](START_HERE.md) (5 minutes)
-2. Open MATLAB R2024b
-3. Run `RUN_VALIDATION`
+2. Check [Orin Next Steps](docs/deployment/ORIN_NEXT_STEPS.md) for deployment
+3. Or continue development with the organized documentation
 
 Good luck! 🚀
 
 ---
 
-**Navigation**: [TOP](#codegencc45-project---documentation-index) | [START_HERE.md](START_HERE.md) | [QUICK_START.md](QUICK_START.md)
+**Navigation**: [TOP](#9-dof-whole-body-ik-solver-for-mobile-manipulator) | [START_HERE.md](START_HERE.md) | [Quick Start](docs/guides/QUICK_START.md)
