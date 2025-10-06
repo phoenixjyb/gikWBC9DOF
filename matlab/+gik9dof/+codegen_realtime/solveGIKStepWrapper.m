@@ -17,12 +17,8 @@ if isempty(initialized)
         'ConstraintInputs', constraintInputs, ...
         'SolverAlgorithm', 'LevenbergMarquardt');
     
-    % Solver parameters for real-time performance
-    solver.MaxIterations = 100;
-    solver.MaxTime = 0.05; % 50ms max (for 10 Hz control with margin)
-    solver.GradientTolerance = 1e-7;
-    solver.SolutionTolerance = 1e-6;
-    solver.RandomRestart = false; % Deterministic for real-time
+    % Note: generalizedInverseKinematics solver parameters are set during call,
+    % not as properties. See solveGIKStepRealtime for usage.
     
     initialized = true;
 end
