@@ -30,6 +30,7 @@ codegen/arm64_realtime/*.mk
 codegen/arm64_realtime/*.rsp
 codegen/arm64_realtime/*.tmw
 codegen/arm64_realtime/*.txt
+codegen/arm64_realtime/_clang-format
 codegen/arm64_realtime/interface/*.cpp
 codegen/arm64_realtime/html/
 codegen/arm64_realtime/examples/
