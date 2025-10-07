@@ -1,6 +1,6 @@
 /**
  * @file gik9dof_solver_node.cpp
- * @brief ROS2 node wrapping MATLAB Coder generated IK solver
+ * @brief ROS2 node wrapping MATLAB Coder generated IK solver - Implementation
  * 
  * This node subscribes to end-effector trajectory commands and publishes
  * joint-space trajectories for the 9-DOF mobile manipulator.
@@ -8,46 +8,29 @@
  * Target: NVIDIA AGX Orin, Ubuntu 22.04, ROS2 Humble, ARM64
  */
 
-#include <rclcpp/rclcpp.hpp>
-#include <sensor_msgs/msg/joint_state.hpp>
-#include <nav_msgs/msg/odometry.hpp>
-#include <geometry_msgs/msg/pose_stamped.hpp>
-#include <geometry_msgs/msg/twist.hpp>
-#include "gik9dof_msgs/msg/end_effector_trajectory.hpp"
-#include "gik9dof_msgs/msg/solver_diagnostics.hpp"
+#include "gik9dof_solver_node.h"
 
-#include <memory>
-#include <vector>
-#include <deque>
-#include <chrono>
-#include <Eigen/Dense>
-#include <Eigen/Geometry>
-
-// MATLAB Coder generated headers
+// MATLAB Coder generated solver
 #include "GIKSolver.h"
-#include "gik9dof_codegen_realtime_solveGIKStepWrapper_types.h"
 
 // MATLAB Coder generated velocity controllers
-// Mode 1: Simple heading controller
 #include "velocity_controller/holisticVelocityController.h"
-#include "velocity_controller/holisticVelocityController_types.h"
 #include "velocity_controller/holisticVelocityController_initialize.h"
 #include "velocity_controller/holisticVelocityController_terminate.h"
 
-// Mode 2: Pure Pursuit path following controller
 #include "purepursuit/purePursuitVelocityController.h"
-#include "purepursuit/purePursuitVelocityController_types.h"
 #include "purepursuit/purePursuitVelocityController_initialize.h"
 #include "purepursuit/purePursuitVelocityController_terminate.h"
 
+// Stage B factory (creates controller without namespace conflicts)
+#include "stage_b_factory.hpp"
+
 using namespace std::chrono_literals;
 
-class GIK9DOFSolverNode : public rclcpp::Node
+GIK9DOFSolverNode::GIK9DOFSolverNode() : Node("gik9dof_solver_node")
 {
-public:
-    GIK9DOFSolverNode() : Node("gik9dof_solver_node")
-    {
         // Declare parameters
+        this->declare_parameter("control_mode", "holistic");  // "holistic" or "staged"
         this->declare_parameter("control_rate", 10.0);  // Hz
         this->declare_parameter("max_solve_time", 0.05);  // 50ms
         this->declare_parameter("max_solver_iterations", 50);  // Max solver iterations
@@ -76,6 +59,7 @@ public:
         this->declare_parameter("purepursuit.lookahead_time_gain", 0.1);
         this->declare_parameter("purepursuit.vx_nominal", 1.0);
         this->declare_parameter("purepursuit.vx_max", 1.5);
+        this->declare_parameter("purepursuit.vx_min", -1.0);  // Max reverse velocity
         this->declare_parameter("purepursuit.wz_max", 2.0);
         this->declare_parameter("purepursuit.track", 0.674);
         this->declare_parameter("purepursuit.vwheel_max", 2.0);
@@ -84,7 +68,24 @@ public:
         this->declare_parameter("purepursuit.goal_tolerance", 0.2);
         this->declare_parameter("purepursuit.interp_spacing", 0.05);
         
+        // Staged control parameters
+        this->declare_parameter("staged.stage_b_mode", 1);  // 1=Pure Hybrid A*, 2=GIK-Assisted
+        this->declare_parameter("staged.planner.max_iterations", 1000);
+        this->declare_parameter("staged.planner.timeout_ms", 50.0);
+        this->declare_parameter("staged.planner.goal_tolerance_xy", 0.15);
+        this->declare_parameter("staged.planner.goal_tolerance_theta", 0.15);
+        this->declare_parameter("staged.planner.use_holonomic", false);
+        this->declare_parameter("staged.stage_a_timeout", 10.0);
+        this->declare_parameter("staged.stage_b_timeout", 30.0);
+        this->declare_parameter("staged.stage_c_timeout", 60.0);
+        
         // Get parameters
+        std::string control_mode_str = this->get_parameter("control_mode").as_string();
+        control_mode_ = (control_mode_str == "staged") ? ControlMode::STAGED : ControlMode::HOLISTIC;
+        current_stage_ = ControlStage::STAGE_A;  // Always start at Stage A
+        stage_b_enabled_ = false;
+        stage_b_controller_ = nullptr;  // Initialize to null
+        
         control_rate_ = this->get_parameter("control_rate").as_double();
         max_solve_time_ = this->get_parameter("max_solve_time").as_double();
         max_solver_iterations_ = this->get_parameter("max_solver_iterations").as_int();
@@ -130,6 +131,7 @@ public:
             pp_params_.lookaheadTimeGain = this->get_parameter("purepursuit.lookahead_time_gain").as_double();
             pp_params_.vxNominal = this->get_parameter("purepursuit.vx_nominal").as_double();
             pp_params_.vxMax = this->get_parameter("purepursuit.vx_max").as_double();
+            pp_params_.vxMin = this->get_parameter("purepursuit.vx_min").as_double();  // Bidirectional support
             pp_params_.wzMax = this->get_parameter("purepursuit.wz_max").as_double();
             pp_params_.track = this->get_parameter("purepursuit.track").as_double();
             pp_params_.vwheelMax = this->get_parameter("purepursuit.vwheel_max").as_double();
@@ -153,6 +155,35 @@ public:
             pp_state_.prevPoseYaw = 0.0;
             pp_state_.lastRefTime = 0.0;
             pp_controller_initialized_ = false;
+        }
+        
+        // Initialize Stage B controller if in staged mode
+        if (control_mode_ == ControlMode::STAGED) {
+            // Create Stage B parameters
+            gik9dof::StageBParams params;
+            params.mode = gik9dof::StageBMode::HybridAStar;
+            params.chassis_max_vel_x = 0.5;
+            params.chassis_max_vel_theta = 0.5;
+            params.chassis_acc_x = 0.5;
+            params.chassis_acc_theta = 0.5;
+            params.lookahead_distance = 0.3;
+            params.goal_tolerance_xy = 0.05;
+            params.goal_tolerance_theta = 0.1;
+            params.planner_time_limit_ms = 50.0;
+            
+            // Create Stage B controller via factory (returns raw pointer)
+            stage_b_controller_ = gik9dof::createStageBController(this, params);
+            
+            stage_b_enabled_ = true;
+            
+            int stage_b_mode = this->get_parameter("staged.stage_b_mode").as_int();
+            RCLCPP_INFO(this->get_logger(), 
+                "Staged control mode enabled - Starting at Stage A (arm ramp-up)");
+            RCLCPP_INFO(this->get_logger(), 
+                "Stage B mode: %s", stage_b_mode == 1 ? "Pure Hybrid A*" : "GIK-Assisted");
+        } else {
+            stage_b_enabled_ = false;
+            RCLCPP_INFO(this->get_logger(), "Holistic control mode enabled");
         }
         
         // Subscribers
@@ -224,23 +255,28 @@ public:
         RCLCPP_INFO(this->get_logger(), "Publishing to:");
         RCLCPP_INFO(this->get_logger(), "  - /motion_target/target_joint_state_arm_left (6 arm joints)");
         RCLCPP_INFO(this->get_logger(), "  - /cmd_vel (base velocities: vx, wz)");
+}
+
+GIK9DOFSolverNode::~GIK9DOFSolverNode()
+{
+    // Destroy Stage B controller (if created)
+    if (stage_b_controller_) {
+        gik9dof::destroyStageBController(stage_b_controller_);
+        stage_b_controller_ = nullptr;
     }
     
-    ~GIK9DOFSolverNode()
-    {
-        // Cleanup velocity controllers
-        if (velocity_control_mode_ == 1) {
-            gik9dof_velocity::holisticVelocityController_terminate();
-            RCLCPP_INFO(this->get_logger(), "Simple heading controller terminated");
-        } else if (velocity_control_mode_ == 2) {
-            gik9dof_purepursuit::purePursuitVelocityController_terminate();
-            RCLCPP_INFO(this->get_logger(), "Pure Pursuit controller terminated");
-        }
+    // Cleanup velocity controllers
+    if (velocity_control_mode_ == 1) {
+        gik9dof_velocity::holisticVelocityController_terminate();
+        RCLCPP_INFO(this->get_logger(), "Simple heading controller terminated");
+    } else if (velocity_control_mode_ == 2) {
+        gik9dof_purepursuit::purePursuitVelocityController_terminate();
+        RCLCPP_INFO(this->get_logger(), "Pure Pursuit controller terminated");
     }
+}
 
-private:
-    void jointStateCallback(const sensor_msgs::msg::JointState::SharedPtr msg)
-    {
+void GIK9DOFSolverNode::jointStateCallback(const sensor_msgs::msg::JointState::SharedPtr msg)
+{
         RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
                             "jointStateCallback FIRED: received %zu joints", msg->position.size());
         // Update arm joint states (6 DOF)
@@ -255,7 +291,7 @@ private:
         }
     }
     
-    void odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg)
+void GIK9DOFSolverNode::odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg)
     {
         RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
                             "odomCallback FIRED: x=%.2f, y=%.2f", 
@@ -277,7 +313,7 @@ private:
         RCLCPP_INFO_ONCE(this->get_logger(), "✅ Base odom received and set!");
     }
     
-    void trajectoryCallback(const gik9dof_msgs::msg::EndEffectorTrajectory::SharedPtr msg)
+void GIK9DOFSolverNode::trajectoryCallback(const gik9dof_msgs::msg::EndEffectorTrajectory::SharedPtr msg)
     {
         std::lock_guard<std::mutex> lock(trajectory_mutex_);
         current_trajectory_ = msg;
@@ -287,7 +323,7 @@ private:
                     msg->waypoints.size(), msg->sequence_id);
     }
     
-    void controlLoop()
+void GIK9DOFSolverNode::controlLoop()
     {
         // Check if we have valid state
         if (!arm_state_received_ || !base_state_received_) {
@@ -304,9 +340,64 @@ private:
         {
             std::lock_guard<std::mutex> lock(trajectory_mutex_);
             if (current_trajectory_ && !current_trajectory_->waypoints.empty()) {
-                // For now, use first waypoint (TODO: interpolate based on time)
-                target_pose = current_trajectory_->waypoints[0].pose;
-                has_target = true;
+                
+                // Check if trajectory completed
+                if (trajectory_complete_) {
+                    // Trajectory is complete - publish zero velocity and hold arm
+                    publishZeroVelocity();
+                    RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 5000,
+                                         "Trajectory complete. Chassis stopped, arm holding position.");
+                    return;
+                }
+                
+                // Reset waypoint index if new trajectory received
+                static uint32_t last_sequence_id = 0;
+                if (trajectory_sequence_ != last_sequence_id) {
+                    current_waypoint_index_ = 0;
+                    trajectory_complete_ = false;
+                    last_sequence_id = trajectory_sequence_;
+                    RCLCPP_INFO(this->get_logger(), "New trajectory seq=%u, reset to waypoint 0", 
+                                trajectory_sequence_);
+                }
+                
+                // Check if we have more waypoints to track
+                if (current_waypoint_index_ < current_trajectory_->waypoints.size()) {
+                    target_pose = current_trajectory_->waypoints[current_waypoint_index_].pose;
+                    has_target = true;
+                    
+                    // Check if close enough to current waypoint to advance
+                    double distance = computeEndEffectorDistance(target_pose);
+                    
+                    if (distance < waypoint_tolerance_) {
+                        RCLCPP_INFO(this->get_logger(), 
+                                    "Waypoint %zu reached (dist=%.3f m). Advancing...", 
+                                    current_waypoint_index_, distance);
+                        current_waypoint_index_++;
+                        
+                        // Check if this was the last waypoint
+                        if (current_waypoint_index_ >= current_trajectory_->waypoints.size()) {
+                            if (current_trajectory_->is_final_segment) {
+                                RCLCPP_INFO(this->get_logger(), 
+                                            "🎯 Final waypoint reached! Trajectory complete. Stopping chassis.");
+                                trajectory_complete_ = true;
+                                publishZeroVelocity();
+                                return;
+                            } else {
+                                // Not final segment - hold at last waypoint
+                                current_waypoint_index_--;
+                                RCLCPP_INFO(this->get_logger(), 
+                                            "Last waypoint reached but not final segment. Holding position.");
+                            }
+                        }
+                    }
+                } else {
+                    // Should not happen, but handle gracefully
+                    RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 5000,
+                                         "Waypoint index out of bounds. Resetting to last waypoint.");
+                    current_waypoint_index_ = current_trajectory_->waypoints.size() - 1;
+                    target_pose = current_trajectory_->waypoints[current_waypoint_index_].pose;
+                    has_target = true;
+                }
             }
         }
         
@@ -316,6 +407,136 @@ private:
             return;
         }
         
+        // ========== STATE MACHINE CONTROL ==========
+        if (control_mode_ == ControlMode::STAGED) {
+            executeStagedControl(target_pose);
+        } else {
+            // Holistic mode: Direct 9-DOF GIK solve
+            executeHolisticControl(target_pose);
+        }
+    }
+    
+void GIK9DOFSolverNode::executeStagedControl(const geometry_msgs::msg::Pose& target_pose)
+    {
+        switch (current_stage_) {
+            case ControlStage::STAGE_A:
+                // Stage A: Ramp arm to home configuration
+                executeStageA(target_pose);
+                break;
+                
+            case ControlStage::STAGE_B:
+                // Stage B: Chassis planning and execution
+                executeStageB(target_pose);
+                break;
+                
+            case ControlStage::STAGE_C:
+                // Stage C: Whole-body tracking
+                executeStageC(target_pose);
+                break;
+        }
+    }
+    
+void GIK9DOFSolverNode::executeStageA(const geometry_msgs::msg::Pose& target_pose)
+    {
+        // Stage A: Ramp arm to home position
+        // TODO: Implement arm ramping logic (smooth trajectory to home config)
+        
+        // For now, check if arm is close to home configuration
+        bool arm_at_home = checkArmAtHome();
+        
+        if (arm_at_home) {
+            // Get current and goal base poses as Eigen::Vector3d (x, y, theta)
+            Eigen::Vector3d current_base_pose;
+            Eigen::Vector3d goal_base_pose;
+            std::vector<double> arm_config(6);
+            
+            {
+                std::lock_guard<std::mutex> lock(state_mutex_);
+                current_base_pose << current_config_[0], current_config_[1], current_config_[2];
+                
+                // Extract arm configuration
+                for (int i = 0; i < 6; i++) {
+                    arm_config[i] = current_config_[3 + i];
+                }
+            }
+            
+            // Convert target_pose to base pose (x, y, theta)
+            goal_base_pose << target_pose.position.x, target_pose.position.y, 0.0;
+            
+            // Extract yaw from quaternion
+            double qw = target_pose.orientation.w;
+            double qx = target_pose.orientation.x;
+            double qy = target_pose.orientation.y;
+            double qz = target_pose.orientation.z;
+            goal_base_pose(2) = std::atan2(2.0 * (qw * qz + qx * qy), 
+                                           1.0 - 2.0 * (qy * qy + qz * qz));
+            
+            // Activate Stage B controller using wrapper function
+            if (stage_b_controller_) {
+                gik9dof::stageBActivate(stage_b_controller_, current_base_pose, 
+                                       goal_base_pose, arm_config);
+            }
+            
+            // Transition to Stage B
+            current_stage_ = ControlStage::STAGE_B;
+            RCLCPP_INFO(this->get_logger(), "Stage A → B: Arm at home, starting chassis planning");
+        } else {
+            // Continue ramping arm
+            RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
+                                 "Stage A: Ramping arm to home configuration...");
+        }
+    }
+    
+void GIK9DOFSolverNode::executeStageB(const geometry_msgs::msg::Pose& target_pose)
+    {
+        // Stage B: Chassis planning and execution
+        if (!stage_b_controller_) {
+            RCLCPP_ERROR(this->get_logger(), "Stage B controller not initialized!");
+            return;
+        }
+        
+        // Get current base pose as Eigen::Vector3d and arm config
+        Eigen::Vector3d current_base_pose;
+        std::vector<double> current_arm_config(6);
+        
+        {
+            std::lock_guard<std::mutex> lock(state_mutex_);
+            current_base_pose << current_config_[0], current_config_[1], current_config_[2];
+            
+            // Extract arm configuration
+            for (int i = 0; i < 6; i++) {
+                current_arm_config[i] = current_config_[3 + i];
+            }
+        }
+        
+        // Execute one step of Stage B controller using wrapper function
+        geometry_msgs::msg::Twist base_cmd;
+        sensor_msgs::msg::JointState arm_cmd;
+        gik9dof::stageBExecuteStep(stage_b_controller_, 
+                                   current_base_pose,
+                                   current_arm_config,
+                                   base_cmd, 
+                                   arm_cmd);
+        
+        // Publish base command
+        base_cmd_pub_->publish(base_cmd);
+        
+        // Check for transition to Stage C using wrapper function
+        if (gik9dof::stageBChassisReachedGoal(stage_b_controller_, current_base_pose)) {
+            gik9dof::stageBDeactivate(stage_b_controller_);
+            current_stage_ = ControlStage::STAGE_C;
+            RCLCPP_INFO(this->get_logger(), "Stage B → C: Chassis at goal, starting whole-body tracking");
+        }
+    }
+    
+void GIK9DOFSolverNode::executeStageC(const geometry_msgs::msg::Pose& target_pose)
+    {
+        // Stage C: Whole-body tracking (same as holistic mode)
+        executeHolisticControl(target_pose);
+    }
+    
+void GIK9DOFSolverNode::executeHolisticControl(const geometry_msgs::msg::Pose& target_pose)
+    {
         // Solve IK
         auto solve_start = this->now();
         bool solve_success = solveIK(target_pose);
@@ -334,7 +555,64 @@ private:
         }
     }
     
-    bool solveIK(const geometry_msgs::msg::Pose& target_pose)
+bool GIK9DOFSolverNode::checkArmAtHome()
+    {
+        // Define home configuration for arm (joints 3-8)
+        // TODO: Load from parameters
+        std::vector<double> home_config = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};  // 6 arm joints
+        
+        double tolerance = 0.1;  // radians
+        
+        std::lock_guard<std::mutex> lock(state_mutex_);
+        for (size_t i = 0; i < 6; i++) {
+            if (std::abs(current_config_[i + 3] - home_config[i]) > tolerance) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
+double GIK9DOFSolverNode::extractYaw(const geometry_msgs::msg::Quaternion& q)
+    {
+        // Extract yaw from quaternion using standard conversion
+        // yaw = atan2(2*(w*z + x*y), 1 - 2*(y^2 + z^2))
+        double siny_cosp = 2.0 * (q.w * q.z + q.x * q.y);
+        double cosy_cosp = 1.0 - 2.0 * (q.y * q.y + q.z * q.z);
+        return std::atan2(siny_cosp, cosy_cosp);
+    }
+
+double GIK9DOFSolverNode::computeEndEffectorDistance(const geometry_msgs::msg::Pose& target_pose)
+    {
+        // Simplified approach: Use the pose violation metric from the last IK solution
+        // The solver already computes position error, which is the distance we need
+        // This avoids needing forward kinematics
+        
+        std::lock_guard<std::mutex> lock(state_mutex_);
+        
+        // Use the position error from the last solver run
+        // This represents how far the achieved EE pose is from the target
+        // If position_error < tolerance, we've reached the waypoint
+        return last_position_error_;
+    }
+
+void GIK9DOFSolverNode::publishZeroVelocity()
+    {
+        // Create and publish zero velocity command to stop the chassis
+        geometry_msgs::msg::Twist zero_cmd;
+        zero_cmd.linear.x = 0.0;
+        zero_cmd.linear.y = 0.0;
+        zero_cmd.linear.z = 0.0;
+        zero_cmd.angular.x = 0.0;
+        zero_cmd.angular.y = 0.0;
+        zero_cmd.angular.z = 0.0;
+        
+        base_cmd_pub_->publish(zero_cmd);
+        
+        RCLCPP_INFO(this->get_logger(), "Published zero velocity - chassis stopped");
+    }
+    
+bool GIK9DOFSolverNode::solveIK(const geometry_msgs::msg::Pose& target_pose)
     {
         // Prepare current configuration (9 DOF)
         // Use previous successful solution as initial guess (warm-start optimization)
@@ -505,7 +783,7 @@ private:
         return (status_str == "success");
     }
     
-    void publishJointCommand()
+void GIK9DOFSolverNode::publishJointCommand()
     {
         auto msg = sensor_msgs::msg::JointState();
         msg.header.stamp = this->now();
@@ -522,7 +800,7 @@ private:
         joint_cmd_pub_->publish(msg);
     }
     
-    void publishBaseCommand()
+void GIK9DOFSolverNode::publishBaseCommand()
     {
         auto msg = geometry_msgs::msg::Twist();
         
@@ -804,7 +1082,7 @@ private:
         }  // End of legacy 5-point differentiation
     }  // End of publishBaseCommand()
     
-    void publishDiagnostics(double solve_time_ms, const geometry_msgs::msg::Pose& target_pose)
+void GIK9DOFSolverNode::publishDiagnostics(double solve_time_ms, const geometry_msgs::msg::Pose& target_pose)
     {
         auto msg = gik9dof_msgs::msg::SolverDiagnostics();
         msg.header.stamp = this->now();
@@ -839,75 +1117,9 @@ private:
         }
         
         diagnostics_pub_->publish(msg);
-    }
-    
-    // ROS2 interfaces
-    rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_state_sub_;
-    rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
-    rclcpp::Subscription<gik9dof_msgs::msg::EndEffectorTrajectory>::SharedPtr trajectory_sub_;
-    rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_cmd_pub_;
-    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr base_cmd_pub_;
-    rclcpp::Publisher<gik9dof_msgs::msg::SolverDiagnostics>::SharedPtr diagnostics_pub_;
-    rclcpp::TimerBase::SharedPtr control_timer_;
-    
-    // State variables
-    std::vector<double> current_config_;  // 9 DOF: [x, y, theta, arm1-6]
-    std::vector<double> target_config_;   // 9 DOF
-    
-    // History buffer for 5-point finite difference velocity estimation
-    static constexpr size_t HISTORY_SIZE = 5;
-    std::deque<std::vector<double>> config_history_;  // Last 5 target configs
-    std::deque<rclcpp::Time> time_history_;           // Last 5 timestamps
-    
-    gik9dof_msgs::msg::EndEffectorTrajectory::SharedPtr current_trajectory_;
-    uint32_t trajectory_sequence_ = 0;
-    
-    // Synchronization
-    std::mutex state_mutex_;
-    std::mutex trajectory_mutex_;
-    
-    // Status flags
-    bool arm_state_received_ = false;
-    bool base_state_received_ = false;
-    
-    // Solver diagnostics
-    int last_solver_iterations_ = 0;
-    int last_exit_flag_ = 0;
-    int last_random_restarts_ = 0;
-    std::string last_solver_status_ = "not_started";
-    double last_pose_violation_ = 0.0;
-    double last_position_error_ = 0.0;
-    double last_orientation_error_ = 0.0;
-    bool last_joint_limit_violation_ = false;
-    bool last_distance_constraint_met_ = true;
-    std::vector<double> last_constraint_violations_;
-    rclcpp::Time last_solve_start_;
-    rclcpp::Time last_solve_end_;
-    
-    // Parameters
-    double control_rate_;
-    double max_solve_time_;
-    int max_solver_iterations_;
-    double distance_lower_;
-    double distance_weight_;
-    bool publish_diagnostics_;
-    bool use_warm_start_;  // Enable warm-start from previous solution
-    int velocity_control_mode_;  // 0=legacy 5-pt diff, 1=heading ctrl, 2=pure pursuit
-    
-    // Simple heading controller state (mode 1)
-    gik9dof_velocity::struct0_T vel_params_;  // Controller parameters
-    gik9dof_velocity::struct1_T vel_state_;   // Controller state
-    bool vel_controller_initialized_;         // Flag to track first call
-    
-    // Pure Pursuit controller state (mode 2)
-    gik9dof_purepursuit::struct0_T pp_params_;  // Pure Pursuit parameters
-    gik9dof_purepursuit::struct1_T pp_state_;   // Pure Pursuit state (path buffer)
-    bool pp_controller_initialized_;            // Flag to track first call
-    
-    // MATLAB solver instance (persistent robot/solver state)
-    std::unique_ptr<gik9dof::GIKSolver> matlab_solver_;
-};
+}
 
+// Main function
 int main(int argc, char** argv)
 {
     rclcpp::init(argc, argv);
