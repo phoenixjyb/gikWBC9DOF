@@ -1,32 +1,37 @@
-# State Machine Integration - Work in Progress
+# State Machine Integration Status
 
-**Date**: 2025-10-07  
-**Status**: 🚧 **IN PROGRESS** - Namespace conflict blocking build
+**Date**: October 8, 2025  
+**Status**: ✅ **ACTIVE** - Stage B Pure Pursuit integration complete, namespace issues resolved
+
+**Latest Update**: Pure Pursuit controller successfully integrated with Hybrid A* in Stage B for smooth path tracking.
 
 ---
 
 ## Summary
 
-Implementing staged control state machine (A → B → C) in `gik9dof_solver_node.cpp` to enable efficient mobile manipulator control with chassis planning separation.
+Implemented staged control state machine (A → B → C) in `gik9dof_solver_node.cpp` with efficient mobile manipulator control and chassis planning separation. **Stage B now features Pure Pursuit controller integration for smooth velocity tracking of Hybrid A* paths.**
 
 ---
 
 ## Completed Work ✅
 
-### 1. **State Machine Framework Added**
+### 1. **State Machine Framework** ✅
 - Added `ControlMode` enum: `HOLISTIC` | `STAGED`
 - Added `ControlStage` enum: `STAGE_A` | `STAGE_B` | `STAGE_C`
-- Added `stage_b_controller_` member (`std::unique_ptr<gik9dof::StageBController>`)
+- Added `stage_b_controller_` member (`StageBController*` via factory pattern)
 - Added `control_mode_` and `current_stage_` state tracking
+- **Status**: Fully implemented
 
-### 2. **Parameter Infrastructure**
+### 2. **Parameter Infrastructure** ✅
 - Declared `control_mode` parameter ("holistic" | "staged")
 - Declared `staged.*` parameters:
   - `staged.stage_b_mode` (1=Pure Hybrid A*, 2=GIK-Assisted)
   - `staged.planner.max_iterations`, `timeout_ms`, tolerances
   - `staged.stage_a_timeout`, `stage_b_timeout`, `stage_c_timeout`
+- Added `velocity_control_mode` parameter (0=legacy, 1=heading, 2=pure pursuit)
+- **Status**: Fully implemented
 
-### 3. **Control Flow Refactoring**
+### 3. **Control Flow Refactoring** ✅
 - Refactored `controlLoop()` to dispatch to `executeStagedControl()` or `executeHolisticControl()`
 - Implemented `executeStagedControl()` with switch on `current_stage_`
 - Created stage execution functions:
@@ -34,8 +39,9 @@ Implementing staged control state machine (A → B → C) in `gik9dof_solver_nod
   - `executeStageB()` - Chassis planning and path following
   - `executeStageC()` - Whole-body tracking (delegates to holistic mode)
   - `executeHolisticControl()` - Original GIK solve logic
+- **Status**: Fully implemented
 
-### 4. **Stage Transitions**
+### 4. **Stage Transitions** ✅
 - **A → B**: When `checkArmAtHome()` returns true
   - Activates Stage B controller with goal pose
   - Logs transition with current/goal poses
@@ -45,159 +51,201 @@ Implementing staged control state machine (A → B → C) in `gik9dof_solver_nod
 - **Helper Functions**:
   - `checkArmAtHome()` - Checks if arm within tolerance of home config
   - `extractYaw()` - Extracts yaw angle from quaternion
+- **Status**: Fully implemented
 
-### 5. **Stage B Controller Integration**
+### 5. **Stage B Controller Integration** ✅
 - Created `StageBParams` struct initialization from ROS2 parameters
 - Set planner parameters (grid resolution, robot radius, timeouts)
 - Set goal tolerances (xy, theta)
 - Pass GIK 3-DOF parameters for Stage B2 mode
-- Pass velocity controller mode selection
+- Pass velocity controller mode selection (0/1/2)
+- **NEW**: Pass Pure Pursuit parameters to Stage B controller
+- **Status**: Fully implemented, builds successfully
+
+### 6. **Pure Pursuit + Hybrid A* Integration** ✅ **NEW - Oct 8, 2025**
+- Integrated Pure Pursuit velocity controller in `executeB1_PureHybridAStar()`
+- Replaced jerky motion primitive velocities with smooth lookahead-based tracking
+- Added velocity control mode switching in Stage B (mode 0/1/2)
+- Resolved namespace conflicts between factory and internal param structures
+- **Benefits**:
+  - ✅ Smooth velocity transitions (no primitive jumps)
+  - ✅ Lookahead-based steering (better accuracy)
+  - ✅ Consistent Pure Pursuit across all modes (Holistic, Stage B, Stage C)
+- **Status**: ✅ **COMPLETE** - Builds successfully, ready for testing
 
 ---
 
-## Current Blocker 🚧
+## Namespace Conflict Resolution ✅
 
-### **Namespace Conflict: `struct0_T` and `struct1_T`**
+### **Solution Implemented: Renamed Internal Structures**
 
-**Problem**: Both MATLAB Coder modules define the same struct names in `gik9dof` namespace:
-- **GIK Solver**: `gik9dof_codegen_realtime_solveGIKStepWrapper_types.h`
-  - `struct0_T` = Solver info (iterations, time, success)
-  - `struct1_T` = Constraint violations (pose, joint limits, distance)
-- **Hybrid A* Planner**: `gik9dof_planHybridAStarCodegen_types.h`
-  - `struct0_T` = Node state (x, y, theta, grid coordinates)
-  - `struct1_T` = Waypoint (x, y, theta)
+**Problem** (RESOLVED): Both MATLAB Coder modules defined the same struct names:
+- GIK Solver: `struct0_T`, `struct1_T`
+- Hybrid A* Planner: `struct0_T`, `struct1_T`
 
-**Error**:
-```
-error: redefinition of 'struct gik9dof::struct0_T'
-error: redefinition of 'struct gik9dof::struct1_T'
-```
+**Solution Applied**:
+1. Created separate param structures:
+   - `StageBParams` (factory interface in `stage_b_factory.hpp`)
+   - `StageBParams_Internal` (detailed internal params in `stage_b_chassis_plan.hpp`)
+2. Added factory function `createStageBController()` to map between structures
+3. Used different enum names:
+   - Factory: `StageBMode` (HybridAStar, GIKAssisted)
+   - Internal: `StageBMode_Internal` (B1_PURE_HYBRID_ASTAR, B2_GIK_ASSISTED)
 
-**Why it happens**:
-- `GIKSolver.h` included early in node (line 27)
-- `stage_b_chassis_plan.hpp` includes `HybridAStarPlanner.h` which includes planner types
-- Both headers pulled into same translation unit → conflict
-
-**Attempted Solutions**:
-1. ❌ **Forward declarations** - Doesn't work for inline constructor logic using types
-2. ❌ **Include after class definition** - Still conflicts when included in same .cpp file
-3. ❌ **Remove GIK from Stage B** - Already done, Stage B is chassis-only (3-DOF)
+**Result**: ✅ **Builds successfully** with no namespace conflicts
 
 ---
 
-## Proposed Solutions
+## Stage B Velocity Controller Architecture
 
-### **Option 1: PIMPL Idiom (Recommended)** ⭐
-Move Stage B controller to pointer-to-implementation:
+### **Three-Mode Flexibility** 🎯
+
+Stage B supports three velocity control modes, selectable via `velocity_control_mode` parameter:
+
+```yaml
+gik9dof_solver_node:
+  ros__parameters:
+    velocity_control_mode: 2  # 0, 1, or 2
+```
+
+#### **Mode 0: Legacy 5-Point Finite Difference**
 ```cpp
-// In class:
-class StageBControllerImpl;  // Forward declaration
-std::unique_ptr<StageBControllerImpl> stage_b_impl_;
-
-// In .cpp (separate file):
-#include "stage_b_chassis_plan.hpp"
-class StageBControllerImpl {
-    std::unique_ptr<gik9dof::StageBController> controller_;
-    // ... wrapper methods ...
-};
+// Stage B Behavior (Mode 0):
+if (params_.velocity_control_mode == 0) {
+    // Fallback: Direct primitive velocities
+    base_cmd.linear.x = state_.path[nearest_idx].Vx;   // Discrete jumps
+    base_cmd.angular.z = state_.path[nearest_idx].Wz;  // From search primitives
+}
 ```
+- **Use Case**: Backward compatibility, debugging
+- **Characteristics**: Jerky motion (0.4→0.6→0.8 m/s step changes)
+- **Source**: Motion primitive velocities from Hybrid A* graph search
 
-**Pros**: Clean separation, no namespace pollution  
-**Cons**: Extra wrapper class, slight performance overhead
+#### **Mode 1: Simple Heading Controller**
+```cpp
+// Stage B Behavior (Mode 1):
+if (params_.velocity_control_mode == 1) {
+    // Fallback: Direct primitive velocities
+    base_cmd.linear.x = state_.path[nearest_idx].Vx;   // Same as mode 0
+    base_cmd.angular.z = state_.path[nearest_idx].Wz;
+}
+```
+- **Use Case**: Lightweight control applications
+- **Note**: In Stage B, behaves same as Mode 0 (uses primitives)
 
-### **Option 2: Rename Planner Namespace**
-Regenerate planner code with different namespace (e.g., `gik9dof_planner`):
+#### **Mode 2: Pure Pursuit** ⭐ **RECOMMENDED**
+```cpp
+// Stage B Behavior (Mode 2) - NEW Oct 8, 2025:
+if (params_.velocity_control_mode == 2) {
+    // ✅ Pure Pursuit: Smooth tracking
+    int lookahead_idx = findNearestWaypoint(current_base_pose);
+    
+    double refX = state_.path[lookahead_idx].x;
+    double refY = state_.path[lookahead_idx].y;
+    double refTheta = state_.path[lookahead_idx].theta;
+    
+    // Call Pure Pursuit controller
+    gik9dof_purepursuit::purePursuitVelocityController(
+        refX, refY, refTheta, refTime,
+        estX, estY, estYaw,
+        &params_.pp_params,
+        &pp_state_,
+        &Vx, &Wz,
+        &newState
+    );
+    
+    base_cmd.linear.x = Vx;   // Smooth velocities
+    base_cmd.angular.z = Wz;  // Lookahead-based steering
+}
+```
+- **Use Case**: Production, best motion quality
+- **Benefits**:
+  - ✅ Smooth velocity transitions (no jumps)
+  - ✅ Lookahead-based steering (better cornering)
+  - ✅ Consistent with Holistic/Stage C modes
+
+### **Why Motion Primitives Need Pure Pursuit**
+
+**Critical Understanding:**
+
+Hybrid A* outputs include `Vx` and `Wz` fields, but these are **NOT** smooth tracking velocities:
+
 ```matlab
-% In MATLAB Coder settings:
-cfg.CustomHeaderCode = 'namespace gik9dof_planner {';
-cfg.CustomSourceCode = '}  // namespace gik9dof_planner';
+% In generateMotionPrimitives.m:
+Vx_forward = [0.4, 0.6, 0.8];     % Fixed forward speeds
+Wz_options = [-2.0, -1.0, 0.0, 1.0, 2.0];  % Fixed yaw rates
+
+% In planHybridAStar.m (search loop):
+next_state.Vx = prim.Vx;  % Stores PRIMITIVE velocity
+next_state.Wz = prim.Wz;  % Used for graph search, not tracking
 ```
 
-**Pros**: Cleanest long-term solution  
-**Cons**: Requires MATLAB regeneration, affects existing code
+**These are SEARCH ACTIONS**, not optimized tracking commands!
 
-### **Option 3: Anonymous Namespace Wrapper**
-Wrap one of the includes in anonymous namespace:
-```cpp
-namespace {
-#include "stage_b_chassis_plan.hpp"
-}  // anonymous
-using ::StageBController;  // Export needed types
-```
+**Direct execution** (Mode 0/1):
+- Robot gets: 0.4 m/s → 0.6 m/s → 0.8 m/s (JERKY!)
+- Yaw rate: -2.0 rad/s → 0.0 rad/s (STEP CHANGE!)
 
-**Pros**: Minimal code changes  
-**Cons**: Hacky, may cause linker issues
-
-### **Option 4: Split Node Into Header + Implementation**
-Create `gik9dof_solver_node.h` with class definition, move constructor/methods to .cpp:
-- `gik9dof_solver_node.h` - Class definition, forward declarations
-- `gik9dof_solver_node.cpp` - Include both headers, implement methods
-
-**Pros**: Standard C++ practice, clean architecture  
-**Cons**: Large refactor, breaks single-file simplicity
-
----
-
-## Recommended Next Steps
-
-### **Immediate: Option 4 (Split Node)**
-1. Create `gik9dof_solver_node.h`:
-   - Move class definition from .cpp to header
-   - Forward-declare `gik9dof::StageBController`
-   - Keep inline methods minimal
-   
-2. Update `gik9dof_solver_node.cpp`:
-   - Include both `GIKSolver.h` AND `stage_b_chassis_plan.hpp`
-   - Move all constructor logic and stage execution methods to .cpp
-   - No conflicts since types are only used in implementation
-
-3. Update `CMakeLists.txt`:
-   - No changes needed (still compiles same .cpp file)
-
-### **Long-Term: Option 2 (Rename Planner Namespace)**
-- Regenerate planner code in MATLAB with unique namespace
-- Update all planner references
-- Prevents future conflicts with other MATLAB Coder modules
+**Pure Pursuit** (Mode 2):
+- Converts geometric waypoints (x, y, θ) → smooth velocities
+- Applies lookahead distance, velocity smoothing
+- Result: Continuous velocity profile ✅
 
 ---
 
 ## Code Changes Summary
 
-### Files Modified
+### Files Modified (Oct 8, 2025)
 | File | Lines Changed | Status |
 |------|---------------|--------|
-| `gik9dof_solver_node.cpp` | ~300 | ✅ Logic done, ❌ Won't compile |
-| `stage_b_chassis_plan.hpp` | 0 | ✅ Already complete |
-| `stage_b_chassis_plan.cpp` | 0 | ✅ Already complete |
+| `gik9dof_solver_node.cpp` | +15 | ✅ Add pp_params passing |
+| `stage_b_factory.hpp` | +2 | ✅ Add pp_params pointer |
+| `stage_b_chassis_plan.hpp` | +25 | ✅ Rename to _Internal, add pp_params |
+| `stage_b_chassis_plan.cpp` | +80 | ✅ Pure Pursuit integration |
+| **Total** | **~122 lines** | ✅ **Builds successfully** |
 
-### Key Additions
-- **State Machine**: 150 lines (enum defs, control flow, transitions)
-- **Stage A Logic**: 40 lines (arm home check, B activation)
-- **Stage B Logic**: 35 lines (execute step, chassis goal check)
-- **Helper Functions**: 25 lines (extractYaw, checkArmAtHome)
-- **Parameters**: 15 lines (control_mode, staged.*)
-
-**Total**: ~265 lines added
+### Key Additions (Pure Pursuit Integration)
+- **Pure Pursuit Call**: 45 lines (executeB1_PureHybridAStar refactor)
+- **Factory Mapping**: 35 lines (createStageBController param conversion)
+- **Param Structures**: 25 lines (pp_params field additions)
+- **Documentation**: 15 lines (comments explaining primitive vs tracking)
 
 ---
 
-## Testing Plan (Once Built)
+## Testing Plan
 
-### **Unit Testing**
+### **Build Verification** ✅ **COMPLETE**
+- ✅ Compiles successfully on x86_64 WSL Ubuntu 22.04
+- ✅ No errors, warnings only (unused parameters in WIP code)
+- ✅ ROS2 Humble package builds with colcon
+
+### **Unit Testing** ⏸️ **TODO**
 1. **Stage A**: Mock arm state, verify A→B transition when at home
-2. **Stage B**: Mock occupancy grid, verify path planning and following
-3. **Stage C**: Verify transition to whole-body tracking
-4. **Holistic Mode**: Verify unchanged behavior when `control_mode: "holistic"`
+2. **Stage B Pure Pursuit**: Mock Hybrid A* path, verify smooth velocity output
+3. **Stage B Primitive Mode**: Compare with Pure Pursuit (expect jerky motion)
+4. **Stage C**: Verify transition to whole-body tracking
+5. **Holistic Mode**: Verify unchanged behavior when `control_mode: "holistic"`
 
-### **Integration Testing**
+### **Integration Testing** ⏸️ **TODO**
 1. **A→B→C Pipeline**: End-to-end staged control with mock trajectory
-2. **Performance**: Verify < 50ms planning, smooth transitions
-3. **Diagnostics**: Check planner diagnostics published correctly
+2. **Velocity Mode Switching**: Test mode 0/1/2 behavior differences
+3. **Performance**: Verify < 50ms planning, smooth transitions
+4. **Diagnostics**: Check planner diagnostics published correctly
 
-### **Hardware Testing (Orin)**
+### **Motion Quality Testing** ⏸️ **TODO - HIGH PRIORITY**
+Compare velocity profiles for same Hybrid A* path:
+
+| Test | Mode | Expected Result |
+|------|------|-----------------|
+| **Primitive Baseline** | 0 or 1 | Jerky step changes (0.4→0.6→0.8 m/s) |
+| **Pure Pursuit** | 2 | Smooth acceleration/deceleration |
+| **Metrics** | All | Measure: max jerk, path error, completion time |
+
+### **Hardware Testing (Orin)** ⏸️ **TODO**
 1. **Real Occupancy Grid**: Test with actual sensor data
 2. **GIK Performance**: Validate 3-5× speedup with iteration limit
 3. **Smooth Execution**: No jerks during stage transitions
+4. **Pure Pursuit Quality**: Measure tracking error in real motion
 
 ---
 
@@ -218,16 +266,67 @@ Create `gik9dof_solver_node.h` with class definition, move constructor/methods t
 - **Stage B**: Chassis efficiency (fast 2D planning without arm)
 - **Stage C**: Whole-body precision (full 9-DOF tracking)
 
+### **Why Pure Pursuit in Stage B?**
+- **Motion Quality**: Converts discrete search primitives → smooth tracking
+- **Consistency**: Same controller across all modes (Holistic/Stage B/Stage C)
+- **Flexibility**: Preserves mode 0/1 for comparison and debugging
+
 ---
 
 ## Next Actions
 
-1. **Resolve Namespace Conflict** (Option 4: Split node into .h/.cpp)
-2. **Build and Test** in WSL
-3. **Deploy to Orin** and validate on ARM64
-4. **Performance Testing** (measure planning time, GIK solve time)
-5. **Integration with Pure Pursuit Bidirectional** (already implemented)
+### **Immediate - Testing Phase** 🎯
+1. ✅ ~~Resolve Namespace Conflict~~ - **COMPLETE**
+2. ✅ ~~Build and Test in WSL~~ - **COMPLETE**
+3. ⏸️ **Motion Quality Tests** - Compare mode 0 vs 2 velocity profiles
+4. ⏸️ **Integration Tests** - Full A→B→C pipeline with mock data
+5. ⏸️ **Deploy to Orin** and validate on ARM64
+
+### **Short-Term - Validation**
+6. ⏸️ **Performance Testing** - Measure planning time, GIK solve time
+7. ⏸️ **Parameter Tuning** - Optimize Pure Pursuit lookahead for Stage B
+8. ⏸️ **Documentation** - Create user guide for velocity mode selection
+
+### **Long-Term - Enhancement**
+9. ⏸️ **Velocity Profiling** - Time-optimal velocity along Hybrid A* path
+10. ⏸️ **Path Smoothing** - Post-process Hybrid A* waypoints (Bézier, B-splines)
+11. ⏸️ **Adaptive Lookahead** - Scale lookahead with velocity and curvature
 
 ---
 
-**Status**: Ready for namespace conflict resolution. All logic implemented, just needs compilation fix.
+## Recent Updates
+
+### **October 8, 2025 - Pure Pursuit Integration** ✅
+- Integrated Pure Pursuit velocity controller in Stage B
+- Replaced jerky primitive velocities with smooth lookahead tracking
+- Resolved namespace conflicts via structure renaming
+- Build verification: ✅ PASS
+- **Commits**: 
+  - `25ff591` - Pure Pursuit integration
+  - `31f037d` - Integration summary documentation
+
+### **October 7, 2025 - Initial State Machine**
+- Implemented A→B→C state machine framework
+- Created Stage B controller integration
+- Encountered namespace conflicts (RESOLVED Oct 8)
+
+---
+
+## References
+
+**Related Documents:**
+- `PUREPURSUIT_HYBRID_ASTAR_INTEGRATION.md` - Integration session summary
+- `docs/technical/CONTROLLER_ARCHITECTURE_STATUS.md` - Full architecture audit
+- `docs/technical/pure-pursuit/PUREPURSUIT_DESIGN.md` - Pure Pursuit details
+- `docs/technical/hybrid-astar/HYBRID_ASTAR_DESIGN.md` - Hybrid A* algorithm
+
+**Code Locations:**
+- State machine: `ros2/gik9dof_solver/src/gik9dof_solver_node.cpp`
+- Stage B controller: `ros2/gik9dof_solver/src/stage_b_chassis_plan.cpp`
+- Factory pattern: `ros2/gik9dof_solver/src/stage_b_factory.hpp`
+- Pure Pursuit: `ros2/gik9dof_solver/include/purepursuit/`
+- Hybrid A*: `ros2/gik9dof_solver/include/planner/`
+
+---
+
+**Status**: ✅ **READY FOR TESTING** - Build complete, awaiting motion quality validation
