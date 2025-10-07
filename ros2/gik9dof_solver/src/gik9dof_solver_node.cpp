@@ -12,6 +12,7 @@
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
+#include <geometry_msgs/msg/twist.hpp>
 #include "gik9dof_msgs/msg/end_effector_trajectory.hpp"
 #include "gik9dof_msgs/msg/solver_diagnostics.hpp"
 
@@ -51,6 +52,8 @@ public:
         // Initialize state
         current_config_.resize(9, 0.0);
         target_config_.resize(9, 0.0);
+        prev_target_config_.resize(9, 0.0);
+        prev_target_time_ = this->now();
         
         // Subscribers
         joint_state_sub_ = this->create_subscription<sensor_msgs::msg::JointState>(
@@ -68,6 +71,9 @@ public:
         // Publishers
         joint_cmd_pub_ = this->create_publisher<sensor_msgs::msg::JointState>(
             "/motion_target/target_joint_state_arm_left", 10);
+        
+        base_cmd_pub_ = this->create_publisher<geometry_msgs::msg::Twist>(
+            "/cmd_vel", 10);
         
         if (publish_diagnostics_) {
             diagnostics_pub_ = this->create_publisher<gik9dof_msgs::msg::SolverDiagnostics>(
@@ -88,6 +94,9 @@ public:
         RCLCPP_INFO(this->get_logger(), "Control rate: %.1f Hz", control_rate_);
         RCLCPP_INFO(this->get_logger(), "Max solve time: %.0f ms", max_solve_time_ * 1000.0);
         RCLCPP_INFO(this->get_logger(), "Warm-start optimization: %s", use_warm_start_ ? "enabled" : "disabled");
+        RCLCPP_INFO(this->get_logger(), "Publishing to:");
+        RCLCPP_INFO(this->get_logger(), "  - /motion_target/target_joint_state_arm_left (6 arm joints)");
+        RCLCPP_INFO(this->get_logger(), "  - /cmd_vel (base velocities: vx, wz)");
     }
 
 private:
@@ -176,6 +185,7 @@ private:
         
         if (solve_success) {
             publishJointCommand();
+            publishBaseCommand();  // NEW: Publish base velocity commands (vx, wz)
             
             if (publish_diagnostics_) {
                 publishDiagnostics(solve_time_ms, target_pose);
@@ -307,6 +317,75 @@ private:
         joint_cmd_pub_->publish(msg);
     }
     
+    void publishBaseCommand()
+    {
+        auto msg = geometry_msgs::msg::Twist();
+        
+        std::lock_guard<std::mutex> lock(state_mutex_);
+        
+        // Compute time difference
+        auto now = this->now();
+        double dt = (now - prev_target_time_).seconds();
+        
+        // Only compute velocities if we have a reasonable time step
+        if (dt > 1e-6 && dt < 1.0) {
+            // Compute world-frame velocities via differentiation
+            double vx_world = (target_config_[0] - prev_target_config_[0]) / dt;
+            double vy_world = (target_config_[1] - prev_target_config_[1]) / dt;
+            double dtheta = target_config_[2] - prev_target_config_[2];
+            
+            // Wrap angle difference to [-pi, pi]
+            while (dtheta > M_PI) dtheta -= 2.0 * M_PI;
+            while (dtheta < -M_PI) dtheta += 2.0 * M_PI;
+            double wz = dtheta / dt;
+            
+            // Transform velocities from world frame to robot frame
+            // Robot's current orientation
+            double theta = current_config_[2];
+            double cos_theta = std::cos(theta);
+            double sin_theta = std::sin(theta);
+            
+            // Rotation matrix: world → robot
+            // [vx_robot]   [ cos(θ)  sin(θ)] [vx_world]
+            // [vy_robot] = [-sin(θ)  cos(θ)] [vy_world]
+            double vx_robot = cos_theta * vx_world + sin_theta * vy_world;
+            double vy_robot = -sin_theta * vx_world + cos_theta * vy_world;
+            
+            // For differential drive: vy should be ~0, use only vx and wz
+            msg.linear.x = vx_robot;
+            msg.linear.y = 0.0;  // Differential drive constraint (no lateral motion)
+            msg.linear.z = 0.0;  // No vertical motion
+            
+            msg.angular.x = 0.0;
+            msg.angular.y = 0.0;
+            msg.angular.z = wz;
+            
+            // Log velocity commands for debugging (throttled)
+            RCLCPP_DEBUG(this->get_logger(), 
+                        "Base cmd: vx=%.3f m/s, wz=%.3f rad/s (dt=%.3f s)", 
+                        vx_robot, wz, dt);
+        } else {
+            // Invalid time step - send zero velocity
+            msg.linear.x = 0.0;
+            msg.linear.y = 0.0;
+            msg.linear.z = 0.0;
+            msg.angular.x = 0.0;
+            msg.angular.y = 0.0;
+            msg.angular.z = 0.0;
+            
+            if (dt >= 1.0) {
+                RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
+                                    "Time step too large (%.2f s), sending zero velocity", dt);
+            }
+        }
+        
+        base_cmd_pub_->publish(msg);
+        
+        // Update history for next iteration
+        prev_target_config_ = target_config_;
+        prev_target_time_ = now;
+    }
+    
     void publishDiagnostics(double solve_time_ms, const geometry_msgs::msg::Pose& target_pose)
     {
         auto msg = gik9dof_msgs::msg::SolverDiagnostics();
@@ -330,12 +409,15 @@ private:
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
     rclcpp::Subscription<gik9dof_msgs::msg::EndEffectorTrajectory>::SharedPtr trajectory_sub_;
     rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_cmd_pub_;
+    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr base_cmd_pub_;
     rclcpp::Publisher<gik9dof_msgs::msg::SolverDiagnostics>::SharedPtr diagnostics_pub_;
     rclcpp::TimerBase::SharedPtr control_timer_;
     
     // State variables
     std::vector<double> current_config_;  // 9 DOF: [x, y, theta, arm1-6]
     std::vector<double> target_config_;   // 9 DOF
+    std::vector<double> prev_target_config_;  // For velocity calculation (differentiation)
+    rclcpp::Time prev_target_time_;           // Timestamp of previous target
     gik9dof_msgs::msg::EndEffectorTrajectory::SharedPtr current_trajectory_;
     uint32_t trajectory_sequence_ = 0;
     
