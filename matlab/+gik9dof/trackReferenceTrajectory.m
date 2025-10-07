@@ -35,7 +35,7 @@ arguments
     options.CommandFcn = []
     options.EnableAiming (1,1) logical = false
     options.DistanceWeight (1,1) double = 0.5
-    options.DistanceMargin (1,1) double = 0.1
+    options.DistanceMargin (1,1) double = 0.3
     options.FloorDiscs (1,:) struct = struct([])
     options.BaseDistanceBody (1,1) string = "abstract_chassis_link"
     options.Mode (1,1) string {mustBeMember(options.Mode, ["holistic","staged"])} = "holistic"
@@ -51,12 +51,16 @@ arguments
     options.StageBLookaheadDistance (1,1) double {mustBePositive} = 0.6
     options.StageBDesiredLinearVelocity (1,1) double = 0.6
     options.StageBMaxAngularVelocity (1,1) double {mustBePositive} = 2.5
+    options.StageBMode (1,1) string {mustBeMember(options.StageBMode, ["gikInLoop","pureHyb"])} = "gikInLoop"
+    options.StageBDockingPositionTolerance (1,1) double {mustBeNonnegative} = 0.02
+    options.StageBDockingYawTolerance (1,1) double {mustBeNonnegative} = 2*pi/180
     options.EnvironmentConfig (1,1) struct = gik9dof.environmentConfig()
+    options.MaxIterations (1,1) double {mustBePositive} = 1500
 end
 
 % Resolve assets and instantiate robot.
 jsonPath = gik9dof.internal.resolvePath(options.JsonPath);
-robot = gik9dof.createRobotModel("Validate", true);
+[robot, footprintInfo] = gik9dof.createRobotModel("Validate", true);
 
 % Build initial configuration with specified base pose.
 configTools = gik9dof.configurationTools(robot);
@@ -67,6 +71,11 @@ if isfield(envConfig, "BaseHome") && numel(envConfig.BaseHome) == 3
     baseHome = envConfig.BaseHome;
 else
     baseHome = options.BaseHome;
+end
+
+usingDefaults = {};
+if isfield(options, 'UsingDefaults')
+    usingDefaults = options.UsingDefaults;
 end
 
 baseMap = struct('joint_x', baseHome(1), ...
@@ -114,19 +123,71 @@ if isfield(envConfig, "DistanceWeight")
     distanceWeight = envConfig.DistanceWeight;
 end
 
+stageBMode = string(options.StageBMode);
+if ismember('StageBMode', usingDefaults) && isfield(envConfig, "StageBMode") && ~isempty(envConfig.StageBMode)
+    try
+        stageBMode = string(validatestring(string(envConfig.StageBMode), {"gikInLoop", "pureHyb"}));
+    catch
+        warning('gik9dof:trackReferenceTrajectory:InvalidStageBMode', ...
+            'Environment config StageBMode "%s" is invalid; using %s.', ...
+            string(envConfig.StageBMode), stageBMode);
+    end
+end
+
+stageBDockPosTol = options.StageBDockingPositionTolerance;
+if ismember('StageBDockingPositionTolerance', usingDefaults) && ...
+        isfield(envConfig, "StageBDockingPositionTolerance") && ...
+        ~isempty(envConfig.StageBDockingPositionTolerance)
+    stageBDockPosTol = max(0, envConfig.StageBDockingPositionTolerance);
+end
+
+stageBDockYawTol = options.StageBDockingYawTolerance;
+if ismember('StageBDockingYawTolerance', usingDefaults) && ...
+        isfield(envConfig, "StageBDockingYawTolerance") && ...
+        ~isempty(envConfig.StageBDockingYawTolerance)
+    stageBDockYawTol = max(0, envConfig.StageBDockingYawTolerance);
+end
+
 floorDiscInfo = struct('Name', {}, 'Radius', {}, 'SafetyMargin', {});
 distanceSpecs = struct([]);
 
 if ~isempty(floorDiscSource)
     floorDiscInfo = gik9dof.addFloorDiscs(robot, floorDiscSource);
     numDiscs = numel(floorDiscInfo);
-    distanceSpecs = repmat(struct('Body', options.BaseDistanceBody, ...
-        'ReferenceBody', "", 'Bounds', [0 0], 'Weight', distanceWeight), numDiscs, 1);
-    for k = 1:numDiscs
-        discName = floorDiscInfo(k).Name;
-        lowerBound = floorDiscInfo(k).Radius + floorDiscInfo(k).SafetyMargin + distanceMargin;
-        distanceSpecs(k).ReferenceBody = discName;
-        distanceSpecs(k).Bounds = [lowerBound, Inf];
+
+    specList = struct('Body', {}, 'ReferenceBody', {}, 'Bounds', {}, 'Weight', {});
+    baseWeight = max(distanceWeight, max(5, distanceWeight));
+
+    if strlength(options.BaseDistanceBody) > 0
+        for k = 1:numDiscs
+            discName = floorDiscInfo(k).Name;
+            lowerBound = floorDiscInfo(k).Radius + floorDiscInfo(k).SafetyMargin + distanceMargin;
+            specList(end+1) = struct( ... %#ok<AGROW>
+                'Body', options.BaseDistanceBody, ...
+                'ReferenceBody', discName, ...
+                'Bounds', [lowerBound, Inf], ...
+                'Weight', baseWeight);
+        end
+    end
+
+    footprintNames = footprintInfo.Names;
+    if ~isempty(footprintNames)
+        fpWeight = max(baseWeight * 2, 20);
+        for fp = 1:numel(footprintNames)
+            for k = 1:numDiscs
+                discName = floorDiscInfo(k).Name;
+                lowerBound = floorDiscInfo(k).Radius + floorDiscInfo(k).SafetyMargin + distanceMargin;
+                specList(end+1) = struct( ... %#ok<AGROW>
+                    'Body', footprintNames(fp), ...
+                    'ReferenceBody', discName, ...
+                    'Bounds', [lowerBound, Inf], ...
+                    'Weight', fpWeight);
+            end
+        end
+    end
+
+    if ~isempty(specList)
+        distanceSpecs = specList;
     end
 end
 
@@ -138,7 +199,8 @@ colTools.apply();
 bundle = gik9dof.createGikSolver(robot, ...
     "EnableAiming", options.EnableAiming, ...
     "DistanceSpecs", distanceSpecs, ...
-    "DistanceWeight", distanceWeight);
+    "DistanceWeight", distanceWeight, ...
+    "MaxIterations", options.MaxIterations);
 
 % Prepare trajectory struct from JSON file.
 trajStruct = loadJsonTrajectory(jsonPath);
@@ -177,13 +239,44 @@ switch options.Mode
             'MaxLinearSpeed', options.RampMaxLinearSpeed, ...
             'MaxYawRate', options.RampMaxYawRate, ...
             'MaxJointSpeed', options.RampMaxJointSpeed);
-        log = gik9dof.runTrajectoryControl(bundle, trajStruct, ...
+        logRef = gik9dof.runTrajectoryControl(bundle, trajStruct, ...
             "InitialConfiguration", q0, ...
             "RateHz", options.RateHz, ...
             "VelocityLimits", velLimits, ...
             "CommandFcn", commandFcn, ...
             "Verbose", options.Verbose);
+
+        baseReferenceTail = logRef.qTraj(baseIdx, 2:end).';
+        baseReference = [q0(baseIdx).'; baseReferenceTail];
+        followerParams = struct('LookaheadBase', 0.8, 'LookaheadVelGain', 0.3, ...
+            'LookaheadTimeGain', 0.1, 'VxNominal', 1.0, 'VxMax', 1.5, ...
+            'VxMin', -1.0, 'WzMax', 2.0, 'TrackWidth', 0.674, 'WheelBase', 0.36, ...
+            'MaxWheelSpeed', 2.0, 'WaypointSpacing', 0.15, 'PathBufferSize', 30.0, ...
+            'GoalTolerance', 0.2, 'InterpSpacing', 0.05, 'ReverseEnabled', true);
+        simRes = gik9dof.control.simulatePurePursuitExecution(baseReference, ...
+            'SampleTime', 1/options.RateHz, 'FollowerOptions', followerParams);
+
+        bundleFinal = gik9dof.createGikSolver(robot, ...
+            "EnableAiming", options.EnableAiming, ...
+            "DistanceSpecs", distanceSpecs, ...
+            "DistanceWeight", distanceWeight, ...
+            "MaxIterations", options.MaxIterations);
+
+        executedBase = simRes.poses(2:end, :);
+        fixedTrajectory = struct('Indices', baseIdx, 'Values', executedBase');
+        log = gik9dof.runTrajectoryControl(bundleFinal, trajStruct, ...
+            "InitialConfiguration", q0, ...
+            "RateHz", options.RateHz, ...
+            "VelocityLimits", velLimits, ...
+            "CommandFcn", commandFcn, ...
+            "Verbose", options.Verbose, ...
+            "FixedJointTrajectory", fixedTrajectory);
         log.mode = "holistic";
+        log.purePursuit.referencePath = baseReference;
+        log.purePursuit.simulation = simRes;
+        log.purePursuit.executedPath = executedBase;
+        log.purePursuit.sampleTime = 1/options.RateHz;
+        log.referenceInitialIk = logRef;
     case "staged"
         pipeline = gik9dof.runStagedTrajectory(robot, trajStruct, ...
             'InitialConfiguration', q0, ...
@@ -205,7 +298,11 @@ switch options.Mode
             'StageBLookaheadDistance', options.StageBLookaheadDistance, ...
             'StageBDesiredLinearVelocity', options.StageBDesiredLinearVelocity, ...
             'StageBMaxAngularVelocity', options.StageBMaxAngularVelocity, ...
-            'EnvironmentConfig', envConfig);
+            'StageBMode', stageBMode, ...
+            'StageBDockingPositionTolerance', stageBDockPosTol, ...
+            'StageBDockingYawTolerance', stageBDockYawTol, ...
+            'EnvironmentConfig', envConfig, ...
+            'MaxIterations', options.MaxIterations);
         log = pipeline;
     otherwise
         error("gik9dof:trackReferenceTrajectory:UnknownMode", options.Mode);
@@ -214,6 +311,7 @@ end
 log.floorDiscs = floorDiscInfo;
 log.distanceSpecs = distanceSpecs;
 log.environment = envConfig;
+log.footprintInfo = footprintInfo;
 if options.Mode == "holistic"
     log.velocityLimits = struct('MaxLinearSpeed', options.RampMaxLinearSpeed, ...
         'MaxYawRate', options.RampMaxYawRate, ...

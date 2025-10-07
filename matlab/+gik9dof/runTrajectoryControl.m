@@ -53,6 +53,7 @@ arguments
     options.StopOnFailure (1,1) logical = true
     options.Verbose (1,1) logical = false
     options.VelocityLimits struct = struct()
+    options.FixedJointTrajectory struct = struct()
 end
 
 poses = trajectory.Poses;
@@ -110,6 +111,31 @@ timestamps = zeros(1, numWaypoints);
 exitFlags = nan(1, numWaypoints);
 iterations = nan(1, numWaypoints);
 constraintViolationMax = nan(1, numWaypoints);
+solveTime = nan(1, numWaypoints);
+solverStatus = strings(1, numWaypoints);
+
+baseIdx = [];
+baseVelocityEstimator = [];
+baseVelocityWorld = [];
+baseVelocityWorldRaw = [];
+baseVelocityRobot = [];
+baseVelocityOmega = [];
+baseVelocityTime = [];
+baseVelocityMethod = strings(1, numWaypoints);
+
+if isfield(options.VelocityLimits, 'BaseIndices') && ...
+        numel(options.VelocityLimits.BaseIndices) >= 3
+    baseIdx = double(options.VelocityLimits.BaseIndices(:));
+    baseIdx = baseIdx(1:3);
+    baseVelocityEstimator = gik9dof.internal.VelocityEstimator();
+    baseVelocityWorld = nan(2, numWaypoints);
+    baseVelocityWorldRaw = nan(2, numWaypoints);
+    baseVelocityRobot = nan(2, numWaypoints);
+    baseVelocityOmega = nan(1, numWaypoints);
+    baseVelocityTime = nan(1, numWaypoints);
+    initialState = q(baseIdx).';
+    baseVelocityEstimator.update(initialState, 0);
+end
 
 targetPositions = reshape(poses(1:3,4,:), 3, numWaypoints);
 targetOrientations = nan(4, numWaypoints);
@@ -120,12 +146,53 @@ orientationErrorQuat = nan(4, numWaypoints);
 orientationErrorAngle = nan(1, numWaypoints);
 eeName = char(bundle.constraints.pose.EndEffector);
 
+fixedTrajectory = options.FixedJointTrajectory;
+useFixedTrajectory = isstruct(fixedTrajectory) && ~isempty(fieldnames(fixedTrajectory));
+if useFixedTrajectory
+    if ~isfield(fixedTrajectory, 'Indices') || ~isfield(fixedTrajectory, 'Values')
+        error('gik9dof:runTrajectoryControl:FixedTrajectoryFormat', ...
+            'FixedJointTrajectory must contain fields ''Indices'' and ''Values''.');
+    end
+    fixedIndices = double(fixedTrajectory.Indices(:)');
+    fixedValues = double(fixedTrajectory.Values);
+    if size(fixedValues,1) ~= numel(fixedIndices)
+        error('gik9dof:runTrajectoryControl:FixedTrajectorySize', ...
+            'FixedJointTrajectory.Values must have one row per index.');
+    end
+    if size(fixedValues,2) ~= numWaypoints
+        error('gik9dof:runTrajectoryControl:FixedTrajectoryColumns', ...
+            'FixedJointTrajectory.Values must have one column per waypoint.');
+    end
+    if any(fixedIndices < 1) || any(fixedIndices > nJoints)
+        error('gik9dof:runTrajectoryControl:FixedTrajectoryIndex', ...
+            'Fixed joint indices out of range.');
+    end
+    if ~isa(bundle.constraints.joint, 'constraintJointBounds')
+        error('gik9dof:runTrajectoryControl:NoJointConstraint', ...
+            'Bundle must include a constraintJointBounds to lock joints.');
+    end
+    originalJointBounds = bundle.constraints.joint.Bounds;
+else
+    fixedIndices = [];
+    fixedValues = [];
+    originalJointBounds = [];
+end
+
 loopClock = rateControl(options.RateHz);
 startTime = tic;
+sampleTime = 1 / options.RateHz;
 
 for k = 1:numWaypoints
     currentPose = poses(:,:,k);
     solveArgs = {"TargetPose", currentPose};
+
+    if useFixedTrajectory
+        valuesStep = fixedValues(:,k);
+        for m = 1:numel(fixedIndices)
+            idx = fixedIndices(m);
+            bundle.constraints.joint.Bounds(idx,:) = [valuesStep(m), valuesStep(m)];
+        end
+    end
 
     if ~isempty(aimTargets)
         solveArgs(end+1:end+2) = {"AimTarget", aimTargets(:,k).' }; %#ok<AGROW>
@@ -139,9 +206,12 @@ for k = 1:numWaypoints
         solveArgs(end+1:end+2) = {"DistanceReference", distRefSeq(k)}; %#ok<AGROW>
     end
 
+    solveTimer = tic;
     try
         [qCandidate, stepInfo] = bundle.solve(q, solveArgs{:});
+        solveTime(k) = toc(solveTimer);
     catch solverErr
+        solveTime(k) = toc(solveTimer);
         if options.StopOnFailure
             rethrow(solverErr);
         else
@@ -159,6 +229,7 @@ for k = 1:numWaypoints
     success = isSuccess(stepInfo);
     exitFlag = fetchExitFlag(stepInfo);
     exitFlags(k) = exitFlag;
+    solverStatus(k) = fetchStatus(stepInfo);
     if isfield(stepInfo, 'Iterations') && ~isempty(stepInfo.Iterations)
         iterations(k) = double(stepInfo.Iterations);
     end
@@ -195,6 +266,18 @@ for k = 1:numWaypoints
     [targetOrientations(:,k), eeOrientations(:,k), orientationErrorQuat(:,k), orientationErrorAngle(k)] = ...
         computeOrientationError(currentPose, eePoses(:,:,k));
 
+    if ~isempty(baseVelocityEstimator)
+        state = q(baseIdx).';
+        currentTime = k * sampleTime;
+        baseVelocityTime(k) = currentTime;
+        velEstimate = baseVelocityEstimator.update(state, currentTime);
+        baseVelocityWorld(:,k) = velEstimate.vWorld(:);
+        baseVelocityWorldRaw(:,k) = velEstimate.vWorldRaw(:);
+        baseVelocityRobot(:,k) = velEstimate.vRobot(:);
+        baseVelocityOmega(k) = velEstimate.omega;
+        baseVelocityMethod(k) = velEstimate.method;
+    end
+
     if ~isempty(commandFcn)
         commandFcn(q, stepInfo, k);
     end
@@ -218,6 +301,24 @@ end
 log.exitFlags = exitFlags;
 log.iterations = iterations;
 log.constraintViolationMax = constraintViolationMax;
+log.solveTime = solveTime;
+log.solverStatus = solverStatus;
+log.solveTimeStats = statsSummary(solveTime);
+log.iterationStats = statsSummary(iterations);
+log.constraintViolationStats = statsSummary(constraintViolationMax);
+log.solverSummary = buildSolverSummary(successMask, exitFlags, solverStatus);
+if ~isempty(baseVelocityEstimator)
+    log.baseVelocityEstimate = struct( ...
+        'time', baseVelocityTime, ...
+        'vxWorld', baseVelocityWorld(1,:), ...
+        'vyWorld', baseVelocityWorld(2,:), ...
+        'vxWorldRaw', baseVelocityWorldRaw(1,:), ...
+        'vyWorldRaw', baseVelocityWorldRaw(2,:), ...
+        'vxRobot', baseVelocityRobot(1,:), ...
+        'vyRobot', baseVelocityRobot(2,:), ...
+        'omega', baseVelocityOmega, ...
+        'method', baseVelocityMethod);
+end
 log.targetPoses = poses;
 log.targetPositions = targetPositions;
 log.targetOrientations = targetOrientations;
@@ -229,6 +330,10 @@ log.positionErrorNorm = vecnorm(log.positionError, 2, 1);
 log.time = [0, timestamps];
 log.orientationErrorQuat = orientationErrorQuat;
 log.orientationErrorAngle = orientationErrorAngle;
+if useFixedTrajectory
+    bundle.constraints.joint.Bounds = originalJointBounds;
+    log.fixedJointTrajectory = struct('Indices', fixedIndices, 'Values', fixedValues);
+end
 end
 
 function qNext = applyVelocityLimits(qCurrent, qCandidate, limits, sampleTime)
@@ -318,4 +423,95 @@ if isfield(info, "ExitFlag")
 else
     flag = NaN;
 end
+end
+
+function status = fetchStatus(info)
+if isfield(info, "Status") && ~isempty(info.Status)
+    status = string(info.Status);
+elseif isfield(info, "ExitFlag")
+    flag = info.ExitFlag;
+    if flag > 0
+        status = "success";
+    elseif flag < 0
+        status = "failure";
+    else
+        status = "unknown";
+    end
+else
+    status = "";
+end
+end
+
+function stats = statsSummary(values)
+stats = defaultStats();
+if isempty(values)
+    return
+end
+
+finiteVals = values(isfinite(values));
+stats.Count = numel(finiteVals);
+
+if stats.Count == 0
+    return
+end
+
+stats.Mean = mean(finiteVals);
+if stats.Count > 1
+    stats.Std = std(finiteVals);
+else
+    stats.Std = NaN;
+end
+stats.Min = min(finiteVals);
+stats.Max = max(finiteVals);
+stats.Total = sum(finiteVals);
+end
+
+function stats = defaultStats()
+stats = struct('Count', 0, 'Mean', NaN, 'Std', NaN, 'Min', NaN, 'Max', NaN, 'Total', NaN);
+end
+
+function summary = buildSolverSummary(successMask, exitFlags, solverStatus)
+summary = struct();
+summary.TotalSteps = numel(successMask);
+summary.Successes = sum(successMask);
+summary.Failures = sum(~successMask & ~isnan(exitFlags));
+summary.Unknown = summary.TotalSteps - summary.Successes - summary.Failures;
+summary.StatusCounts = tallyStrings(solverStatus);
+summary.ExitFlagCounts = tallyNumeric(exitFlags);
+end
+
+function counts = tallyStrings(values)
+counts = table('Size', [0 2], 'VariableTypes', {'string','double'}, ...
+    'VariableNames', {'Value','Count'});
+if isempty(values)
+    return
+end
+
+vals = string(values(:));
+vals(vals == "") = [];
+if isempty(vals)
+    return
+end
+
+[uniqueVals, ~, idx] = unique(vals);
+countVec = accumarray(idx, 1);
+counts = table(uniqueVals(:), countVec(:), 'VariableNames', {'Value','Count'});
+end
+
+function counts = tallyNumeric(values)
+counts = table('Size', [0 2], 'VariableTypes', {'double','double'}, ...
+    'VariableNames', {'Value','Count'});
+if isempty(values)
+    return
+end
+
+vals = double(values(:));
+vals = vals(isfinite(vals));
+if isempty(vals)
+    return
+end
+
+[uniqueVals, ~, idx] = unique(vals);
+countVec = accumarray(idx, 1);
+counts = table(uniqueVals(:), countVec(:), 'VariableNames', {'Value','Count'});
 end

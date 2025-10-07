@@ -1,4 +1,4 @@
-function robot = createRobotModel(options)
+function [robot, footprint] = createRobotModel(options)
 %CREATEROBOTMODEL Assemble the 9-DOF mobile manipulator as a rigidBodyTree.
 %   robot = GIK9DOF.CREATEROBOTMODEL() loads the robot definition from the
 %   project URDF, normalises the planar base joint axes, and prepares the
@@ -43,6 +43,18 @@ arguments
     options.Gravity (1,3) double = [0 0 -9.81]
     options.AdjustPlanarBase (1,1) logical = true
     options.Validate (1,1) logical = false
+    options.AttachFootprint (1,1) logical = true
+    options.FootprintOffsets (:,2) double = [ ...
+        0.55  0.35;
+        0.55 -0.35;
+       -0.55  0.35;
+       -0.55 -0.35]
+    options.FootprintEdgeOffsets (:,2) double = [ ...
+        0.55  0.00;
+       -0.55  0.00;
+        0.00  0.35;
+        0.00 -0.35]
+    options.FootprintPrefix (1,1) string = "footprint"
 end
 
 % Resolve URDF and mesh paths relative to the repository when necessary.
@@ -74,6 +86,22 @@ if options.AdjustPlanarBase
     setJointAxisIfPresent(robot, "base_link_x", [1 0 0]);
     setJointAxisIfPresent(robot, "base_link_y", [0 1 0]);
     setJointAxisIfPresent(robot, "abstract_chassis_link", [0 0 1]);
+end
+
+footprint = struct('Names', strings(0,1), 'Offsets', zeros(0,2));
+
+if options.AttachFootprint
+    try
+        info = gik9dof.internal.addChassisFootprint(robot, ...
+            "CornerOffsets", options.FootprintOffsets, ...
+            "EdgeOffsets", options.FootprintEdgeOffsets, ...
+            "Prefix", options.FootprintPrefix);
+        footprint = info;
+    catch footprintErr
+        warning("gik9dof:createRobotModel:FootprintFailed", ...
+            "Failed to attach chassis footprint bodies: %s", footprintErr.message);
+        footprint = struct('Names', strings(0,1), 'Offsets', zeros(0,2));
+    end
 end
 
 if options.Validate

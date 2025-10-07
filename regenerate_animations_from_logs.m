@@ -3,7 +3,9 @@
 %   results/. The script regenerates holistic and staged animations using the
 %   staged-style visualization, and reproduces the arm/chassis plots.
 
-runFolder = fullfile('results', '20251005_195649_compare_fixed');
+if ~exist('runFolder', 'var') || isempty(runFolder)
+    runFolder = fullfile('results', '20251005_195649_compare_fixed');
+end
 
 projRoot = fileparts(mfilename('fullpath'));
 addpath(genpath(fullfile(projRoot, 'matlab')));

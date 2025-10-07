@@ -22,7 +22,7 @@ env.BaseHome = [-2, -2, 0];
 radius = 0.10;
 height = 0.15;
 safetyMargin = 0.05;
-distanceMargin = 0.15;
+distanceMargin = 0.30;
 distanceWeight = 5.0;
 
 center1 = [-1, -1];
@@ -44,6 +44,10 @@ env.FloorDiscs = [discTemplate(center1, 'floor_disc_1'), discTemplate(center2, '
 
 env.DistanceMargin = distanceMargin;
 env.DistanceWeight = distanceWeight;
+
+env.StageBMode = "gikInLoop";
+env.StageBDockingPositionTolerance = 0.02;
+env.StageBDockingYawTolerance = 2*pi/180;
 
 cachedEnv = env;
 end
