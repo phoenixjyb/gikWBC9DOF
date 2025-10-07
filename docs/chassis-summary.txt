@@ -1,0 +1,71 @@
+Overview
+--------
+- Firmware targets an STM32F4 running FreeRTOS; main boots hardware, selects the vehicle preset, and starts tasks for motion control, display, LEDs, comms, and sensors (USER/main.c:20, USER/system.c:167, BALANCE/balance_task.c:19).
+- Code is organised into hardware drivers (HARDWARE/*), middleware (FreeRTOS, USB), high-level motion control in BALANCE/, and vehicle geometry selectors in CarType/ (for example CarType/diff_robot_init.c:29).
+
+WHEELTEC Platform Summary
+=========================
+
+
+Differential (DIFF_CAR)
+-----------------------
+- Six presets (Type 0-5) selected via ADC dial (Robot_Select in CarType/diff_robot_init.c). Track widths: 0.329 m (top diff) or 0.573 m (four-wheel diff variants). Wheel diameters: 0.125 m or 0.215 m. Gear ratios: 27:1, 51:1, 18:1, 47:1 (CarType/Inc/robot_init.h:126-134, CarType/diff_robot_init.c:29-38).
+- Four-wheel variants (Types 2-5) share a 0.573 m track with 0.215 m drive wheels; pendulum-suspension (BS) rigs pair MD60N 18:1 and 47:1 gearboxes for standard vs heavy duty, while the independent-suspension (DL) rigs reuse the same ratios (CarType/diff_robot_init.c:33-38; BALANCE/robot_select_init.c.orig:45-49).
+- Encoder precision is 4 * 500 * gear_ratio, yielding 54k-102k counts per wheel revolution (CarType/diff_robot_init.c:68).
+- InverseKinematics_diff implements standard two-wheel kinematics: omega_L = Vx - Vz * track / 2, omega_R = Vx + Vz * track / 2 (BALANCE/balance_task.c:765-768).
+- Odometry uses Kinematics_akm_diff, returning (Vx, 0, (omega_R - omega_L) / track) (BALANCE/data_task.c:270-278).
+- Command limits and smoothing hold translational speed to 3.5 m/s and yaw to roughly 3.5 rad/s (BALANCE/balance_task.c:860-907).
+- Left/right wheel scaling via LineDiffParam (0-100 gives up to +/-20 percent adjustment) compensates traction differences (BALANCE/balance_task.c:832-845).
+- Control loop: incremental PI on each driven wheel with sign-dependent PWM polarity (ResponseControl, Set_Pwm in BALANCE/balance_task.c:960-1090).
+
+Common Infrastructure
+---------------------
+- Drive_Motor applies smoothing, performs kinematics, clamps wheel targets, and scales by LineDiffParam (BALANCE/balance_task.c:856-914).
+- Speed interfaces call Drive_Motor(Vx, Vy, Vz); differential builds pass Vy = 0 so the kinematics use only translational speed and yaw rate before the left/right PI loops act on each side (BALANCE/balance_task.c:856-894).
+- Get_Robot_FeedBack converts encoder counts to wheel speeds using stored circumference and precision, applying the same left/right scaling (BALANCE/balance_task.c:1718-1752).
+- data_task packages odometry, IMU, and voltage telemetry; wheel velocities reported in mm/s (BALANCE/data_task.c:70-118).
+- User control interfaces (app, RC, PS2) adjust rc_speed (default 500 mm/s) and yaw scaling (BALANCE/balance_task.c:1180-1483, BALANCE/uartx_callback.c:215-323).
+
+
+
+Kinematics & Control
+--------------------
+- Holonomic inverse kinematics maps chassis velocity commands to wheel speeds; Vx and Vy are combined symmetrically while yaw uses (AxleSpacing + WheelSpacing) so the robot rotates about its geometric centre (BALANCE/balance_task.c:782-787).
+- Forward kinematics/odometry reconstruct chassis velocity from measured wheel speeds using the same geometry assumptions (BALANCE/data_task.c:292-300).
+- Drive_Motor applies smoothing, clamps the magnitude to +/-3.5 m/s, and scales the left/right wheels with LineDiffParam before the PI loops saturate at +/-16800 PWM counts (BALANCE/balance_task.c:832-914, 227-243).
+
+
+- Targets are ramped every 10 ms by `Vel_SmoothControl`; default step 0.02 m/s limits acceleration to roughly 2 m/s^2 but can be tuned from the app (BALANCE/balance_task.c:2066, 2219-2221; BALANCE/uartx_callback.c:247, 323).
+- Left/right wheel gains are trimmed in software with `LineDiffParam` (0-100) giving up to +/-20% scaling on one side to compensate asymmetry (BALANCE/balance_task.c:832-845; BALANCE/uartx_callback.c:323).
+
+Dynamics & Limits
+-----------------
+- Axis commands clamp to +/- `limt_max_speed`; Differential presets default to 3.5 m/s while a special Ackermann type reaches 6 m/s (BALANCE/balance_task.c:860-914, 2218-2226).
+- Yaw shares the same limiter, yielding up to roughly 3.5 rad/s; teleop sources start from a pi/4 rad/s base and scale with `rc_speed` (BALANCE/balance_task.c:1174, 1219, 860).
+- Incremental PI loops use preset KP/KI (default 300) and saturate at +/-16800 PWM counts; at 3.5 m/s a 0.152 m wheel spins about 7.3 rev/s (BALANCE/balance_task.c:191-243; HARDWARE/Inc/motor.h:10).
+- `rc_speed` (default 500 mm/s) scales user input, adjustable in +/-50/100 mm/s steps via gamepad/UART and clamped to [0, limt_max_speed * 1000] (BALANCE/balance_task.c:2219; BALANCE/uartx_callback.c:215-323).
+
+Feedback & Odometry
+-------------------
+- `Get_Robot_FeedBack` converts encoder ticks to wheel linear speeds in m/s with sign handling per wheel before feeding odometry (BALANCE/balance_task.c:1718-1757).
+
+Next Steps
+----------
+1. Gather mechanical mass/COG/inertia experimentally and document if higher fidelity is needed.
+2. Validate the 3.5 m/s clamp against motor capability; tune `limt_max_speed` and PI gains carefully (BALANCE/balance_task.c:2218; BALANCE/balance_task.c:191-196).
+3. Confirm wheel radius and encoder counts in the field, then refine `LineDiffParam` for accurate odometry (BALANCE/uartx_callback.c:323).
+
+
+
+
+
+
+
+Yaw Rate Estimation
+-------------------
+- Diff-car kinematics enforce |Vx +/- (track/2) * Vz| <= Vwheel_max. Rearranging gives |Vz| <= 2 * (Vwheel_max - |Vx|) / track (clamped to zero if |Vx| >= Vwheel_max).
+- Pure spin examples for a 1.5 m/s wheel limit:
+  * Top diff chassis (track 0.329 m): Vz_max ~ 2 * 1.5 / 0.329 ~ 9.1 rad/s (~520 deg/s).
+  * Four-wheel diff chassis (track 0.573 m): Vz_max ~ 5.2 rad/s (~300 deg/s).
+- Mixed translation/spin example (top diff, Vx = 1.0 m/s): Vz_max ~ 2 * (1.5 - 1.0) / 0.329 ~ 3.0 rad/s.
+- Firmware still clamps Vx and Vz to +/-limt_max_speed (default 3.5 m/s); raise the ceiling only after verifying motor and encoder capability.

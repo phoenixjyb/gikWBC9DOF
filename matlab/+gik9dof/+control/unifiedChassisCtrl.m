@@ -1,6 +1,6 @@
-function [cmd, state] = unifiedChassisCtrl(mode, ref, estPose, state, params)
+function [cmd, state] = unifiedChassisCtrl(mode, ref, estPose, params, state)
 %UNIFIEDCHASSISCTRL Convert heterogeneous references into unified base commands.
-%   [cmd, state] = gik9dof.control.unifiedChassisCtrl(mode, ref, estPose, state, params)
+%   [cmd, state] = gik9dof.control.unifiedChassisCtrl(mode, ref, estPose, params, state)
 %   accepts references from either the holistic GIK pipeline ("holistic" or
 %   "staged-C") or a staged base follower ("staged-B") and produces a
 %   UnifiedCmd struct with fields:
@@ -18,7 +18,6 @@ function [cmd, state] = unifiedChassisCtrl(mode, ref, estPose, state, params)
 %             struct must include fields x,y,theta,t and optionally arm_qdot.
 %             For staged-B it must include v,w,t.
 %   estPose : 1x3 [x y theta] estimated robot pose in world.
-%   state   : struct carrying persistent fields used by the controller.
 %   params  : struct with fields:
 %                track        - wheel track (m)
 %                Vwheel_max   - per-wheel speed limit (m/s)
@@ -26,6 +25,7 @@ function [cmd, state] = unifiedChassisCtrl(mode, ref, estPose, state, params)
 %                W_max        - yaw rate clamp (rad/s)
 %                yawKp        - heading proportional gain
 %                yawKff       - yaw feed-forward gain
+%   state   : struct carrying persistent fields used by the controller.
 %
 %   Outputs
 %   -------
@@ -42,15 +42,15 @@ function [cmd, state] = unifiedChassisCtrl(mode, ref, estPose, state, params)
 %   See also gik9dof.control.defaultUnifiedParams.
 
 arguments
-    mode (1,1) string {mustBeMember(mode, ["holistic","staged-C","staged-B"])}
+    mode {mustBeMember(mode, {'holistic','staged-C','staged-B'})}  % Cell array of char arrays for codegen
     ref (1,1) struct
     estPose (1,3) double
-    state struct = struct()
     params struct
+    state struct = struct()
 end
 
 % Ensure required parameter fields exist
-requiredParamFields = {"track","Vwheel_max","Vx_max","W_max","yawKp","yawKff"};
+requiredParamFields = {'track','Vwheel_max','Vx_max','W_max','yawKp','yawKff'};  % Cell array for codegen
 for k = 1:numel(requiredParamFields)
     name = requiredParamFields{k};
     if ~isfield(params, name)
@@ -60,17 +60,17 @@ for k = 1:numel(requiredParamFields)
 end
 
 switch mode
-    case {"holistic","staged-C"}
+    case {'holistic','staged-C'}  % Use char arrays for codegen compatibility
         % Guard: ensure reference carries pose + timestamp
-        needed = ["x","y","theta","t"];
+        needed = {'x','y','theta','t'};  % Cell array of char arrays
         for k = 1:numel(needed)
-            if ~isfield(ref, needed(k))
+            if ~isfield(ref, needed{k})
                 error("gik9dof:unifiedChassisCtrl:MissingField", ...
-                    "Holistic/Stage-C reference missing field '%s'.", needed(k));
+                    "Holistic/Stage-C reference missing field '%s'.", needed{k});
             end
         end
 
-        if ~isfield(state, "prev") || isempty(state.prev)
+        if ~isfield(state, 'prev') || isempty(state.prev)
             state.prev = ref;
             % Initialise to zero command on first call.
             dt = 1e-3;
@@ -97,12 +97,12 @@ switch mode
         Vx = sign(vBody(1)) * min(abs(vBody(1)), params.Vx_max) * cos(headingError);
         Wz = params.yawKp * headingError + params.yawKff * wRef;
 
-    case "staged-B"
-        needed = ["v","w","t"];
+    case 'staged-B'  % Use char array for codegen compatibility
+        needed = {'v','w','t'};  % Cell array of char arrays
         for k = 1:numel(needed)
-            if ~isfield(ref, needed(k))
+            if ~isfield(ref, needed{k})
                 error("gik9dof:unifiedChassisCtrl:MissingField", ...
-                    "Stage-B reference missing field '%s'.", needed(k));
+                    "Stage-B reference missing field '%s'.", needed{k});
             end
         end
         Vx = ref.v;
@@ -121,7 +121,7 @@ cmd.time = ref.t;
 cmd.base = struct('Vx', Vx, 'Vy', 0, 'Wz', Wz, ...
     'YawLimitWheel', yawCaps.wheel, 'YawLimitCmd', yawCaps.applied);
 cmd.arm = struct('qdot', []);
-if mode ~= "staged-B" && isfield(ref, 'arm_qdot') && ~isempty(ref.arm_qdot)
+if ~strcmp(mode, 'staged-B') && isfield(ref, 'arm_qdot') && ~isempty(ref.arm_qdot)  % Use strcmp for char array comparison
     cmd.arm.qdot = ref.arm_qdot;
 end
 cmd.flags = struct();

@@ -27,6 +27,19 @@
 #include "GIKSolver.h"
 #include "gik9dof_codegen_realtime_solveGIKStepWrapper_types.h"
 
+// MATLAB Coder generated velocity controllers
+// Mode 1: Simple heading controller
+#include "velocity_controller/holisticVelocityController.h"
+#include "velocity_controller/holisticVelocityController_types.h"
+#include "velocity_controller/holisticVelocityController_initialize.h"
+#include "velocity_controller/holisticVelocityController_terminate.h"
+
+// Mode 2: Pure Pursuit path following controller
+#include "purepursuit/purePursuitVelocityController.h"
+#include "purepursuit/purePursuitVelocityController_types.h"
+#include "purepursuit/purePursuitVelocityController_initialize.h"
+#include "purepursuit/purePursuitVelocityController_terminate.h"
+
 using namespace std::chrono_literals;
 
 class GIK9DOFSolverNode : public rclcpp::Node
@@ -42,6 +55,34 @@ public:
         this->declare_parameter("publish_diagnostics", true);
         this->declare_parameter("use_warm_start", true);  // Use previous solution as initial guess
         
+        // Velocity controller mode selection
+        // 0 = Legacy 5-point differentiation (baseline)
+        // 1 = Simple heading controller (P + feedforward)
+        // 2 = Pure Pursuit path following (lookahead-based)
+        this->declare_parameter("velocity_control_mode", 2);
+        
+        // Simple heading controller parameters (mode 1)
+        this->declare_parameter("vel_ctrl.track", 0.674);         // Wheel track width (m)
+        this->declare_parameter("vel_ctrl.vwheel_max", 2.0);      // Max wheel speed (m/s)
+        this->declare_parameter("vel_ctrl.vx_max", 1.0);          // Max forward velocity (m/s)
+        this->declare_parameter("vel_ctrl.w_max", 2.0);           // Max yaw rate (rad/s)
+        this->declare_parameter("vel_ctrl.yaw_kp", 2.0);          // Heading error P gain
+        this->declare_parameter("vel_ctrl.yaw_kff", 0.9);         // Yaw rate feedforward gain
+        
+        // Pure Pursuit controller parameters (mode 2)
+        this->declare_parameter("purepursuit.lookahead_base", 0.8);
+        this->declare_parameter("purepursuit.lookahead_vel_gain", 0.3);
+        this->declare_parameter("purepursuit.lookahead_time_gain", 0.1);
+        this->declare_parameter("purepursuit.vx_nominal", 1.0);
+        this->declare_parameter("purepursuit.vx_max", 1.5);
+        this->declare_parameter("purepursuit.wz_max", 2.0);
+        this->declare_parameter("purepursuit.track", 0.674);
+        this->declare_parameter("purepursuit.vwheel_max", 2.0);
+        this->declare_parameter("purepursuit.waypoint_spacing", 0.15);
+        this->declare_parameter("purepursuit.path_buffer_size", 30.0);
+        this->declare_parameter("purepursuit.goal_tolerance", 0.2);
+        this->declare_parameter("purepursuit.interp_spacing", 0.05);
+        
         // Get parameters
         control_rate_ = this->get_parameter("control_rate").as_double();
         max_solve_time_ = this->get_parameter("max_solve_time").as_double();
@@ -50,9 +91,67 @@ public:
         publish_diagnostics_ = this->get_parameter("publish_diagnostics").as_bool();
         use_warm_start_ = this->get_parameter("use_warm_start").as_bool();
         
+        // Get velocity controller mode
+        velocity_control_mode_ = this->get_parameter("velocity_control_mode").as_int();
+        
         // Initialize state
         current_config_.resize(9, 0.0);
         target_config_.resize(9, 0.0);
+        
+        // Initialize velocity controllers based on mode
+        if (velocity_control_mode_ == 1) {
+            // Simple heading controller
+            gik9dof_velocity::holisticVelocityController_initialize();
+            
+            // Get controller parameters
+            vel_params_.track = this->get_parameter("vel_ctrl.track").as_double();
+            vel_params_.Vwheel_max = this->get_parameter("vel_ctrl.vwheel_max").as_double();
+            vel_params_.Vx_max = this->get_parameter("vel_ctrl.vx_max").as_double();
+            vel_params_.W_max = this->get_parameter("vel_ctrl.w_max").as_double();
+            vel_params_.yawKp = this->get_parameter("vel_ctrl.yaw_kp").as_double();
+            vel_params_.yawKff = this->get_parameter("vel_ctrl.yaw_kff").as_double();
+            
+            // Initialize state
+            vel_state_.prev.x = 0.0;
+            vel_state_.prev.y = 0.0;
+            vel_state_.prev.theta = 0.0;
+            vel_state_.prev.t = 0.0;
+            vel_controller_initialized_ = false;
+            
+        } else if (velocity_control_mode_ == 2) {
+            // Pure Pursuit controller
+            gik9dof_purepursuit::purePursuitVelocityController_initialize();
+            
+            // Get Pure Pursuit parameters
+            pp_params_.lookaheadBase = this->get_parameter("purepursuit.lookahead_base").as_double();
+            pp_params_.lookaheadVelGain = this->get_parameter("purepursuit.lookahead_vel_gain").as_double();
+            pp_params_.lookaheadTimeGain = this->get_parameter("purepursuit.lookahead_time_gain").as_double();
+            pp_params_.vxNominal = this->get_parameter("purepursuit.vx_nominal").as_double();
+            pp_params_.vxMax = this->get_parameter("purepursuit.vx_max").as_double();
+            pp_params_.wzMax = this->get_parameter("purepursuit.wz_max").as_double();
+            pp_params_.track = this->get_parameter("purepursuit.track").as_double();
+            pp_params_.vwheelMax = this->get_parameter("purepursuit.vwheel_max").as_double();
+            pp_params_.waypointSpacing = this->get_parameter("purepursuit.waypoint_spacing").as_double();
+            pp_params_.pathBufferSize = this->get_parameter("purepursuit.path_buffer_size").as_double();
+            pp_params_.goalTolerance = this->get_parameter("purepursuit.goal_tolerance").as_double();
+            pp_params_.interpSpacing = this->get_parameter("purepursuit.interp_spacing").as_double();
+            
+            // Initialize Pure Pursuit state (30 waypoint buffer)
+            for (int i = 0; i < 30; i++) {
+                pp_state_.pathX[i] = 0.0;
+                pp_state_.pathY[i] = 0.0;
+                pp_state_.pathTheta[i] = 0.0;
+                pp_state_.pathTime[i] = 0.0;
+            }
+            pp_state_.numWaypoints = 0;
+            pp_state_.prevVx = 0.0;
+            pp_state_.prevWz = 0.0;
+            pp_state_.prevPoseX = 0.0;
+            pp_state_.prevPoseY = 0.0;
+            pp_state_.prevPoseYaw = 0.0;
+            pp_state_.lastRefTime = 0.0;
+            pp_controller_initialized_ = false;
+        }
         
         // Subscribers
         joint_state_sub_ = this->create_subscription<sensor_msgs::msg::JointState>(
@@ -93,9 +192,44 @@ public:
         RCLCPP_INFO(this->get_logger(), "Control rate: %.1f Hz", control_rate_);
         RCLCPP_INFO(this->get_logger(), "Max solve time: %.0f ms", max_solve_time_ * 1000.0);
         RCLCPP_INFO(this->get_logger(), "Warm-start optimization: %s", use_warm_start_ ? "enabled" : "disabled");
+        
+        // Log velocity controller mode
+        const char* mode_names[] = {
+            "Legacy (5-point differentiation)", 
+            "Simple Heading Controller (P + feedforward)", 
+            "Pure Pursuit (lookahead path following)"
+        };
+        RCLCPP_INFO(this->get_logger(), "Velocity controller mode: %d - %s", 
+            velocity_control_mode_, mode_names[velocity_control_mode_]);
+        
+        if (velocity_control_mode_ == 1) {
+            RCLCPP_INFO(this->get_logger(), "  Heading controller params: track=%.3f, Vx_max=%.2f, W_max=%.2f, Kp=%.2f, Kff=%.2f",
+                vel_params_.track, vel_params_.Vx_max, vel_params_.W_max, vel_params_.yawKp, vel_params_.yawKff);
+        } else if (velocity_control_mode_ == 2) {
+            RCLCPP_INFO(this->get_logger(), "  Pure Pursuit params:");
+            RCLCPP_INFO(this->get_logger(), "    Lookahead: base=%.2f, vel_gain=%.2f, time_gain=%.2f",
+                pp_params_.lookaheadBase, pp_params_.lookaheadVelGain, pp_params_.lookaheadTimeGain);
+            RCLCPP_INFO(this->get_logger(), "    Velocity: nominal=%.2f m/s, max=%.2f m/s, wz_max=%.2f rad/s",
+                pp_params_.vxNominal, pp_params_.vxMax, pp_params_.wzMax);
+            RCLCPP_INFO(this->get_logger(), "    Path: buffer=%d waypoints, spacing=%.2f m, tolerance=%.2f m",
+                (int)pp_params_.pathBufferSize, pp_params_.waypointSpacing, pp_params_.goalTolerance);
+        }
+        
         RCLCPP_INFO(this->get_logger(), "Publishing to:");
         RCLCPP_INFO(this->get_logger(), "  - /motion_target/target_joint_state_arm_left (6 arm joints)");
         RCLCPP_INFO(this->get_logger(), "  - /cmd_vel (base velocities: vx, wz)");
+    }
+    
+    ~GIK9DOFSolverNode()
+    {
+        // Cleanup velocity controllers
+        if (velocity_control_mode_ == 1) {
+            gik9dof_velocity::holisticVelocityController_terminate();
+            RCLCPP_INFO(this->get_logger(), "Simple heading controller terminated");
+        } else if (velocity_control_mode_ == 2) {
+            gik9dof_purepursuit::purePursuitVelocityController_terminate();
+            RCLCPP_INFO(this->get_logger(), "Pure Pursuit controller terminated");
+        }
     }
 
 private:
@@ -322,6 +456,119 @@ private:
         
         std::lock_guard<std::mutex> lock(state_mutex_);
         
+        // ═══════════════════════════════════════════════════════════════════════
+        // 3-WAY RUNTIME SWITCH: Velocity Control Mode Selection
+        // ═══════════════════════════════════════════════════════════════════════
+        
+        if (velocity_control_mode_ == 2) {
+            // ═══════════════════════════════════════════════════════════════
+            // MODE 2: Pure Pursuit Path Following Controller
+            // ═══════════════════════════════════════════════════════════════
+            
+            // Extract reference from target configuration
+            double refX = target_config_[0];      // Base x position (m)
+            double refY = target_config_[1];      // Base y position (m)
+            double refTheta = target_config_[2];  // Base orientation (rad)
+            double refTime = this->now().seconds();
+            
+            // Current pose estimate (from odometry)
+            double estX = current_config_[0];
+            double estY = current_config_[1];
+            double estYaw = current_config_[2];
+            
+            // Call MATLAB Coder generated Pure Pursuit controller
+            double Vx, Wz;
+            gik9dof_purepursuit::struct1_T newState;
+            
+            gik9dof_purepursuit::purePursuitVelocityController(
+                refX, refY, refTheta, refTime,
+                estX, estY, estYaw,
+                &pp_params_,
+                &pp_state_,
+                &Vx, &Wz,
+                &newState
+            );
+            
+            // Update state for next iteration
+            pp_state_ = newState;
+            pp_controller_initialized_ = true;
+            
+            // Publish velocity command
+            msg.linear.x = Vx;
+            msg.linear.y = 0.0;
+            msg.linear.z = 0.0;
+            msg.angular.x = 0.0;
+            msg.angular.y = 0.0;
+            msg.angular.z = Wz;
+            
+            base_cmd_pub_->publish(msg);
+            
+            // Debug logging (throttled)
+            static int log_counter_pp = 0;
+            if (++log_counter_pp >= 50) {  // Log every 5 seconds at 10Hz
+                RCLCPP_DEBUG(this->get_logger(), 
+                    "Pure Pursuit: Vx=%.3f m/s, Wz=%.3f rad/s | Buffer: %d waypoints | ref: x=%.2f, y=%.2f, θ=%.2f", 
+                    Vx, Wz, (int)pp_state_.numWaypoints, refX, refY, refTheta);
+                log_counter_pp = 0;
+            }
+            
+        } else if (velocity_control_mode_ == 1) {
+            // ═══════════════════════════════════════════════════════════════
+            // MODE 1: Simple Heading Controller (P + feedforward)
+            // ═══════════════════════════════════════════════════════════════
+            
+            // Extract reference from target configuration
+            double refX = target_config_[0];      // Base x position (m)
+            double refY = target_config_[1];      // Base y position (m)
+            double refTheta = target_config_[2];  // Base orientation (rad)
+            double refTime = this->now().seconds();
+            
+            // Current pose estimate (from odometry)
+            double estX = current_config_[0];
+            double estY = current_config_[1];
+            double estYaw = current_config_[2];
+            
+            // Call MATLAB Coder generated velocity controller
+            double Vx, Wz;
+            gik9dof_velocity::struct1_T newState;
+            
+            gik9dof_velocity::holisticVelocityController(
+                refX, refY, refTheta, refTime,
+                estX, estY, estYaw,
+                &vel_params_,
+                &vel_state_,
+                &Vx, &Wz,
+                &newState
+            );
+            
+            // Update state for next iteration
+            vel_state_ = newState;
+            vel_controller_initialized_ = true;
+            
+            // Publish velocity command
+            msg.linear.x = Vx;
+            msg.linear.y = 0.0;
+            msg.linear.z = 0.0;
+            msg.angular.x = 0.0;
+            msg.angular.y = 0.0;
+            msg.angular.z = Wz;
+            
+            base_cmd_pub_->publish(msg);
+            
+            // Debug logging (throttled)
+            static int log_counter_heading = 0;
+            if (++log_counter_heading >= 50) {  // Log every 5 seconds at 10Hz
+                RCLCPP_DEBUG(this->get_logger(), 
+                    "Heading controller: Vx=%.3f m/s, Wz=%.3f rad/s (ref: x=%.2f, y=%.2f, θ=%.2f)", 
+                    Vx, Wz, refX, refY, refTheta);
+                log_counter_heading = 0;
+            }
+            
+        } else {
+            // ═══════════════════════════════════════════════════════════════
+            // MODE 0: Legacy 5-point finite differentiation (open-loop)
+            // ═══════════════════════════════════════════════════════════════
+        
         // Add current target to history
         auto now = this->now();
         config_history_.push_back(target_config_);
@@ -481,7 +728,9 @@ private:
                     n, vx_robot, wz);
         
         base_cmd_pub_->publish(msg);
-    }
+            
+        }  // End of legacy 5-point differentiation
+    }  // End of publishBaseCommand()
     
     void publishDiagnostics(double solve_time_ms, const geometry_msgs::msg::Pose& target_pose)
     {
@@ -542,6 +791,17 @@ private:
     double distance_weight_;
     bool publish_diagnostics_;
     bool use_warm_start_;  // Enable warm-start from previous solution
+    int velocity_control_mode_;  // 0=legacy 5-pt diff, 1=heading ctrl, 2=pure pursuit
+    
+    // Simple heading controller state (mode 1)
+    gik9dof_velocity::struct0_T vel_params_;  // Controller parameters
+    gik9dof_velocity::struct1_T vel_state_;   // Controller state
+    bool vel_controller_initialized_;         // Flag to track first call
+    
+    // Pure Pursuit controller state (mode 2)
+    gik9dof_purepursuit::struct0_T pp_params_;  // Pure Pursuit parameters
+    gik9dof_purepursuit::struct1_T pp_state_;   // Pure Pursuit state (path buffer)
+    bool pp_controller_initialized_;            // Flag to track first call
     
     // MATLAB solver instance (persistent robot/solver state)
     std::unique_ptr<gik9dof::GIKSolver> matlab_solver_;

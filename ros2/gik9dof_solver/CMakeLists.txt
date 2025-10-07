@@ -28,6 +28,8 @@ find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 include_directories(
   include
   include/shared_robotics  # MATLAB Robotics System Toolbox collision headers
+  include/velocity_controller  # MATLAB Coder generated velocity controller (simple heading)
+  include/purepursuit  # MATLAB Coder generated Pure Pursuit controller
 )
 
 # MATLAB Coder generated source files
@@ -76,6 +78,18 @@ add_executable(gik9dof_solver_node
   src/gik9dof_solver_node.cpp
   src/collisioncodegen_stubs.cpp  # Stub implementations for MATLAB collision functions
   src/coder_posix_time_stubs.cpp  # Stub implementations for MATLAB POSIX time functions
+  # MATLAB Coder generated velocity controller (simple heading)
+  src/velocity_controller/holisticVelocityController.cpp
+  src/velocity_controller/holisticVelocityController_initialize.cpp
+  src/velocity_controller/holisticVelocityController_terminate.cpp
+  src/velocity_controller/wrapToPi.cpp
+  # MATLAB Coder generated Pure Pursuit controller
+  src/purepursuit/purePursuitVelocityController.cpp
+  src/purepursuit/purePursuitVelocityController_initialize.cpp
+  src/purepursuit/purePursuitVelocityController_terminate.cpp
+  src/purepursuit/rtGetInf.cpp
+  src/purepursuit/rtGetNaN.cpp
+  src/purepursuit/rt_nonfinite.cpp
 )
 
 ament_target_dependencies(gik9dof_solver_node

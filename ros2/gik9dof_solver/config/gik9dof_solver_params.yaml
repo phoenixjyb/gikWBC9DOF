@@ -1,0 +1,200 @@
+# GIK9DOF Solver Node Configuration
+# YAML configuration for ROS2 parameters
+
+gik9dof_solver_node:
+  ros__parameters:
+    # Control loop rate (Hz)
+    control_rate: 10.0
+    
+    # Maximum solve time per iteration (seconds)
+    max_solve_time: 0.05
+    
+    # IK solver parameters
+    distance_lower_bound: 0.1
+    distance_weight: 1.0
+    
+    # Diagnostics publishing
+    publish_diagnostics: true
+    
+    # Optimization warm-start (use previous solution as initial guess)
+    use_warm_start: true
+    
+    # ═══════════════════════════════════════════════════════════════════════
+    # VELOCITY CONTROLLER SELECTION
+    # ═══════════════════════════════════════════════════════════════════════
+    # Control mode:
+    #   0 = Legacy 5-point finite differentiation (open-loop)
+    #   1 = Simple heading controller (P + feedforward)
+    #   2 = Pure Pursuit path following (lookahead-based)
+    velocity_control_mode: 2
+    
+    # ═══════════════════════════════════════════════════════════════════════
+    # SIMPLE HEADING CONTROLLER PARAMETERS (mode = 1)
+    # ═══════════════════════════════════════════════════════════════════════
+    
+    # Physical robot parameters
+    vel_ctrl:
+      # Wheel track width (m) - distance between left and right wheels
+      track: 0.674
+      
+      # Maximum wheel speed (m/s) - hardware limit
+      vwheel_max: 2.0
+      
+      # Maximum forward velocity (m/s) - safety limit
+      vx_max: 1.0
+      
+      # Maximum yaw rate (rad/s) - safety limit
+      w_max: 2.0
+      
+      # Heading error proportional gain
+      # Higher values = more aggressive heading correction
+      # Typical range: 1.0 - 5.0
+      yaw_kp: 2.0
+      
+      # Yaw rate feedforward gain
+      # Higher values = more aggressive tracking of reference yaw rate
+      # Typical range: 0.5 - 1.0
+      yaw_kff: 0.9
+    
+    # ═══════════════════════════════════════════════════════════════════════
+    # PURE PURSUIT CONTROLLER PARAMETERS (mode = 2)
+    # ═══════════════════════════════════════════════════════════════════════
+    
+    purepursuit:
+      # Lookahead distance parameters
+      # Adaptive lookahead: L = lookahead_base + lookahead_vel_gain * vx + lookahead_time_gain * dt
+      
+      # Base lookahead distance (m) - minimum lookahead
+      # Larger = smoother paths, wider turns
+      # Smaller = tighter tracking, sharper turns
+      # Typical range: 0.5 - 1.5
+      lookahead_base: 0.8
+      
+      # Velocity-dependent lookahead gain (dimensionless)
+      # How much lookahead grows with forward velocity
+      # Typical range: 0.0 - 0.5
+      lookahead_vel_gain: 0.3
+      
+      # Time-dependent lookahead gain (dimensionless)
+      # How much lookahead grows with time since last reference update
+      # Typical range: 0.0 - 0.2
+      lookahead_time_gain: 0.1
+      
+      # Forward velocity parameters
+      # Nominal forward speed (m/s) - default cruising speed
+      vx_nominal: 1.0
+      
+      # Maximum forward speed (m/s) - hard limit
+      vx_max: 1.5
+      
+      # Maximum angular velocity (rad/s) - hard limit
+      wz_max: 2.0
+      
+      # Robot physical parameters
+      # Wheel track width (m) - distance between left and right wheels
+      track: 0.674
+      
+      # Maximum wheel speed (m/s) - hardware limit
+      vwheel_max: 2.0
+      
+      # Path management
+      # Minimum spacing between waypoints (m) - filters out redundant points
+      waypoint_spacing: 0.15
+      
+      # Maximum number of waypoints in buffer - fixed at 30
+      path_buffer_size: 30
+      
+      # Goal tolerance (m) - distance to consider a waypoint "reached" and remove it
+      goal_tolerance: 0.2
+      
+      # Interpolation spacing (m) - spacing between interpolated path points
+      # Smaller = smoother path following but more computation
+      interp_spacing: 0.05
+
+# ═══════════════════════════════════════════════════════════════════════
+# TUNING GUIDE
+# ═══════════════════════════════════════════════════════════════════════
+#
+# CONTROL MODE SELECTION:
+#   velocity_control_mode: 0  →  Legacy 5-point differentiation (baseline)
+#   velocity_control_mode: 1  →  Simple heading controller (P + feedforward)
+#   velocity_control_mode: 2  →  Pure Pursuit path following (RECOMMENDED)
+#
+# ───────────────────────────────────────────────────────────────────────
+# PURE PURSUIT TUNING (mode = 2):
+# ───────────────────────────────────────────────────────────────────────
+#
+# Lookahead Distance (most important parameter):
+#   lookahead_base:
+#     - Start: 0.8 m (good for moderate speeds)
+#     - Increase: For smoother, wider turns at high speed
+#     - Decrease: For tighter tracking, sharper corners
+#     - Too large: Robot cuts corners, sluggish response
+#     - Too small: Oscillations, overshooting
+#
+#   lookahead_vel_gain:
+#     - Start: 0.3 (lookahead grows 0.3m per 1 m/s)
+#     - Purpose: Increase lookahead at high speed for stability
+#     - Set to 0.0 to disable velocity-adaptive lookahead
+#
+#   lookahead_time_gain:
+#     - Start: 0.1
+#     - Purpose: Compensate for sparse waypoint updates
+#     - Increase if GIK sends waypoints slowly (>100ms apart)
+#
+# Forward Velocity:
+#   vx_nominal:
+#     - Default cruising speed
+#     - Robot will reduce speed in sharp turns automatically
+#   
+#   vx_max:
+#     - Hard safety limit (1.5 m/s per your spec)
+#     - Controller will never exceed this
+#
+# Path Management:
+#   waypoint_spacing:
+#     - Start: 0.15 m
+#     - Filters redundant waypoints too close together
+#     - Decrease for very precise paths
+#   
+#   goal_tolerance:
+#     - Start: 0.2 m
+#     - Distance to remove "passed" waypoints
+#     - Decrease for tighter waypoint tracking
+#   
+#   interp_spacing:
+#     - Start: 0.05 m (5 cm between interpolated points)
+#     - Decrease for smoother curves (more CPU)
+#     - Increase for faster computation
+#
+# ───────────────────────────────────────────────────────────────────────
+# SIMPLE HEADING CONTROLLER TUNING (mode = 1):
+# ───────────────────────────────────────────────────────────────────────
+#   
+#   yaw_kp (Heading P-gain):
+#     - Too low:  Slow heading corrections, oscillations around target
+#     - Too high: Aggressive corrections, potential overshoot/instability
+#     - Start:    2.0
+#     - Increase: If heading tracking is sluggish
+#     - Decrease: If robot oscillates or overshoots heading
+#   
+#   yaw_kff (Yaw Feedforward):
+#     - Too low:  Lags behind reference trajectory in turns
+#     - Too high: Overshoots in turns, aggressive rotation
+#     - Start:    0.9
+#     - Increase: If robot turns too slowly to track trajectory
+#     - Decrease: If robot overshoots turns
+#
+# ───────────────────────────────────────────────────────────────────────
+# VALIDATION PROCEDURE:
+# ───────────────────────────────────────────────────────────────────────
+#   1. Start with mode 0 (legacy) to establish baseline
+#   2. Switch to mode 2 (Pure Pursuit) with default parameters
+#   3. Test with straight line command - should follow smoothly
+#   4. Test with circular path - should have no oscillations
+#   5. Tune lookahead_base if needed:
+#      - Oscillating? Increase lookahead_base
+#      - Cutting corners? Decrease lookahead_base
+#   6. Adjust vx_nominal for desired cruising speed
+#   7. Monitor cmd_vel topic - verify vx < 1.5 m/s, wz within limits
+#
