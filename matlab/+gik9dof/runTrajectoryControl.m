@@ -53,6 +53,7 @@ arguments
     options.StopOnFailure (1,1) logical = true
     options.Verbose (1,1) logical = false
     options.VelocityLimits struct = struct()
+    options.FixedJointTrajectory struct = struct()
 end
 
 poses = trajectory.Poses;
@@ -145,6 +146,38 @@ orientationErrorQuat = nan(4, numWaypoints);
 orientationErrorAngle = nan(1, numWaypoints);
 eeName = char(bundle.constraints.pose.EndEffector);
 
+fixedTrajectory = options.FixedJointTrajectory;
+useFixedTrajectory = isstruct(fixedTrajectory) && ~isempty(fieldnames(fixedTrajectory));
+if useFixedTrajectory
+    if ~isfield(fixedTrajectory, 'Indices') || ~isfield(fixedTrajectory, 'Values')
+        error('gik9dof:runTrajectoryControl:FixedTrajectoryFormat', ...
+            'FixedJointTrajectory must contain fields ''Indices'' and ''Values''.');
+    end
+    fixedIndices = double(fixedTrajectory.Indices(:)');
+    fixedValues = double(fixedTrajectory.Values);
+    if size(fixedValues,1) ~= numel(fixedIndices)
+        error('gik9dof:runTrajectoryControl:FixedTrajectorySize', ...
+            'FixedJointTrajectory.Values must have one row per index.');
+    end
+    if size(fixedValues,2) ~= numWaypoints
+        error('gik9dof:runTrajectoryControl:FixedTrajectoryColumns', ...
+            'FixedJointTrajectory.Values must have one column per waypoint.');
+    end
+    if any(fixedIndices < 1) || any(fixedIndices > nJoints)
+        error('gik9dof:runTrajectoryControl:FixedTrajectoryIndex', ...
+            'Fixed joint indices out of range.');
+    end
+    if ~isa(bundle.constraints.joint, 'constraintJointBounds')
+        error('gik9dof:runTrajectoryControl:NoJointConstraint', ...
+            'Bundle must include a constraintJointBounds to lock joints.');
+    end
+    originalJointBounds = bundle.constraints.joint.Bounds;
+else
+    fixedIndices = [];
+    fixedValues = [];
+    originalJointBounds = [];
+end
+
 loopClock = rateControl(options.RateHz);
 startTime = tic;
 sampleTime = 1 / options.RateHz;
@@ -152,6 +185,14 @@ sampleTime = 1 / options.RateHz;
 for k = 1:numWaypoints
     currentPose = poses(:,:,k);
     solveArgs = {"TargetPose", currentPose};
+
+    if useFixedTrajectory
+        valuesStep = fixedValues(:,k);
+        for m = 1:numel(fixedIndices)
+            idx = fixedIndices(m);
+            bundle.constraints.joint.Bounds(idx,:) = [valuesStep(m), valuesStep(m)];
+        end
+    end
 
     if ~isempty(aimTargets)
         solveArgs(end+1:end+2) = {"AimTarget", aimTargets(:,k).' }; %#ok<AGROW>
@@ -289,6 +330,10 @@ log.positionErrorNorm = vecnorm(log.positionError, 2, 1);
 log.time = [0, timestamps];
 log.orientationErrorQuat = orientationErrorQuat;
 log.orientationErrorAngle = orientationErrorAngle;
+if useFixedTrajectory
+    bundle.constraints.joint.Bounds = originalJointBounds;
+    log.fixedJointTrajectory = struct('Indices', fixedIndices, 'Values', fixedValues);
+end
 end
 
 function qNext = applyVelocityLimits(qCurrent, qCandidate, limits, sampleTime)
