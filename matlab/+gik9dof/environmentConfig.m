@@ -22,7 +22,7 @@ env.BaseHome = [-2, -2, 0];
 radius = 0.10;
 height = 0.15;
 safetyMargin = 0.05;
-distanceMargin = 0.15;
+distanceMargin = 0.30;
 distanceWeight = 5.0;
 
 center1 = [-1, -1];

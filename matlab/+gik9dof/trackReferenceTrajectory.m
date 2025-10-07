@@ -35,7 +35,7 @@ arguments
     options.CommandFcn = []
     options.EnableAiming (1,1) logical = false
     options.DistanceWeight (1,1) double = 0.5
-    options.DistanceMargin (1,1) double = 0.1
+    options.DistanceMargin (1,1) double = 0.3
     options.FloorDiscs (1,:) struct = struct([])
     options.BaseDistanceBody (1,1) string = "abstract_chassis_link"
     options.Mode (1,1) string {mustBeMember(options.Mode, ["holistic","staged"])} = "holistic"
@@ -60,7 +60,7 @@ end
 
 % Resolve assets and instantiate robot.
 jsonPath = gik9dof.internal.resolvePath(options.JsonPath);
-robot = gik9dof.createRobotModel("Validate", true);
+[robot, footprintInfo] = gik9dof.createRobotModel("Validate", true);
 
 % Build initial configuration with specified base pose.
 configTools = gik9dof.configurationTools(robot);
@@ -154,13 +154,40 @@ distanceSpecs = struct([]);
 if ~isempty(floorDiscSource)
     floorDiscInfo = gik9dof.addFloorDiscs(robot, floorDiscSource);
     numDiscs = numel(floorDiscInfo);
-    distanceSpecs = repmat(struct('Body', options.BaseDistanceBody, ...
-        'ReferenceBody', "", 'Bounds', [0 0], 'Weight', distanceWeight), numDiscs, 1);
-    for k = 1:numDiscs
-        discName = floorDiscInfo(k).Name;
-        lowerBound = floorDiscInfo(k).Radius + floorDiscInfo(k).SafetyMargin + distanceMargin;
-        distanceSpecs(k).ReferenceBody = discName;
-        distanceSpecs(k).Bounds = [lowerBound, Inf];
+
+    specList = struct('Body', {}, 'ReferenceBody', {}, 'Bounds', {}, 'Weight', {});
+    baseWeight = max(distanceWeight, max(5, distanceWeight));
+
+    if strlength(options.BaseDistanceBody) > 0
+        for k = 1:numDiscs
+            discName = floorDiscInfo(k).Name;
+            lowerBound = floorDiscInfo(k).Radius + floorDiscInfo(k).SafetyMargin + distanceMargin;
+            specList(end+1) = struct( ... %#ok<AGROW>
+                'Body', options.BaseDistanceBody, ...
+                'ReferenceBody', discName, ...
+                'Bounds', [lowerBound, Inf], ...
+                'Weight', baseWeight);
+        end
+    end
+
+    footprintNames = footprintInfo.Names;
+    if ~isempty(footprintNames)
+        fpWeight = max(baseWeight * 2, 20);
+        for fp = 1:numel(footprintNames)
+            for k = 1:numDiscs
+                discName = floorDiscInfo(k).Name;
+                lowerBound = floorDiscInfo(k).Radius + floorDiscInfo(k).SafetyMargin + distanceMargin;
+                specList(end+1) = struct( ... %#ok<AGROW>
+                    'Body', footprintNames(fp), ...
+                    'ReferenceBody', discName, ...
+                    'Bounds', [lowerBound, Inf], ...
+                    'Weight', fpWeight);
+            end
+        end
+    end
+
+    if ~isempty(specList)
+        distanceSpecs = specList;
     end
 end
 
@@ -253,6 +280,7 @@ end
 log.floorDiscs = floorDiscInfo;
 log.distanceSpecs = distanceSpecs;
 log.environment = envConfig;
+log.footprintInfo = footprintInfo;
 if options.Mode == "holistic"
     log.velocityLimits = struct('MaxLinearSpeed', options.RampMaxLinearSpeed, ...
         'MaxYawRate', options.RampMaxYawRate, ...
