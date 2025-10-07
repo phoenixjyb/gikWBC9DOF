@@ -1,0 +1,19 @@
+=== Testing x64 Codegen Only ===
+
+x64 Config:
+  Target: C++
+  Namespace: gik9dof_purepursuit
+
+Starting x64 codegen...
+[Warning: The 'DynamicMemoryAllocation' option will be removed in a future release. Use 'EnableDynamicMemoryAllocation' and 'DynamicMemoryAllocationThreshold' options instead.
+Alternatively, in the MATLAB Coder app select "Enable dynamic memory allocation" and set a value for "Dynamic memory allocation threshold".] 
+Structure field lookaheadTimeGain does not exist.
+
+Error in ==> purePursuitVelocityController Line: 40 Column: 21
+Code generation failed: To view the report, open('codegen\purepursuit_x64_test\html\report.mldatx')
+
+? x64 code generation FAILED:
+  Error: 
+  Location: D:\Program Files\MATLAB\R2024b\toolbox\coder\matlabcoder\codegen.p (line 0)
+
+=== Test Complete ===

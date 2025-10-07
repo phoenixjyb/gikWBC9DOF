@@ -2,7 +2,7 @@
 // File: _coder_purePursuitVelocityController_api.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 12:15:43
+// C/C++ source code generated on  : 08-Oct-2025 03:43:59
 //
 
 #ifndef _CODER_PUREPURSUITVELOCITYCONTROLLER_API_H
@@ -22,6 +22,7 @@ struct struct0_T {
   real_T lookaheadTimeGain;
   real_T vxNominal;
   real_T vxMax;
+  real_T vxMin;
   real_T wzMax;
   real_T track;
   real_T vwheelMax;
@@ -36,7 +37,7 @@ struct struct1_T {
   real_T pathY[30];
   real_T pathTheta[30];
   real_T pathTime[30];
-  real_T numWaypoints;
+  uint32_T numWaypoints;
   real_T prevVx;
   real_T prevWz;
   real_T prevPoseX;

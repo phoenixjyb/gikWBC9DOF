@@ -2,7 +2,7 @@
 // File: purePursuitVelocityController_types.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 12:15:24
+// C/C++ source code generated on  : 08-Oct-2025 03:43:41
 //
 
 #ifndef PUREPURSUITVELOCITYCONTROLLER_TYPES_H
@@ -19,6 +19,7 @@ struct struct0_T {
   double lookaheadTimeGain;
   double vxNominal;
   double vxMax;
+  double vxMin;
   double wzMax;
   double track;
   double vwheelMax;
@@ -33,7 +34,7 @@ struct struct1_T {
   double pathY[30];
   double pathTheta[30];
   double pathTime[30];
-  double numWaypoints;
+  unsigned int numWaypoints;
   double prevVx;
   double prevWz;
   double prevPoseX;

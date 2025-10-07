@@ -1,0 +1,81 @@
+Pure Pursuit Velocity Controller - Code Generation
+===================================================
+
+Working directory: H:\wSpace\codegenGIKsample\Trial\gikWBC9DOF\matlab
+
+[Warning: Namespace directories not allowed in MATLAB path: H:\wSpace\codegenGIKsample\Trial\gikWBC9DOF\matlab\+gik9dof\+control] 
+[> In path (line 109)
+In addpath>doPathAddition (line 126)
+In addpath (line 90)
+In generate_code_purePursuit (line 33)] 
+Added paths for code generation
+
+Defining input types for MATLAB Coder...
+Input types defined
+
+==================================================
+Generating ARM64 code for Jetson Orin...
+==================================================
+
+ARM64 Config:
+  Target: C++
+  Namespace: gik9dof_purepursuit
+  Hardware: ARM Cortex-A
+  Build: Faster Runs
+  Dynamic Memory: Off
+
+Starting ARM64 codegen...
+[Warning: The 'DynamicMemoryAllocation' option will be removed in a future release. Use 'EnableDynamicMemoryAllocation' and 'DynamicMemoryAllocationThreshold' options instead.
+Alternatively, in the MATLAB Coder app select "Enable dynamic memory allocation" and set a value for "Dynamic memory allocation threshold".] 
+Code generation successful: To view the report, open('codegen\purepursuit_arm64\html\report.mldatx')
+
+? ARM64 code generation completed successfully!
+  Output: H:\wSpace\codegenGIKsample\Trial\gikWBC9DOF\matlab\codegen\purepursuit_arm64
+
+==================================================
+Generating x86_64 code for WSL...
+==================================================
+
+x86_64 Config:
+  Target: C++
+  Namespace: gik9dof_purepursuit
+  Hardware: x86-64 Linux
+  Build: Faster Runs
+  Dynamic Memory: Off
+
+Starting x86_64 codegen...
+[Warning: The 'DynamicMemoryAllocation' option will be removed in a future release. Use 'EnableDynamicMemoryAllocation' and 'DynamicMemoryAllocationThreshold' options instead.
+Alternatively, in the MATLAB Coder app select "Enable dynamic memory allocation" and set a value for "Dynamic memory allocation threshold".] 
+Code generation successful: To view the report, open('codegen\purepursuit_x64\html\report.mldatx')
+
+? x86_64 code generation completed successfully!
+  Output: H:\wSpace\codegenGIKsample\Trial\gikWBC9DOF\matlab\codegen\purepursuit_x64
+
+==================================================
+Code Generation Summary
+==================================================
+? ARM64 (Orin):  H:\wSpace\codegenGIKsample\Trial\gikWBC9DOF\matlab\codegen\purepursuit_arm64
+? x86_64 (WSL):  H:\wSpace\codegenGIKsample\Trial\gikWBC9DOF\matlab\codegen\purepursuit_x64
+
+Generated files include:
+  - purePursuitVelocityController.h/cpp
+  - rtwtypes.h
+  - Pure Pursuit algorithm implementation
+
+Specifications:
+  - Path buffer: 30 waypoints max
+  - Update rate: 100 Hz (10ms period)
+  - Max speed: 1.5 m/s
+  - Adaptive lookahead: L = L_base + k_v*vx + k_t*dt
+  - Interpolation: Linear, configurable spacing
+  - Continuous reference acceptance
+
+Next steps:
+  1. Copy generated code to ROS2 package
+  2. Update CMakeLists.txt
+  3. Integrate into gik9dof_solver_node.cpp
+  4. Build and test on WSL
+  5. Deploy to Orin
+==================================================
+
+Returned to: H:\wSpace\codegenGIKsample\Trial\gikWBC9DOF\matlab

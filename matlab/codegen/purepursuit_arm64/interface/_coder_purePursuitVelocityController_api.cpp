@@ -2,7 +2,7 @@
 // File: _coder_purePursuitVelocityController_api.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 12:15:24
+// C/C++ source code generated on  : 08-Oct-2025 03:43:41
 //
 
 // Include Files
@@ -28,8 +28,14 @@ emlrtContext emlrtContextGlobal{
 static void b_emlrt_marshallIn(const emlrtStack &sp, const mxArray *src,
                                const emlrtMsgIdentifier *msgId, real_T ret[30]);
 
-static real_T b_emlrt_marshallIn(const emlrtStack &sp, const mxArray *src,
+static uint32_T b_emlrt_marshallIn(const emlrtStack &sp, const mxArray *u,
+                                   const emlrtMsgIdentifier *parentId);
+
+static real_T c_emlrt_marshallIn(const emlrtStack &sp, const mxArray *src,
                                  const emlrtMsgIdentifier *msgId);
+
+static uint32_T d_emlrt_marshallIn(const emlrtStack &sp, const mxArray *src,
+                                   const emlrtMsgIdentifier *msgId);
 
 static void emlrtExitTimeCleanupDtorFcn(const void *r);
 
@@ -84,11 +90,26 @@ static void b_emlrt_marshallIn(const emlrtStack &sp, const mxArray *src,
 
 //
 // Arguments    : const emlrtStack &sp
+//                const mxArray *u
+//                const emlrtMsgIdentifier *parentId
+// Return Type  : uint32_T
+//
+static uint32_T b_emlrt_marshallIn(const emlrtStack &sp, const mxArray *u,
+                                   const emlrtMsgIdentifier *parentId)
+{
+  uint32_T y;
+  y = d_emlrt_marshallIn(sp, emlrtAlias(u), parentId);
+  emlrtDestroyArray(&u);
+  return y;
+}
+
+//
+// Arguments    : const emlrtStack &sp
 //                const mxArray *src
 //                const emlrtMsgIdentifier *msgId
 // Return Type  : real_T
 //
-static real_T b_emlrt_marshallIn(const emlrtStack &sp, const mxArray *src,
+static real_T c_emlrt_marshallIn(const emlrtStack &sp, const mxArray *src,
                                  const emlrtMsgIdentifier *msgId)
 {
   static const int32_T dims{0};
@@ -96,6 +117,24 @@ static real_T b_emlrt_marshallIn(const emlrtStack &sp, const mxArray *src,
   emlrtCheckBuiltInR2012b((emlrtConstCTX)&sp, msgId, src, "double", false, 0U,
                           (const void *)&dims);
   ret = *static_cast<real_T *>(emlrtMxGetData(src));
+  emlrtDestroyArray(&src);
+  return ret;
+}
+
+//
+// Arguments    : const emlrtStack &sp
+//                const mxArray *src
+//                const emlrtMsgIdentifier *msgId
+// Return Type  : uint32_T
+//
+static uint32_T d_emlrt_marshallIn(const emlrtStack &sp, const mxArray *src,
+                                   const emlrtMsgIdentifier *msgId)
+{
+  static const int32_T dims{0};
+  uint32_T ret;
+  emlrtCheckBuiltInR2012b((emlrtConstCTX)&sp, msgId, src, "uint32", false, 0U,
+                          (const void *)&dims);
+  ret = *static_cast<uint32_T *>(emlrtMxGetData(src));
   emlrtDestroyArray(&src);
   return ret;
 }
@@ -138,11 +177,12 @@ static void emlrt_marshallIn(const emlrtStack &sp, const mxArray *u,
                              const emlrtMsgIdentifier *parentId, struct0_T &y)
 {
   static const int32_T dims{0};
-  static const char_T *fieldNames[12]{"lookaheadBase",
+  static const char_T *fieldNames[13]{"lookaheadBase",
                                       "lookaheadVelGain",
                                       "lookaheadTimeGain",
                                       "vxNominal",
                                       "vxMax",
+                                      "vxMin",
                                       "wzMax",
                                       "track",
                                       "vwheelMax",
@@ -153,7 +193,7 @@ static void emlrt_marshallIn(const emlrtStack &sp, const mxArray *u,
   emlrtMsgIdentifier thisId;
   thisId.fParent = parentId;
   thisId.bParentIsCell = false;
-  emlrtCheckStructR2012b((emlrtConstCTX)&sp, parentId, u, 12,
+  emlrtCheckStructR2012b((emlrtConstCTX)&sp, parentId, u, 13,
                          (const char_T **)&fieldNames[0], 0U,
                          (const void *)&dims);
   thisId.fIdentifier = "lookaheadBase";
@@ -183,42 +223,46 @@ static void emlrt_marshallIn(const emlrtStack &sp, const mxArray *u,
   y.vxMax = emlrt_marshallIn(
       sp, emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)&sp, u, 0, 4, "vxMax")),
       &thisId);
+  thisId.fIdentifier = "vxMin";
+  y.vxMin = emlrt_marshallIn(
+      sp, emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)&sp, u, 0, 5, "vxMin")),
+      &thisId);
   thisId.fIdentifier = "wzMax";
   y.wzMax = emlrt_marshallIn(
-      sp, emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)&sp, u, 0, 5, "wzMax")),
+      sp, emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)&sp, u, 0, 6, "wzMax")),
       &thisId);
   thisId.fIdentifier = "track";
   y.track = emlrt_marshallIn(
-      sp, emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)&sp, u, 0, 6, "track")),
+      sp, emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)&sp, u, 0, 7, "track")),
       &thisId);
   thisId.fIdentifier = "vwheelMax";
   y.vwheelMax = emlrt_marshallIn(
       sp,
-      emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)&sp, u, 0, 7, "vwheelMax")),
+      emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)&sp, u, 0, 8, "vwheelMax")),
       &thisId);
   thisId.fIdentifier = "waypointSpacing";
   y.waypointSpacing =
       emlrt_marshallIn(sp,
                        emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)&sp, u, 0,
-                                                      8, "waypointSpacing")),
+                                                      9, "waypointSpacing")),
                        &thisId);
   thisId.fIdentifier = "pathBufferSize";
   y.pathBufferSize =
       emlrt_marshallIn(sp,
                        emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)&sp, u, 0,
-                                                      9, "pathBufferSize")),
+                                                      10, "pathBufferSize")),
                        &thisId);
   thisId.fIdentifier = "goalTolerance";
   y.goalTolerance =
       emlrt_marshallIn(sp,
                        emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)&sp, u, 0,
-                                                      10, "goalTolerance")),
+                                                      11, "goalTolerance")),
                        &thisId);
   thisId.fIdentifier = "interpSpacing";
   y.interpSpacing =
       emlrt_marshallIn(sp,
                        emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)&sp, u, 0,
-                                                      11, "interpSpacing")),
+                                                      12, "interpSpacing")),
                        &thisId);
   emlrtDestroyArray(&u);
 }
@@ -282,10 +326,10 @@ static void emlrt_marshallIn(const emlrtStack &sp, const mxArray *u,
       &thisId, y.pathTime);
   thisId.fIdentifier = "numWaypoints";
   y.numWaypoints =
-      emlrt_marshallIn(sp,
-                       emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)&sp, u, 0,
-                                                      4, "numWaypoints")),
-                       &thisId);
+      b_emlrt_marshallIn(sp,
+                         emlrtAlias(emlrtGetFieldR2017b((emlrtConstCTX)&sp, u,
+                                                        0, 4, "numWaypoints")),
+                         &thisId);
   thisId.fIdentifier = "prevVx";
   y.prevVx = emlrt_marshallIn(
       sp,
@@ -364,7 +408,7 @@ static real_T emlrt_marshallIn(const emlrtStack &sp, const mxArray *u,
                                const emlrtMsgIdentifier *parentId)
 {
   real_T y;
-  y = b_emlrt_marshallIn(sp, emlrtAlias(u), parentId);
+  y = c_emlrt_marshallIn(sp, emlrtAlias(u), parentId);
   emlrtDestroyArray(&u);
   return y;
 }
@@ -379,6 +423,8 @@ static const mxArray *emlrt_marshallOut(const struct1_T &u)
                               "pathTime",    "numWaypoints", "prevVx",
                               "prevWz",      "prevPoseX",    "prevPoseY",
                               "prevPoseYaw", "lastRefTime"};
+  const mxArray *b_y;
+  const mxArray *m;
   const mxArray *y;
   y = nullptr;
   emlrtAssign(&y, emlrtCreateStructMatrix(1, 1, 11, (const char_T **)&sv[0]));
@@ -386,8 +432,11 @@ static const mxArray *emlrt_marshallOut(const struct1_T &u)
   emlrtSetFieldR2017b(y, 0, "pathY", emlrt_marshallOut(u.pathY), 1);
   emlrtSetFieldR2017b(y, 0, "pathTheta", emlrt_marshallOut(u.pathTheta), 2);
   emlrtSetFieldR2017b(y, 0, "pathTime", emlrt_marshallOut(u.pathTime), 3);
-  emlrtSetFieldR2017b(y, 0, "numWaypoints", emlrt_marshallOut(u.numWaypoints),
-                      4);
+  b_y = nullptr;
+  m = emlrtCreateNumericMatrix(1, 1, mxUINT32_CLASS, mxREAL);
+  *static_cast<uint32_T *>(emlrtMxGetData(m)) = u.numWaypoints;
+  emlrtAssign(&b_y, m);
+  emlrtSetFieldR2017b(y, 0, "numWaypoints", b_y, 4);
   emlrtSetFieldR2017b(y, 0, "prevVx", emlrt_marshallOut(u.prevVx), 5);
   emlrtSetFieldR2017b(y, 0, "prevWz", emlrt_marshallOut(u.prevWz), 6);
   emlrtSetFieldR2017b(y, 0, "prevPoseX", emlrt_marshallOut(u.prevPoseX), 7);

@@ -2,7 +2,7 @@
 // File: main.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 12:15:24
+// C/C++ source code generated on  : 08-Oct-2025 03:43:41
 //
 
 /*************************************************************************/
@@ -46,6 +46,8 @@ static void argInit_struct0_T(gik9dof_purepursuit::struct0_T &result);
 
 static void argInit_struct1_T(gik9dof_purepursuit::struct1_T &result);
 
+static unsigned int argInit_uint32_T();
+
 // Function Definitions
 //
 // Arguments    : double result[30]
@@ -85,6 +87,7 @@ static void argInit_struct0_T(gik9dof_purepursuit::struct0_T &result)
   result.lookaheadTimeGain = result_tmp;
   result.vxNominal = result_tmp;
   result.vxMax = result_tmp;
+  result.vxMin = result_tmp;
   result.wzMax = result_tmp;
   result.track = result_tmp;
   result.vwheelMax = result_tmp;
@@ -105,7 +108,7 @@ static void argInit_struct1_T(gik9dof_purepursuit::struct1_T &result)
   // Change this value to the value that the application requires.
   argInit_1x30_real_T(result.pathX);
   result_tmp = argInit_real_T();
-  result.numWaypoints = result_tmp;
+  result.numWaypoints = argInit_uint32_T();
   result.prevVx = result_tmp;
   result.prevWz = result_tmp;
   result.prevPoseX = result_tmp;
@@ -117,6 +120,15 @@ static void argInit_struct1_T(gik9dof_purepursuit::struct1_T &result)
     result.pathTheta[i] = result.pathX[i];
     result.pathTime[i] = result.pathX[i];
   }
+}
+
+//
+// Arguments    : void
+// Return Type  : unsigned int
+//
+static unsigned int argInit_uint32_T()
+{
+  return 0U;
 }
 
 //

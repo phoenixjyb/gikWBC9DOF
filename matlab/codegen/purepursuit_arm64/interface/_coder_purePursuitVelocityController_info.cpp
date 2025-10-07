@@ -2,7 +2,7 @@
 // File: _coder_purePursuitVelocityController_info.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 12:15:24
+// C/C++ source code generated on  : 08-Oct-2025 03:43:41
 //
 
 // Include Files
@@ -62,11 +62,11 @@ mxArray *emlrtMexFcnProperties()
   emlrtSetField(xEntryPoints, 0, "ConstantInputs", xInputs);
   emlrtSetField(
       xEntryPoints, 0, "ResolvedFilePath",
-      emlrtMxCreateString("H:"
-                          "\\wSpace\\codegenGIKsample\\Trial\\gikWBC9DOF\\matla"
-                          "b\\purePursuitVelocityController.m"));
+      emlrtMxCreateString("C:"
+                          "\\Users\\yanbo\\wSpace\\codegenGIKsample\\Trial\\gik"
+                          "WBC9DOF\\matlab\\purePursuitVelocityController.m"));
   emlrtSetField(xEntryPoints, 0, "TimeStamp",
-                emlrtMxCreateDoubleScalar(739897.50839120371));
+                emlrtMxCreateDoubleScalar(739898.14753472223));
   emlrtSetField(xEntryPoints, 0, "Constructor",
                 emlrtMxCreateLogicalScalar(false));
   emlrtSetField(xEntryPoints, 0, "Visible", emlrtMxCreateLogicalScalar(true));

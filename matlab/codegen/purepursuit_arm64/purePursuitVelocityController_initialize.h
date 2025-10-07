@@ -2,7 +2,7 @@
 // File: purePursuitVelocityController_initialize.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 12:15:24
+// C/C++ source code generated on  : 08-Oct-2025 03:43:41
 //
 
 #ifndef PUREPURSUITVELOCITYCONTROLLER_INITIALIZE_H

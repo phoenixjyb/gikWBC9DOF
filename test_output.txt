@@ -1,0 +1,12 @@
+Testing ARM64 codegen...
+Running codegen...
+Type of input argument 'refX' for function 'purePursuitVelocityController' not specified. Use -args, the Define Input Types step in the MATLAB Coder app, preconditioning
+statements, or an arguments block to specify input types.
+helpview('coder','msginfo_Coder_FE_MissingPreconditionClassFAVInputTypes');
+Error in ==> purePursuitVelocityController Line: 1 Column: 31
+Code generation failed: To view the report, open('codegen\test_simple\html\report.mldatx')
+
+FAILED:
+
+  codegen (line 0)
+  simple_test (line 16)

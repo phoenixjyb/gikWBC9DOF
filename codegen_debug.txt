@@ -1,0 +1,6 @@
+File: H:\wSpace\codegenGIKsample\Trial\gikWBC9DOF\debug_arm64_codegen.m Line: 66 Column: 67
+Invalid expression. When calling a function or indexing a variable, use parentheses. Otherwise, check for mismatched delimiters.
+{File: H:\wSpace\codegenGIKsample\Trial\gikWBC9DOF\debug_arm64_codegen.m Line: 66 Column: 67
+Invalid expression. When calling a function or indexing a variable, use parentheses. Otherwise, check for mismatched delimiters.
+} 
+ERROR: MATLAB error Exit Status: 0x00000001

@@ -75,13 +75,13 @@ if addNewWaypoint
         idx = stateOut.numWaypoints;
     else
         % Buffer full, shift left and add at end
-        for i = 1:(pathBufferSize-1)
+        for i = 1:uint32(pathBufferSize-1)
             stateOut.pathX(i) = stateOut.pathX(i+1);
             stateOut.pathY(i) = stateOut.pathY(i+1);
             stateOut.pathTheta(i) = stateOut.pathTheta(i+1);
             stateOut.pathTime(i) = stateOut.pathTime(i+1);
         end
-        idx = pathBufferSize;
+        idx = uint32(pathBufferSize);
     end
     
     stateOut.pathX(idx) = refX;
@@ -94,7 +94,7 @@ end
 %% Remove passed waypoints
 % Remove waypoints that are behind the robot
 if stateOut.numWaypoints > 1
-    numToRemove = 0;
+    numToRemove = uint32(0);
     
     for i = 1:stateOut.numWaypoints
         % Transform waypoint to robot frame
@@ -342,7 +342,7 @@ function state = initializeState()
     state.pathY = zeros(1, 30);
     state.pathTheta = zeros(1, 30);
     state.pathTime = zeros(1, 30);
-    state.numWaypoints = 0;
+    state.numWaypoints = uint32(0);  % MUST be uint32 for loop counters
     
     % Previous commands
     state.prevVx = 0.0;

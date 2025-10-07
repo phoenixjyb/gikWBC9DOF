@@ -2,7 +2,7 @@
 // File: purePursuitVelocityController.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 12:15:43
+// C/C++ source code generated on  : 08-Oct-2025 03:43:59
 //
 
 // Include Files
@@ -23,17 +23,19 @@
 //    stateIn - Controller state struct (optional, has default)
 //
 //  Outputs:
-//    vx - Forward velocity command (m/s)
+//    vx - Forward velocity command (m/s, positive=forward, negative=reverse)
 //    wz - Angular velocity command (rad/s)
 //    stateOut - Updated controller state
 //
 //  Design:
 //    - Path buffer: 30 waypoints max
 //    - Update rate: 100 Hz (dt = 0.01s)
-//    - Max speed: 1.5 m/s
+//    - Max speed: 1.5 m/s forward, -1.0 m/s reverse
 //    - Adaptive lookahead: L = L_base + k_v * vx + k_t * dt_since_ref
 //    - Interpolation: Linear between waypoints
 //    - Continuous reference acceptance (no goal stop)
+//    - BIDIRECTIONAL: Automatically detects forward/reverse based on waypoint
+//    position
 //
 // Arguments    : double refX
 //                double refY
@@ -60,11 +62,12 @@ void purePursuitVelocityController(double refX, double refY, double refTheta,
   double interpY[200];
   double dx;
   double dy;
-  double idx;
-  double newNum;
+  double segmentDist;
   int b_i;
-  int closestIdx;
+  int c_i;
   int i;
+  unsigned int idx;
+  int numToRemove;
   bool addNewWaypoint;
   //  Copyright 2025, Mobile Manipulator Team
   //  Default state initialization
@@ -75,6 +78,7 @@ void purePursuitVelocityController(double refX, double refY, double refTheta,
   //  Time-dependent gain
   //  Nominal forward speed (m/s)
   //  Max forward speed (m/s)
+  //  Max reverse speed (m/s, negative)
   //  Max angular rate (rad/s)
   //  Wheel track width (m)
   //  Max wheel speed (m/s)
@@ -84,7 +88,7 @@ void purePursuitVelocityController(double refX, double refY, double refTheta,
   //  Interpolation spacing (m)
   //  Update path buffer with new reference
   //  Check if new waypoint is sufficiently different from last stored point
-  if (stateOut->numWaypoints == 0.0) {
+  if (stateOut->numWaypoints == 0U) {
     //  First waypoint
     addNewWaypoint = true;
   } else {
@@ -96,18 +100,40 @@ void purePursuitVelocityController(double refX, double refY, double refTheta,
   if (addNewWaypoint) {
     if (stateOut->numWaypoints < params->pathBufferSize) {
       //  Add to buffer
-      stateOut->numWaypoints++;
-      idx = stateOut->numWaypoints;
+      idx = stateOut->numWaypoints + 1U;
+      if (stateOut->numWaypoints + 1U < stateOut->numWaypoints) {
+        idx = MAX_uint32_T;
+      }
+      stateOut->numWaypoints = idx;
     } else {
       //  Buffer full, shift left and add at end
-      i = static_cast<int>(params->pathBufferSize - 1.0);
-      for (b_i = 0; b_i < i; b_i++) {
-        stateOut->pathX[b_i] = stateOut->pathX[b_i + 1];
-        stateOut->pathY[b_i] = stateOut->pathY[b_i + 1];
-        stateOut->pathTheta[b_i] = stateOut->pathTheta[b_i + 1];
-        stateOut->pathTime[b_i] = stateOut->pathTime[b_i + 1];
+      segmentDist = std::round(params->pathBufferSize - 1.0);
+      if (segmentDist < 4.294967296E+9) {
+        if (segmentDist >= 0.0) {
+          idx = static_cast<unsigned int>(segmentDist);
+        } else {
+          idx = 0U;
+        }
+      } else {
+        idx = 0U;
       }
-      idx = params->pathBufferSize;
+      b_i = static_cast<int>(idx);
+      for (i = 0; i < b_i; i++) {
+        stateOut->pathX[i] = stateOut->pathX[i + 1];
+        stateOut->pathY[i] = stateOut->pathY[i + 1];
+        stateOut->pathTheta[i] = stateOut->pathTheta[i + 1];
+        stateOut->pathTime[i] = stateOut->pathTime[i + 1];
+      }
+      segmentDist = std::round(params->pathBufferSize);
+      if (segmentDist < 4.294967296E+9) {
+        if (segmentDist >= 0.0) {
+          idx = static_cast<unsigned int>(segmentDist);
+        } else {
+          idx = 0U;
+        }
+      } else {
+        idx = 0U;
+      }
     }
     stateOut->pathX[static_cast<int>(idx) - 1] = refX;
     stateOut->pathY[static_cast<int>(idx) - 1] = refY;
@@ -117,43 +143,46 @@ void purePursuitVelocityController(double refX, double refY, double refTheta,
   }
   //  Remove passed waypoints
   //  Remove waypoints that are behind the robot
-  if (stateOut->numWaypoints > 1.0) {
-    idx = 0.0;
-    b_i = 0;
-    while ((b_i <= static_cast<int>(stateOut->numWaypoints) - 1) &&
-           ((stateOut->pathX[b_i] - estX) * std::cos(-estYaw) -
-                (stateOut->pathY[b_i] - estY) * std::sin(-estYaw) <
+  if (stateOut->numWaypoints > 1U) {
+    numToRemove = 0;
+    i = 0;
+    while ((i <= static_cast<int>(stateOut->numWaypoints) - 1) &&
+           ((stateOut->pathX[i] - estX) * std::cos(-estYaw) -
+                (stateOut->pathY[i] - estY) * std::sin(-estYaw) <
             -params->goalTolerance)) {
       //  Transform waypoint to robot frame
       //  Rotate to robot frame
       //  If waypoint is behind robot (x < -goalTolerance), mark for removal
-      idx = static_cast<double>(b_i) + 1.0;
-      b_i++;
+      numToRemove = static_cast<int>(static_cast<unsigned int>(i) + 1U);
+      i++;
     }
     //  Shift path buffer to remove passed waypoints
-    if (idx > 0.0) {
-      newNum = stateOut->numWaypoints - idx;
-      i = static_cast<int>(newNum);
-      for (b_i = 0; b_i < i; b_i++) {
-        closestIdx = b_i + static_cast<int>(static_cast<unsigned int>(idx));
-        stateOut->pathX[b_i] = stateOut->pathX[closestIdx];
-        stateOut->pathY[b_i] = stateOut->pathY[closestIdx];
-        stateOut->pathTheta[b_i] = stateOut->pathTheta[closestIdx];
-        stateOut->pathTime[b_i] = stateOut->pathTime[closestIdx];
+    if (numToRemove > 0) {
+      idx = stateOut->numWaypoints - static_cast<unsigned int>(numToRemove);
+      if (idx > stateOut->numWaypoints) {
+        idx = 0U;
       }
-      stateOut->numWaypoints = newNum;
+      b_i = static_cast<int>(idx);
+      for (i = 0; i < b_i; i++) {
+        c_i = static_cast<int>(static_cast<unsigned int>(i) +
+                               static_cast<unsigned int>(numToRemove));
+        stateOut->pathX[i] = stateOut->pathX[c_i];
+        stateOut->pathY[i] = stateOut->pathY[c_i];
+        stateOut->pathTheta[i] = stateOut->pathTheta[c_i];
+        stateOut->pathTime[i] = stateOut->pathTime[c_i];
+      }
+      stateOut->numWaypoints = idx;
     }
   }
   //  Handle insufficient waypoints
-  if (stateOut->numWaypoints < 1.0) {
+  if (stateOut->numWaypoints < 1U) {
     //  No path, stop
     *vx = 0.0;
     *wz = 0.0;
   } else {
-    double dxSeg;
     double lookaheadDist;
     double lookaheadY;
-    int j;
+    double numSegPoints;
     int numInterpPoints;
     bool exitg1;
     //  Calculate adaptive lookahead distance
@@ -162,44 +191,52 @@ void purePursuitVelocityController(double refX, double refY, double refTheta,
     //  Adaptive lookahead: L = L_base + k_v * vx + k_t * dt
     //  Clamp lookahead
     if (stateOut->lastRefTime > 0.0) {
-      idx = refTime - stateOut->lastRefTime;
+      lookaheadDist = refTime - stateOut->lastRefTime;
     } else {
-      idx = 0.0;
+      lookaheadDist = 0.0;
     }
     lookaheadDist = std::fmax(
         0.3,
         std::fmin(2.5, (params->lookaheadBase +
                         params->lookaheadVelGain * std::abs(stateOut->prevVx)) +
-                           params->lookaheadTimeGain * idx));
+                           params->lookaheadTimeGain * lookaheadDist));
     //  Interpolate path for smooth following
     //  Create interpolated points along the path
     //  Pre-allocate max interpolated points
     std::memset(&interpX[0], 0, 200U * sizeof(double));
     std::memset(&interpY[0], 0, 200U * sizeof(double));
     numInterpPoints = -1;
-    if (stateOut->numWaypoints == 1.0) {
+    if (stateOut->numWaypoints == 1U) {
       //  Single waypoint, just use it
       numInterpPoints = 0;
       interpX[0] = stateOut->pathX[0];
       interpY[0] = stateOut->pathY[0];
     } else {
       //  Interpolate between waypoints
-      i = static_cast<int>(stateOut->numWaypoints - 1.0);
-      for (b_i = 0; b_i < i; b_i++) {
-        dxSeg = stateOut->pathX[b_i];
-        dy = stateOut->pathY[b_i];
-        lookaheadY = stateOut->pathX[b_i + 1] - dxSeg;
-        dx = stateOut->pathY[b_i + 1] - dy;
-        idx = std::sqrt(lookaheadY * lookaheadY + dx * dx);
-        if (idx > 1.0E-6) {
-          idx = std::fmax(2.0, std::ceil(idx / params->interpSpacing));
-          closestIdx = static_cast<int>((idx - 1.0) + 1.0);
-          for (j = 0; j < closestIdx; j++) {
+      b_i = static_cast<int>(stateOut->numWaypoints) - 2;
+      for (i = 0; i <= b_i; i++) {
+        double a_tmp;
+        dy = stateOut->pathX[i];
+        lookaheadY = stateOut->pathY[i];
+        dx = stateOut
+                 ->pathX[static_cast<int>(static_cast<unsigned int>(i) + 1U)] -
+             dy;
+        a_tmp =
+            stateOut
+                ->pathY[static_cast<int>(static_cast<unsigned int>(i) + 1U)] -
+            lookaheadY;
+        segmentDist = std::sqrt(dx * dx + a_tmp * a_tmp);
+        if (segmentDist > 1.0E-6) {
+          numSegPoints =
+              std::fmax(2.0, std::ceil(segmentDist / params->interpSpacing));
+          c_i = static_cast<int>((numSegPoints - 1.0) + 1.0);
+          for (numToRemove = 0; numToRemove < c_i; numToRemove++) {
             if (numInterpPoints + 1 < 200) {
-              newNum = static_cast<double>(j) / (idx - 1.0);
+              segmentDist =
+                  static_cast<double>(numToRemove) / (numSegPoints - 1.0);
               numInterpPoints++;
-              interpX[numInterpPoints] = dxSeg + newNum * lookaheadY;
-              interpY[numInterpPoints] = dy + newNum * dx;
+              interpX[numInterpPoints] = dy + segmentDist * dx;
+              interpY[numInterpPoints] = lookaheadY + segmentDist * a_tmp;
             }
           }
         }
@@ -215,95 +252,116 @@ void purePursuitVelocityController(double refX, double refY, double refTheta,
     }
     //  Find lookahead point
     //  Find closest point on path to robot
-    newNum = rtInf;
-    closestIdx = 0;
-    for (b_i = 0; b_i <= numInterpPoints; b_i++) {
-      dx = interpX[b_i] - estX;
-      dy = interpY[b_i] - estY;
-      idx = std::sqrt(dx * dx + dy * dy);
-      if (idx < newNum) {
-        newNum = idx;
-        closestIdx = b_i;
+    numSegPoints = rtInf;
+    numToRemove = 0;
+    for (i = 0; i <= numInterpPoints; i++) {
+      dx = interpX[i] - estX;
+      dy = interpY[i] - estY;
+      segmentDist = std::sqrt(dx * dx + dy * dy);
+      if (segmentDist < numSegPoints) {
+        numSegPoints = segmentDist;
+        numToRemove = i;
       }
     }
     //  Search forward from closest point for lookahead distance along path
-    idx = interpX[numInterpPoints];
+    numSegPoints = interpX[numInterpPoints];
     lookaheadY = interpY[numInterpPoints];
-    newNum = 0.0;
-    i = numInterpPoints - closestIdx;
-    b_i = 0;
+    segmentDist = 0.0;
+    b_i = numInterpPoints - numToRemove;
+    i = 0;
     exitg1 = false;
-    while ((!exitg1) && (b_i <= i)) {
-      j = closestIdx + b_i;
-      if (j + 1 > closestIdx + 1) {
+    while ((!exitg1) && (i <= b_i)) {
+      c_i = numToRemove + i;
+      if (c_i + 1 > numToRemove + 1) {
         //  Accumulate distance along path segments
-        dxSeg = interpX[j] - interpX[j - 1];
-        dy = interpY[j] - interpY[j - 1];
-        newNum += std::sqrt(dxSeg * dxSeg + dy * dy);
+        dy = interpX[c_i] - interpX[c_i - 1];
+        dx = interpY[c_i] - interpY[c_i - 1];
+        segmentDist += std::sqrt(dy * dy + dx * dx);
       }
       //  Check if accumulated distance along path >= lookahead distance
-      if (newNum >= lookaheadDist) {
-        idx = interpX[j];
-        lookaheadY = interpY[j];
+      if (segmentDist >= lookaheadDist) {
+        numSegPoints = interpX[c_i];
+        lookaheadY = interpY[c_i];
         exitg1 = true;
       } else {
-        b_i++;
+        i++;
       }
     }
     //  If we didn't find a point at lookahead distance, use the farthest point
-    if (newNum < lookaheadDist) {
-      idx = interpX[numInterpPoints];
+    if (segmentDist < lookaheadDist) {
+      numSegPoints = interpX[numInterpPoints];
       lookaheadY = interpY[numInterpPoints];
     }
     //  Transform lookahead point to robot frame
-    dx = idx - estX;
+    dx = numSegPoints - estX;
     dy = lookaheadY - estY;
     //  Rotate to robot frame
-    idx = std::sin(-estYaw);
-    newNum = std::cos(-estYaw);
-    dxSeg = dx * newNum - dy * idx;
-    newNum = dx * idx + dy * newNum;
+    segmentDist = std::sin(-estYaw);
+    numSegPoints = std::cos(-estYaw);
+    lookaheadY = dx * numSegPoints - dy * segmentDist;
+    segmentDist = dx * segmentDist + dy * numSegPoints;
     //  Pure Pursuit curvature calculation
     //  Curvature: κ = 2 * y / L²
     //  Where y is lateral distance to lookahead point
     //  L is lookahead distance
-    idx = std::sqrt(dxSeg * dxSeg + newNum * newNum);
-    if (idx < 0.05) {
+    numSegPoints =
+        std::sqrt(lookaheadY * lookaheadY + segmentDist * segmentDist);
+    if (numSegPoints < 0.05) {
       //  Too close to lookahead point
-      dxSeg = 0.0;
+      numSegPoints = 0.0;
     } else {
-      dxSeg = 2.0 * newNum / (idx * idx);
+      numSegPoints = 2.0 * segmentDist / (numSegPoints * numSegPoints);
+    }
+    //  BIDIRECTIONAL SUPPORT: Determine if we should move forward or reverse
+    //  Check if lookahead point is primarily behind the robot
+    numToRemove = 1;
+    //  Default: forward motion
+    if (lookaheadY < -0.3) {
+      //  Lookahead point is significantly behind robot (x < -0.3m in robot
+      //  frame) Use reverse motion
+      numToRemove = -1;
+      //  When reversing, invert the steering (lookahead point interpretation)
+      numSegPoints = -numSegPoints;
     }
     //  Calculate velocities
-    //  Forward velocity: nominal speed
-    idx = params->vxNominal;
+    //  Forward velocity: nominal speed (with direction for bidirectional)
+    *vx = params->vxNominal * static_cast<double>(numToRemove);
     //  Reduce speed in sharp turns
-    newNum = std::abs(dxSeg);
-    if (newNum > 0.5) {
+    segmentDist = std::abs(numSegPoints);
+    if (segmentDist > 0.5) {
       //  Sharp turn, reduce speed
-      idx = params->vxNominal * 0.5;
-    } else if (newNum > 0.2) {
+      *vx = params->vxNominal * 0.5 * static_cast<double>(numToRemove);
+    } else if (segmentDist > 0.2) {
       //  Moderate turn
-      idx = params->vxNominal * 0.7;
+      *vx = params->vxNominal * 0.7 * static_cast<double>(numToRemove);
     }
-    //  Clamp forward velocity
-    *vx = std::fmax(0.0, std::fmin(params->vxMax, idx));
+    //  Clamp velocity (BIDIRECTIONAL: allow negative for reverse)
+    if (numToRemove > 0) {
+      //  Forward motion: clamp to [0, vxMax]
+      *vx = std::fmax(0.0, std::fmin(params->vxMax, *vx));
+    } else {
+      //  Reverse motion: clamp to [vxMin, 0] (vxMin should be negative)
+      *vx = std::fmax(params->vxMin, std::fmin(0.0, *vx));
+    }
     //  Angular velocity from curvature
     //  Clamp angular velocity
-    *wz = std::fmax(-params->wzMax, std::fmin(params->wzMax, *vx * dxSeg));
+    *wz =
+        std::fmax(-params->wzMax, std::fmin(params->wzMax, *vx * numSegPoints));
     //  Apply wheel speed limits
     //  Differential drive kinematics:
     //  v_left = vx - (track/2) * wz
     //  v_right = vx + (track/2) * wz
-    idx = params->track / 2.0 * *wz;
-    newNum = *vx + idx;
+    segmentDist = params->track / 2.0 * *wz;
+    numSegPoints = *vx + segmentDist;
     //  Check wheel limits
-    idx = std::abs(*vx - idx);
-    if ((idx > params->vwheelMax) || (std::abs(newNum) > params->vwheelMax)) {
+    segmentDist = std::abs(*vx - segmentDist);
+    if ((segmentDist > params->vwheelMax) ||
+        (std::abs(numSegPoints) > params->vwheelMax)) {
       //  Scale down to respect limits
-      idx = params->vwheelMax / std::fmax(idx, std::abs(newNum));
-      *vx *= idx;
-      *wz *= idx;
+      segmentDist =
+          params->vwheelMax / std::fmax(segmentDist, std::abs(numSegPoints));
+      *vx *= segmentDist;
+      *wz *= segmentDist;
     }
     //  Update state
     stateOut->prevVx = *vx;
