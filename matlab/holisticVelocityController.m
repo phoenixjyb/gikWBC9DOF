@@ -1,14 +1,14 @@
 function [Vx, Wz, stateOut] = holisticVelocityController(...
     refX, refY, refTheta, refTime, ...
     estX, estY, estYaw, ...
-    stateIn, ...
-    params)
+    params, ...
+    stateIn)
 %HOLISTICVELOCITYCONTROLLER Simplified wrapper for codegen of unifiedChassisCtrl
 %   [Vx, Wz, stateOut] = holisticVelocityController(
 %       refX, refY, refTheta, refTime,     % Target position from IK solver
 %       estX, estY, estYaw,                 % Current robot pose estimate
-%       stateIn,                            % Controller state (persistent memory)
-%       params)                             % Controller parameters
+%       params,                             % Controller parameters (required)
+%       stateIn)                            % Controller state (optional, has default)
 %
 %   Wraps gik9dof.control.unifiedChassisCtrl in "holistic" mode with
 %   scalar inputs/outputs for easier C++ code generation and ROS2 integration.
@@ -17,8 +17,8 @@ function [Vx, Wz, stateOut] = holisticVelocityController(...
 %       refX, refY, refTheta - Target base pose in world frame [m, m, rad]
 %       refTime              - Timestamp of reference [s]
 %       estX, estY, estYaw   - Estimated robot pose [m, m, rad]
-%       stateIn              - State struct (carries prev reference)
-%       params               - Parameter struct (track, Vx_max, etc.)
+%       params               - Parameter struct (track, Vx_max, etc.) - REQUIRED
+%       stateIn              - State struct (carries prev reference) - OPTIONAL
 %
 %   Outputs:
 %       Vx       - Forward velocity command [m/s]
@@ -36,8 +36,8 @@ arguments
     estX (1,1) double
     estY (1,1) double
     estYaw (1,1) double
-    stateIn struct
     params struct
+    stateIn struct = struct()
 end
 
 % Build reference struct for unifiedChassisCtrl

@@ -32,7 +32,7 @@ fprintf('[Test 1] First call (no previous reference):\n');
 [Vx, Wz, state] = holisticVelocityController(...
     1.0, 0.0, 0.0, 0.0, ...  % Target: x=1, y=0, theta=0, t=0
     0.0, 0.0, 0.0, ...        % Current: at origin
-    state, params);
+    params, state);
 
 fprintf('  Target: (1.0, 0.0, 0°)\n');
 fprintf('  Current: (0.0, 0.0, 0°)\n');
@@ -52,7 +52,7 @@ fprintf('[Test 2] Second call (moving straight forward):\n');
 [Vx, Wz, state] = holisticVelocityController(...
     2.0, 0.0, 0.0, 0.1, ...   % Target: x=2, y=0, theta=0, t=0.1
     0.0, 0.0, 0.0, ...         % Current: still at origin
-    state, params);
+    params, state);
 
 fprintf('  Target: (2.0, 0.0, 0°) at t=0.1s\n');
 fprintf('  Previous: (1.0, 0.0, 0°) at t=0.0s\n');
@@ -73,7 +73,7 @@ fprintf('[Test 3] Turning motion (heading error):\n');
 [Vx, Wz, state] = holisticVelocityController(...
     3.0, 1.0, 0.5, 0.2, ...    % Target: x=3, y=1, theta=0.5rad, t=0.2
     0.0, 0.0, 0.0, ...          % Current: still at origin
-    state, params);
+    params, state);
 
 fprintf('  Target: (3.0, 1.0, 28.6°) at t=0.2s\n');
 fprintf('  Current: (0.0, 0.0, 0°)\n');
@@ -97,7 +97,7 @@ params_fast.Vwheel_max = 0.4;  % Low wheel limit
 [Vx, Wz, state] = holisticVelocityController(...
     10.0, 0.0, 0.0, 0.3, ...   % Very far target (would need high speed)
     0.0, 0.0, 0.0, ...
-    state, params_fast);
+    params_fast, state);
 
 fprintf('  Target: Very far (10m ahead)\n');
 fprintf('  Limits: Vx_max=0.3, Vwheel_max=0.4\n');
