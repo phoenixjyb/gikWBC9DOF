@@ -15,8 +15,14 @@ fprintf('===================================================\n\n');
 
 %% Change to matlab directory
 originalDir = pwd;
-[scriptPath, ~, ~] = fileparts(mfilename('fullpath'));
-cd(scriptPath);
+
+% Check if we're already in the matlab directory
+if contains(pwd, 'matlab') && exist('purePursuitVelocityController.m', 'file')
+    scriptPath = pwd;
+else
+    [scriptPath, ~, ~] = fileparts(mfilename('fullpath'));
+    cd(scriptPath);
+end
 
 fprintf('Working directory: %s\n\n', pwd);
 
@@ -47,6 +53,7 @@ params_type.lookaheadVelGain = coder.typeof(0.0);
 params_type.lookaheadTimeGain = coder.typeof(0.0);
 params_type.vxNominal = coder.typeof(0.0);
 params_type.vxMax = coder.typeof(0.0);
+params_type.vxMin = coder.typeof(0.0);  % ADDED: Bidirectional support
 params_type.wzMax = coder.typeof(0.0);
 params_type.track = coder.typeof(0.0);
 params_type.vwheelMax = coder.typeof(0.0);

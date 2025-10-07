@@ -12,17 +12,18 @@ function [vx, wz, stateOut] = purePursuitVelocityController(...
 %   stateIn - Controller state struct (optional, has default)
 %
 % Outputs:
-%   vx - Forward velocity command (m/s)
+%   vx - Forward velocity command (m/s, positive=forward, negative=reverse)
 %   wz - Angular velocity command (rad/s)
 %   stateOut - Updated controller state
 %
 % Design:
 %   - Path buffer: 30 waypoints max
 %   - Update rate: 100 Hz (dt = 0.01s)
-%   - Max speed: 1.5 m/s
+%   - Max speed: 1.5 m/s forward, -1.0 m/s reverse
 %   - Adaptive lookahead: L = L_base + k_v * vx + k_t * dt_since_ref
 %   - Interpolation: Linear between waypoints
 %   - Continuous reference acceptance (no goal stop)
+%   - BIDIRECTIONAL: Automatically detects forward/reverse based on waypoint position
 
 % Copyright 2025, Mobile Manipulator Team
 
@@ -39,6 +40,7 @@ lookaheadVelGain = params.lookaheadVelGain; % Velocity-dependent gain
 lookaheadTimeGain = params.lookaheadTimeGain; % Time-dependent gain
 vxNominal = params.vxNominal;              % Nominal forward speed (m/s)
 vxMax = params.vxMax;                      % Max forward speed (m/s)
+vxMin = params.vxMin;                      % Max reverse speed (m/s, negative)
 wzMax = params.wzMax;                      % Max angular rate (rad/s)
 track = params.track;                      % Wheel track width (m)
 vwheelMax = params.vwheelMax;              % Max wheel speed (m/s)
@@ -265,22 +267,40 @@ else
     curvature = 2.0 * yLookahead / (L_actual * L_actual);
 end
 
+%% BIDIRECTIONAL SUPPORT: Determine if we should move forward or reverse
+% Check if lookahead point is primarily behind the robot
+vx_direction = 1.0;  % Default: forward motion
+
+if xLookahead < -0.3
+    % Lookahead point is significantly behind robot (x < -0.3m in robot frame)
+    % Use reverse motion
+    vx_direction = -1.0;
+    % When reversing, invert the steering (lookahead point interpretation)
+    curvature = -curvature;
+end
+
 %% Calculate velocities
-% Forward velocity: nominal speed
-vx = vxNominal;
+% Forward velocity: nominal speed (with direction for bidirectional)
+vx = vxNominal * vx_direction;
 
 % Reduce speed in sharp turns
 curvatureMag = abs(curvature);
 if curvatureMag > 0.5
     % Sharp turn, reduce speed
-    vx = vxNominal * 0.5;
+    vx = vxNominal * 0.5 * vx_direction;
 elseif curvatureMag > 0.2
     % Moderate turn
-    vx = vxNominal * 0.7;
+    vx = vxNominal * 0.7 * vx_direction;
 end
 
-% Clamp forward velocity
-vx = max(0.0, min(vxMax, vx));
+% Clamp velocity (BIDIRECTIONAL: allow negative for reverse)
+if vx_direction > 0.0
+    % Forward motion: clamp to [0, vxMax]
+    vx = max(0.0, min(vxMax, vx));
+else
+    % Reverse motion: clamp to [vxMin, 0] (vxMin should be negative)
+    vx = max(vxMin, min(0.0, vx));
+end
 
 % Angular velocity from curvature
 wz = vx * curvature;
