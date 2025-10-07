@@ -170,6 +170,14 @@ GIK9DOFSolverNode::GIK9DOFSolverNode() : Node("gik9dof_solver_node")
             params.goal_tolerance_xy = 0.05;
             params.goal_tolerance_theta = 0.1;
             params.planner_time_limit_ms = 50.0;
+            params.velocity_control_mode = velocity_control_mode_;
+            
+            // Pass Pure Pursuit params if mode 2
+            if (velocity_control_mode_ == 2) {
+                params.pp_params = &pp_params_;
+            } else {
+                params.pp_params = nullptr;
+            }
             
             // Create Stage B controller via factory (returns raw pointer)
             stage_b_controller_ = gik9dof::createStageBController(this, params);

@@ -274,20 +274,38 @@ void purePursuitVelocityController(double refX, double refY, double refTheta,
     } else {
       dxSeg = 2.0 * newNum / (idx * idx);
     }
+    
+    //  BIDIRECTIONAL SUPPORT: Determine if we should move forward or reverse
+    //  Check if lookahead point is primarily behind the robot
+    double vx_direction = 1.0;  // Default: forward
+    if (dxSeg < -0.3) {
+      //  Lookahead point is significantly behind robot (x < -0.3m in robot frame)
+      //  Use reverse motion
+      vx_direction = -1.0;
+      //  When reversing, invert the steering (lookahead point interpretation)
+      dxSeg = -dxSeg;
+    }
+    
     //  Calculate velocities
-    //  Forward velocity: nominal speed
-    idx = params->vxNominal;
+    //  Forward velocity: nominal speed (with direction)
+    idx = params->vxNominal * vx_direction;
     //  Reduce speed in sharp turns
     newNum = std::abs(dxSeg);
     if (newNum > 0.5) {
       //  Sharp turn, reduce speed
-      idx = params->vxNominal * 0.5;
+      idx = params->vxNominal * 0.5 * vx_direction;
     } else if (newNum > 0.2) {
       //  Moderate turn
-      idx = params->vxNominal * 0.7;
+      idx = params->vxNominal * 0.7 * vx_direction;
     }
-    //  Clamp forward velocity
-    *vx = std::fmax(0.0, std::fmin(params->vxMax, idx));
+    //  Clamp velocity (BIDIRECTIONAL: allow negative for reverse)
+    if (vx_direction > 0.0) {
+      //  Forward motion: clamp to [0, vxMax]
+      *vx = std::fmax(0.0, std::fmin(params->vxMax, idx));
+    } else {
+      //  Reverse motion: clamp to [vxMin, 0]
+      *vx = std::fmax(params->vxMin, std::fmin(0.0, idx));
+    }
     //  Angular velocity from curvature
     //  Clamp angular velocity
     *wz = std::fmax(-params->wzMax, std::fmin(params->wzMax, *vx * dxSeg));

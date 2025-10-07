@@ -19,9 +19,9 @@
 
 ## Question 3: Pure Pursuit Controller Usage
 
-### ❌ **NOT used for all cases** - Selective usage only
+### ✅ **NOW used for all path tracking cases** - Universal smooth tracking
 
-**Current Implementation:**
+**Updated Implementation (October 8, 2025):**
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -35,10 +35,11 @@
 │    - Outputs: Velocity commands (vx, wz)                    │
 │                                                              │
 │  STAGED MODE - Stage B:                                     │
-│    ❌ NO Pure Pursuit                                        │
-│    - Uses: Hybrid A* planner output directly                │
-│    - Approach: Nearest waypoint lookup                      │
-│    - Outputs: Vx, Wz from path waypoints                    │
+│    ✅ Pure Pursuit NOW INTEGRATED (Oct 8, 2025)             │
+│    - Path Source: Hybrid A* geometric waypoints (x,y,θ)     │
+│    - Controller: Pure Pursuit smooth tracking               │
+│    - Outputs: Smooth Vx, Wz (not primitive jumps)           │
+│    - Benefit: Replaces jerky primitive velocities           │
 │                                                              │
 │  STAGED MODE - Stage C:                                     │
 │    ✅ Pure Pursuit Controller                               │
@@ -92,9 +93,9 @@ if (velocity_control_mode_ == 2) {
 
 ---
 
-#### **2. Staged Mode - Stage B (Chassis Planning)**
+#### **2. Staged Mode - Stage B (Chassis Planning) - UPDATED Oct 8, 2025**
 
-**Code Location:** `stage_b_chassis_plan.cpp` lines 315-352
+**Code Location:** `stage_b_chassis_plan.cpp` lines 315-397
 
 ```cpp
 void StageBController::executeB1_PureHybridAStar(
@@ -107,38 +108,75 @@ void StageBController::executeB1_PureHybridAStar(
         return;
     }
     
-    // Find nearest waypoint (simple nearest-neighbor)
-    int nearest_idx = 0;
-    double min_dist = 1e9;
+    // Stage B1: Use Pure Pursuit to track Hybrid A* path
+    // Hybrid A* provides kinematically-feasible geometric waypoints
+    // Pure Pursuit provides smooth velocity commands to follow them
     
-    for (size_t i = state_.current_waypoint_idx; i < state_.path.size(); i++) {
-        double dx = state_.path[i].x - current_base_pose.x();
-        double dy = state_.path[i].y - current_base_pose.y();
-        double dist = std::sqrt(dx * dx + dy * dy);
+    // Use Pure Pursuit controller to track the path
+    if (params_.velocity_control_mode == 2) {
+        // Find next waypoint ahead for reference (lookahead-based)
+        int lookahead_idx = state_.current_waypoint_idx;
+        // ... nearest waypoint search ...
         
-        if (dist < min_dist) {
-            min_dist = dist;
-            nearest_idx = i;
-        }
+        // Extract reference from next waypoint
+        double refX = state_.path[lookahead_idx].x;
+        double refY = state_.path[lookahead_idx].y;
+        double refTheta = state_.path[lookahead_idx].theta;
+        double refTime = node_->now().seconds();
+        
+        // Current pose estimate
+        double estX = current_base_pose.x();
+        double estY = current_base_pose.y();
+        double estYaw = current_base_pose.z();
+        
+        // Call Pure Pursuit controller
+        double Vx, Wz;
+        gik9dof_purepursuit::struct1_T newState;
+        
+        gik9dof_purepursuit::purePursuitVelocityController(
+            refX, refY, refTheta, refTime,
+            estX, estY, estYaw,
+            &params_.pp_params,
+            &pp_state_,
+            &Vx, &Wz,
+            &newState
+        );
+        
+        // Update state for next iteration
+        pp_state_ = newState;
+        
+        // Publish smooth velocity command
+        base_cmd.linear.x = Vx;
+        base_cmd.angular.z = Wz;
     }
-    
-    state_.current_waypoint_idx = nearest_idx;
-    
-    // Use velocity commands DIRECTLY from nearest waypoint
-    base_cmd.linear.x = state_.path[nearest_idx].Vx;
-    base_cmd.angular.z = state_.path[nearest_idx].Wz;
 }
 ```
 
-❌ **Pure Pursuit NOT used**  
-**Instead:** Direct waypoint velocity lookup  
-**Reason:** Hybrid A* already provides velocity commands in path  
-**Algorithm:** Nearest-neighbor waypoint tracking
+✅ **Pure Pursuit NOW USED (velocity_control_mode=2)**  
+❌ **Fallback:** Direct primitive velocities (other modes - NOT RECOMMENDED)  
 
-**Why not Pure Pursuit?**
-- Hybrid A* output includes (x, y, θ, Vx, Wz) per waypoint
-- Pure Pursuit would be redundant (already have velocity commands)
-- Stage B is chassis-only, simpler control approach
+**Why the Change?**
+
+**Original (Incorrect) Assumption:**
+- "Hybrid A* already provides velocity commands (Vx, Wz)"
+- "Pure Pursuit would be redundant"
+
+**Reality Discovered:**
+- Hybrid A* Vx/Wz are **MOTION PRIMITIVES** (discrete search actions)
+- Primitive velocities: Fixed values like 0.4, 0.6, 0.8 m/s
+- Direct use causes **JERKY MOTION** (step changes in velocity)
+- Motion primitives are for **GRAPH SEARCH**, not smooth tracking
+
+**Correct Architecture:**
+1. **Hybrid A* Output:** Kinematically-feasible geometric path (x, y, θ waypoints)
+2. **Pure Pursuit Input:** Geometric waypoints from Hybrid A*  
+3. **Pure Pursuit Output:** Smooth, lookahead-based velocity commands
+4. **Result:** Smooth tracking instead of primitive jumps
+
+**Benefit:**
+- ✅ Smooth velocity transitions (no 0.4→0.6→0.8 m/s jumps)
+- ✅ Lookahead-based steering (better path accuracy)
+- ✅ Consistent controller across all modes
 
 ---
 
@@ -176,15 +214,15 @@ void GIK9DOFSolverNode::executeHolisticControl(const geometry_msgs::msg::Pose& t
 
 gik9dof_solver_node:
   ros__parameters:
-    velocity_control_mode: 2  # 0=legacy, 1=heading, 2=pure pursuit
+    velocity_control_mode: 2  # 0=legacy, 1=heading, 2=pure pursuit (RECOMMENDED)
 ```
 
 **Runtime Switching:**
 - **Mode 0:** Legacy 5-point finite difference (backward compatibility)
 - **Mode 1:** Simple heading controller (P + feedforward)
-- **Mode 2:** Pure Pursuit path following (lookahead-based)
+- **Mode 2:** Pure Pursuit path following (lookahead-based) **← RECOMMENDED FOR ALL MODES**
 
-**Only applies to Holistic and Stage C!** Stage B has its own controller.
+**Now applies to ALL modes:** Holistic, Stage B, and Stage C all benefit from Pure Pursuit smoothing!
 
 ---
 

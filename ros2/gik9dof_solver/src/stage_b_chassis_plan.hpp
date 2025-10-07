@@ -26,37 +26,42 @@
 #include <vector>
 #include <deque>
 
+// MATLAB Coder generated velocity controllers
+#include "velocity_controller/holisticVelocityController.h"
+#include "velocity_controller/holisticVelocityController_types.h"
+#include "velocity_controller/holisticVelocityController_initialize.h"
+#include "velocity_controller/holisticVelocityController_terminate.h"
+#include "purepursuit/purePursuitVelocityController.h"
+#include "purepursuit/purePursuitVelocityController_types.h"
+#include "purepursuit/purePursuitVelocityController_initialize.h"
+#include "purepursuit/purePursuitVelocityController_terminate.h"
+
 // MATLAB Coder generated planner
 #include "HybridAStarPlanner.h"
 #include "OccupancyGrid2D.h"
 #include "gik9dof_planHybridAStarCodegen_types.h"
 
-// MATLAB Coder generated GIK solver (for Stage B2)
-#include "GIKSolver.h"
-#include "gik9dof_codegen_realtime_solveGIKStepWrapper_types.h"
-
-// MATLAB Coder generated velocity controllers
-#include "velocity_controller/holisticVelocityController.h"
-#include "velocity_controller/holisticVelocityController_types.h"
-#include "purepursuit/purePursuitVelocityController.h"
-#include "purepursuit/purePursuitVelocityController_types.h"
+// NOTE: NOT including GIKSolver.h to avoid struct0_T/struct1_T conflicts with planner types
+// Stage B2 will use planner waypoints directly without invoking full GIK solver
+// (The full 9-DOF GIK solver is used in Stage C, not Stage B which is chassis-only)
 
 namespace gik9dof {
 
 /**
- * @brief Stage B execution modes
+ * @brief Stage B execution modes (internal detailed version)
  */
-enum class StageBMode {
+enum class StageBMode_Internal {
     B1_PURE_HYBRID_ASTAR,  // Pure Hybrid A* → Velocity
     B2_GIK_ASSISTED        // Hybrid A* → GIK 3-DOF → Velocity
 };
 
 /**
- * @brief Stage B controller parameters
+ * @brief Stage B controller parameters (internal detailed version)
+ * Note: Factory uses simpler StageBParams from stage_b_factory.hpp
  */
-struct StageBParams {
+struct StageBParams_Internal {
     // Mode selection
-    StageBMode mode;
+    StageBMode_Internal mode;
     
     // Hybrid A* planner parameters
     double grid_resolution;          // Occupancy grid resolution (m/cell)
@@ -75,6 +80,9 @@ struct StageBParams {
     
     // Velocity controller selection (shared with holistic mode)
     int velocity_control_mode;       // 0=legacy, 1=simple heading, 2=pure pursuit
+    
+    // Pure Pursuit parameters (for mode 2)
+    gik9dof_purepursuit::struct0_T pp_params;  // Pure Pursuit controller params
 };
 
 /**
@@ -126,9 +134,9 @@ public:
      * @brief Constructor
      * 
      * @param node ROS2 node pointer for publishers/subscribers
-     * @param params Stage B parameters
+     * @param params Stage B parameters (internal detailed version)
      */
-    StageBController(rclcpp::Node* node, const StageBParams& params);
+    StageBController(rclcpp::Node* node, const StageBParams_Internal& params);
     
     /**
      * @brief Destructor
@@ -227,15 +235,15 @@ private:
     rclcpp::Node* node_;
     
     // Parameters
-    StageBParams params_;
+    StageBParams_Internal params_;
     
     // State
     StageBState state_;
     
     // MATLAB Coder objects
     std::unique_ptr<gik9dof::HybridAStarPlanner> planner_;
-    std::unique_ptr<gik9dof::GIKSolver> gik_solver_;  // For Stage B2
     gik9dof::OccupancyGrid2D occupancy_grid_;
+    // Note: GIK solver removed - Stage B is chassis-only planning, full 9-DOF GIK used in Stage C
     
     // ROS2 subscribers
     rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr grid_sub_;
@@ -244,19 +252,22 @@ private:
     nav_msgs::msg::OccupancyGrid::SharedPtr latest_grid_;
     std::mutex grid_mutex_;
     
-    // Velocity controller state (mode 1: simple heading)
-    gik9dof_velocity::struct0_T vel_state_;
-    gik9dof_velocity::struct1_T vel_params_;
+    // Velocity controller (mode 1: simple heading)
+    gik9dof_velocity::struct0_T vel_params_;   // Parameters: track, Vwheel_max, etc.
+    gik9dof_velocity::struct1_T vel_state_;    // State with prev (x, y, theta, t)
     bool vel_controller_initialized_;
     
-    // Pure Pursuit state (mode 2)
-    gik9dof_purepursuit::struct0_T pp_state_;
-    gik9dof_purepursuit::struct1_T pp_params_;
+    // Pure Pursuit controller (mode 2)
+    gik9dof_purepursuit::struct0_T pp_params_; // Parameters: lookahead, vxNominal, etc.
+    gik9dof_purepursuit::struct1_T pp_state_;  // State: pathX[], pathY[], prevVx, etc.
     bool pp_controller_initialized_;
     
     // Logger
     rclcpp::Logger logger_;
 };
+
+// NOTE: Factory functions are declared in stage_b_factory.hpp, not here!
+// This avoids duplicate declarations.
 
 } // namespace gik9dof
 

@@ -9,7 +9,8 @@ param(
     [string]$Username = "cr",  # Updated default username for Orin
     # user name is cr; but we drop stuff to /home/nvidia/ . 
     [Parameter(Mandatory=$false)]
-    [string]$RemotePath = "/home/nvidia/camo_9dof/gikWBC9DOF",  # Updated deployment path
+    # [string]$RemotePath = "/home/nvidia/camo_9dof/gikWBC9DOF",  # Updated deployment path
+    [string]$RemotePath = "/home/nvidia/temp_gikrepo",  # Updated deployment path
 
     [Parameter(Mandatory=$false)]
     [switch]$SkipMeshes = $false

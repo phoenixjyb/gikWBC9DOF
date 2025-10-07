@@ -19,6 +19,7 @@ struct struct0_T {
   double lookaheadTimeGain;
   double vxNominal;
   double vxMax;
+  double vxMin;          // ADDED: Max reverse velocity (negative value)
   double wzMax;
   double track;
   double vwheelMax;

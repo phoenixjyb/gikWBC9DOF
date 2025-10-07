@@ -8,12 +8,13 @@
  */
 
 #include "stage_b_chassis_plan.hpp"
+#include "stage_b_factory.hpp"  // For factory StageBParams definition
 #include <cmath>
 #include <algorithm>
 
 namespace gik9dof {
 
-StageBController::StageBController(rclcpp::Node* node, const StageBParams& params)
+StageBController::StageBController(rclcpp::Node* node, const StageBParams_Internal& params)
     : node_(node),
       params_(params),
       vel_controller_initialized_(false),
@@ -32,11 +33,8 @@ StageBController::StageBController(rclcpp::Node* node, const StageBParams& param
     // Initialize MATLAB Coder planner
     planner_ = std::make_unique<gik9dof::HybridAStarPlanner>();
     
-    // Initialize GIK solver for Stage B2 mode
-    if (params_.mode == StageBMode::B2_GIK_ASSISTED) {
-        gik_solver_ = std::make_unique<gik9dof::GIKSolver>();
-        RCLCPP_INFO(logger_, "Stage B2 mode: GIK 3-DOF solver initialized");
-    }
+    // Note: Stage B is chassis-only planning (base: x,y,theta)
+    // Full 9-DOF GIK solver is used in Stage C for whole-body control
     
     // Initialize velocity controllers based on mode
     if (params_.velocity_control_mode == 1) {
@@ -78,7 +76,7 @@ StageBController::StageBController(rclcpp::Node* node, const StageBParams& param
     
     RCLCPP_INFO(logger_, "Stage B Controller initialized");
     RCLCPP_INFO(logger_, "  Mode: %s", 
-        params_.mode == StageBMode::B1_PURE_HYBRID_ASTAR ? "B1 (Pure Hybrid A*)" : "B2 (GIK-Assisted)");
+        params_.mode == StageBMode_Internal::B1_PURE_HYBRID_ASTAR ? "B1 (Pure Hybrid A*)" : "B2 (GIK-Assisted)");
     RCLCPP_INFO(logger_, "  Grid resolution: %.3f m", params_.grid_resolution);
     RCLCPP_INFO(logger_, "  Max planning time: %.0f ms", params_.max_planning_time * 1000.0);
     RCLCPP_INFO(logger_, "  Goal tolerance: xy=%.2f m, theta=%.1f deg", 
@@ -170,7 +168,7 @@ bool StageBController::executeStep(const Eigen::Vector3d& current_base_pose,
     }
     
     // Execute based on mode
-    if (params_.mode == StageBMode::B1_PURE_HYBRID_ASTAR) {
+    if (params_.mode == StageBMode_Internal::B1_PURE_HYBRID_ASTAR) {
         executeB1_PureHybridAStar(current_base_pose, base_cmd);
     } else {
         executeB2_GIKAssisted(current_base_pose, current_arm_config, base_cmd);
@@ -324,38 +322,99 @@ void StageBController::executeB1_PureHybridAStar(const Eigen::Vector3d& current_
         return;
     }
     
-    // Stage B1: Use velocity commands directly from Hybrid A* path
-    // Find nearest waypoint (simple nearest-neighbor)
-    int nearest_idx = 0;
-    double min_dist = 1e9;
+    // Stage B1: Use Pure Pursuit to track Hybrid A* path
+    // Hybrid A* provides kinematically-feasible geometric waypoints
+    // Pure Pursuit provides smooth velocity commands to follow them
     
-    for (size_t i = state_.current_waypoint_idx; i < state_.path.size(); i++) {
-        double dx = state_.path[i].x - current_base_pose.x();
-        double dy = state_.path[i].y - current_base_pose.y();
-        double dist = std::sqrt(dx * dx + dy * dy);
+    // Use Pure Pursuit controller to track the path
+    if (params_.velocity_control_mode == 2) {
+        // Find next waypoint ahead for reference (lookahead-based)
+        int lookahead_idx = state_.current_waypoint_idx;
+        double min_dist = 1e9;
         
-        if (dist < min_dist) {
-            min_dist = dist;
-            nearest_idx = i;
+        for (size_t i = state_.current_waypoint_idx; i < state_.path.size(); i++) {
+            double dx = state_.path[i].x - current_base_pose.x();
+            double dy = state_.path[i].y - current_base_pose.y();
+            double dist = std::sqrt(dx * dx + dy * dy);
+            
+            if (dist < min_dist) {
+                min_dist = dist;
+                lookahead_idx = i;
+            }
+            
+            // Stop searching if we're past the robot
+            if (i > static_cast<size_t>(state_.current_waypoint_idx + 10)) break;
         }
         
-        // Stop searching if we're past the robot
-        if (i > state_.current_waypoint_idx + 10) break;
+        state_.current_waypoint_idx = lookahead_idx;
+        
+        // Extract reference from next waypoint
+        double refX = state_.path[lookahead_idx].x;
+        double refY = state_.path[lookahead_idx].y;
+        double refTheta = state_.path[lookahead_idx].theta;
+        double refTime = node_->now().seconds();
+        
+        // Current pose estimate
+        double estX = current_base_pose.x();
+        double estY = current_base_pose.y();
+        double estYaw = current_base_pose.z();
+        
+        // Call Pure Pursuit controller
+        double Vx, Wz;
+        gik9dof_purepursuit::struct1_T newState;
+        
+        gik9dof_purepursuit::purePursuitVelocityController(
+            refX, refY, refTheta, refTime,
+            estX, estY, estYaw,
+            &params_.pp_params,
+            &pp_state_,
+            &Vx, &Wz,
+            &newState
+        );
+        
+        // Update state for next iteration
+        pp_state_ = newState;
+        
+        // Publish smooth velocity command
+        base_cmd.linear.x = Vx;
+        base_cmd.angular.z = Wz;
+        
+        RCLCPP_INFO_THROTTLE(logger_, *node_->get_clock(), 1000,
+            "Stage B1 (Pure Pursuit): waypoint %d/%d, Vx=%.2f, Wz=%.2f, dist=%.2f",
+            lookahead_idx, state_.total_waypoints, Vx, Wz, min_dist);
+        
+    } else {
+        // Fallback: Simple nearest waypoint (for legacy mode)
+        int nearest_idx = 0;
+        double min_dist = 1e9;
+        
+        for (size_t i = state_.current_waypoint_idx; i < state_.path.size(); i++) {
+            double dx = state_.path[i].x - current_base_pose.x();
+            double dy = state_.path[i].y - current_base_pose.y();
+            double dist = std::sqrt(dx * dx + dy * dy);
+            
+            if (dist < min_dist) {
+                min_dist = dist;
+                nearest_idx = i;
+            }
+            
+            if (i > static_cast<size_t>(state_.current_waypoint_idx + 10)) break;
+        }
+        
+        state_.current_waypoint_idx = nearest_idx;
+        
+        // Use velocity commands from nearest waypoint (jerky, not recommended)
+        base_cmd.linear.x = state_.path[nearest_idx].Vx;
+        base_cmd.angular.z = state_.path[nearest_idx].Wz;
+        
+        RCLCPP_WARN_THROTTLE(logger_, *node_->get_clock(), 5000,
+            "Stage B1: Using raw primitive velocities (mode %d) - consider mode 2 for smoother tracking",
+            params_.velocity_control_mode);
     }
-    
-    state_.current_waypoint_idx = nearest_idx;
-    
-    // Use velocity commands from nearest waypoint
-    base_cmd.linear.x = state_.path[nearest_idx].Vx;
-    base_cmd.angular.z = state_.path[nearest_idx].Wz;
-    
-    RCLCPP_INFO_THROTTLE(logger_, *node_->get_clock(), 1000,
-        "Stage B1: waypoint %d/%d, Vx=%.2f, Wz=%.2f",
-        nearest_idx, state_.total_waypoints, base_cmd.linear.x, base_cmd.angular.z);
 }
 
 void StageBController::executeB2_GIKAssisted(const Eigen::Vector3d& current_base_pose,
-                                              const std::vector<double>& current_arm_config,
+                                              const std::vector<double>& /* current_arm_config */,
                                               geometry_msgs::msg::Twist& base_cmd)
 {
     if (state_.path.empty()) {
@@ -404,6 +463,99 @@ bool StageBController::convertOccupancyGrid(const nav_msgs::msg::OccupancyGrid& 
                      ros_grid.info.height);
     
     return true;
+}
+
+/**
+ * @brief Factory function to create Stage B controller
+ * 
+ * Implemented here to avoid exposing StageBController constructor in header.
+ * Maps from factory params (stage_b_factory.hpp) to internal params (stage_b_chassis_plan.hpp).
+ */
+gik9dof::StageBController* createStageBController(
+    rclcpp::Node* node,
+    const gik9dof::StageBParams& factory_params)
+{
+    // Map factory params to internal params structure
+    StageBParams_Internal internal_params;
+    
+    // Map mode
+    internal_params.mode = (factory_params.mode == gik9dof::StageBMode::HybridAStar) 
+                           ? StageBMode_Internal::B1_PURE_HYBRID_ASTAR 
+                           : StageBMode_Internal::B2_GIK_ASSISTED;
+    
+    // Map planner params
+    internal_params.grid_resolution = 0.1;  // 10cm cells
+    internal_params.max_planning_time = factory_params.planner_time_limit_ms / 1000.0;
+    internal_params.robot_radius = 0.35;  // Default robot radius
+    internal_params.replan_threshold = 0.5;  // 50cm movement triggers replan
+    
+    // Map goal tolerance
+    internal_params.xy_tolerance = factory_params.goal_tolerance_xy;
+    internal_params.theta_tolerance = factory_params.goal_tolerance_theta;
+    
+    // GIK 3-DOF params (defaults)
+    internal_params.distance_lower_bound = 0.01;
+    internal_params.distance_weight = 1.0;
+    internal_params.use_warm_start = true;
+    
+    // Velocity controller mode
+    internal_params.velocity_control_mode = factory_params.velocity_control_mode;
+    
+    // Copy Pure Pursuit params if provided (ptr check)
+    if (factory_params.pp_params != nullptr) {
+        internal_params.pp_params = *(factory_params.pp_params);
+    }
+    
+    // Create controller with internal params
+    return new StageBController(node, internal_params);
+}
+
+/**
+ * @brief Destroy Stage B controller
+ */
+void destroyStageBController(gik9dof::StageBController* controller)
+{
+    delete controller;
+}
+
+/**
+ * @brief Wrapper: Activate Stage B controller
+ */
+void stageBActivate(gik9dof::StageBController* controller,
+                   const Eigen::Vector3d& current_base_pose,
+                   const Eigen::Vector3d& goal_base_pose,
+                   const std::vector<double>& arm_static_config)
+{
+    controller->activate(current_base_pose, goal_base_pose, arm_static_config);
+}
+
+/**
+ * @brief Wrapper: Execute one step of Stage B controller
+ */
+bool stageBExecuteStep(gik9dof::StageBController* controller,
+                      const Eigen::Vector3d& current_base_pose,
+                      const std::vector<double>& current_arm_config,
+                      geometry_msgs::msg::Twist& base_cmd,
+                      sensor_msgs::msg::JointState& arm_cmd)
+{
+    return controller->executeStep(current_base_pose, current_arm_config, base_cmd, arm_cmd);
+}
+
+/**
+ * @brief Wrapper: Check if chassis has reached goal
+ */
+bool stageBChassisReachedGoal(gik9dof::StageBController* controller,
+                             const Eigen::Vector3d& current_base_pose)
+{
+    return controller->chassisReachedGoal(current_base_pose);
+}
+
+/**
+ * @brief Wrapper: Deactivate Stage B controller
+ */
+void stageBDeactivate(gik9dof::StageBController* controller)
+{
+    controller->deactivate();
 }
 
 } // namespace gik9dof

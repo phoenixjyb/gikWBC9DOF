@@ -118,10 +118,32 @@ endif()
 # Disable warnings for MATLAB generated code
 target_compile_options(hybrid_astar_planner PRIVATE -w)
 
+# ===== Stage B Controller Library =====
+# Separate library to isolate namespace conflicts between GIK solver and planner
+add_library(stage_b_controller STATIC
+  src/stage_b_chassis_plan.cpp
+)
+
+target_include_directories(stage_b_controller PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/src
+  ${PLANNER_GENERATED_DIR}
+)
+
+ament_target_dependencies(stage_b_controller
+  rclcpp
+  sensor_msgs
+  nav_msgs
+  geometry_msgs
+)
+
+target_link_libraries(stage_b_controller
+  hybrid_astar_planner  # Stage B uses the planner
+  Eigen3::Eigen
+)
+
 # Solver node executable
 add_executable(gik9dof_solver_node
   src/gik9dof_solver_node.cpp
-  # src/stage_b_chassis_plan.cpp    # Stage B chassis planning controller (DISABLED - needs fixing)
   src/collisioncodegen_stubs.cpp  # Stub implementations for MATLAB collision functions
   src/coder_posix_time_stubs.cpp  # Stub implementations for MATLAB POSIX time functions
   # MATLAB Coder generated velocity controller (simple heading)
@@ -147,8 +169,8 @@ ament_target_dependencies(gik9dof_solver_node
 )
 
 target_link_libraries(gik9dof_solver_node
-  gik_matlab_solver  # MATLAB generated solver library
-  hybrid_astar_planner  # MATLAB generated planner library (NEW)
+  gik_matlab_solver      # MATLAB generated solver library
+  stage_b_controller     # Stage B controller (uses planner library)
   Eigen3::Eigen
   OpenMP::OpenMP_CXX
 )

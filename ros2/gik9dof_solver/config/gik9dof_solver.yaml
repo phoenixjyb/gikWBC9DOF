@@ -49,6 +49,7 @@ gik9dof_solver_node:
       lookahead_time_gain: 0.1  # Time-based lookahead gain
       vx_nominal: 1.0           # Nominal forward velocity (m/s)
       vx_max: 1.5               # Max forward velocity (m/s)
+      vx_min: -1.0              # Max reverse velocity (m/s) - BIDIRECTIONAL SUPPORT
       wz_max: 2.0               # Max angular velocity (rad/s)
       track: 0.674              # Wheel track width (m)
       vwheel_max: 2.0           # Max wheel speed (m/s)
