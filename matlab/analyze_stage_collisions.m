@@ -34,11 +34,11 @@ if ~isfield(data, 'log')
 end
 log = data.log;
 
-robotColumn = gik9dof.createRobotModel();
+[robotColumn, ~] = gik9dof.createRobotModel();
 configTools = gik9dof.configurationTools(robotColumn);
 jointNames = string(configTools.templateJointNames());
 
-robotRow = gik9dof.createRobotModel("DataFormat", "row");
+[robotRow, ~] = gik9dof.createRobotModel("DataFormat", "row");
 colTools = gik9dof.collisionTools(robotRow);
 colTools.apply();
 

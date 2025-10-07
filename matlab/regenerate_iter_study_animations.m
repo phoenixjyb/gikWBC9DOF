@@ -25,6 +25,7 @@ arguments
     options.VideoFrameRate (1,1) double {mustBePositive} = 25
     options.FigureScale (1,1) double {mustBePositive} = 1.0
     options.StageLabels (1,:) string = ["Phase 1", "Phase 2", "Phase 3"]
+    options.CreatePurePursuitVideo (1,1) logical = false
 end
 
 resultsDir = string(resultsDir);
@@ -58,7 +59,8 @@ armIdx = find(armMask);
 armJointNames = cellstr(jointNames(armIdx));
 
 outputs = repmat(struct('Mode', "", 'IterationCap', NaN, ...
-    'LogPath', "", 'VideoPath', ""), numel(logFiles), 1);
+    'LogPath', "", 'VideoPath', "", 'PurePursuitVideoPath', "", ...
+    'PurePursuitCommands', ""), numel(logFiles), 1);
 
 for k = 1:numel(logFiles)
     logPath = fullfile(logFiles(k).folder, logFiles(k).name);
@@ -85,10 +87,20 @@ for k = 1:numel(logFiles)
         timeVec = (0:numSamples-1) * sampleTime;
     end
 
-    baseTrajectory = qTraj(baseIdx, :).';
+    if ~exist('sampleTime','var') || isempty(sampleTime)
+        if numel(timeVec) > 1
+            sampleTime = mean(diff(timeVec));
+        else
+            sampleTime = 1 / getfieldwithdefault(log, 'rateHz', 30);
+        end
+    end
+
+    basePathFull = qTraj(baseIdx, :).';
+    baseTimesFull = timeVec;
     armTrajectory = qTraj(armIdx, :).';
     armTimes = timeVec;
-    baseTimes = timeVec;
+    baseTrajectory = basePathFull;
+    baseTimes = baseTimesFull;
 
     eeName = "left_gripper_link";
     eePath = zeros(numSamples, 3);
@@ -159,7 +171,18 @@ for k = 1:numel(logFiles)
     obstacles = [];
     if isfield(log, 'floorDiscs') && ~isempty(log.floorDiscs)
         obstacles = log.floorDiscs;
+        if isfield(log, 'environment') && isfield(log.environment, 'DistanceMargin')
+            distMargin = log.environment.DistanceMargin;
+        else
+            distMargin = 0;
+        end
+        for d = 1:numel(obstacles)
+            obstacles(d).DistanceMargin = distMargin;
+        end
     end
+
+    pureVideoPath = "";
+    pureCmdPath = "";
 
     try
         gik9dof.viz.animate_whole_body(robotStruct, armJointNames, armTrajectory, armTimes, ...
@@ -177,10 +200,52 @@ for k = 1:numel(logFiles)
         videoPath = "";
     end
 
+    if options.CreatePurePursuitVideo
+        followerOpts = struct('SampleTime', sampleTime, ...
+            'LookaheadBase', 0.8, ...
+            'LookaheadVelGain', 0.3, ...
+            'LookaheadTimeGain', 0.1, ...
+            'VxNominal', 1.0, ...
+            'VxMax', 1.5, ...
+            'VxMin', -1.0, ...
+            'WzMax', 2.0, ...
+            'TrackWidth', 0.674, ...
+            'WheelBase', 0.36, ...
+            'MaxWheelSpeed', 2.0, ...
+            'WaypointSpacing', 0.15, ...
+            'PathBufferSize', 30.0, ...
+            'GoalTolerance', 0.2, ...
+            'InterpSpacing', 0.05, ...
+            'ReverseEnabled', true);
+
+        simRes = gik9dof.control.simulatePurePursuitExecution(basePathFull, ...
+            'SampleTime', sampleTime, 'FollowerOptions', followerOpts);
+
+        pureVideoName = sprintf('anim_purepursuit_%s_iter%s.mp4', modeLabel, iterLabel);
+        pureVideoPath = fullfile(resultsDir, pureVideoName);
+        try
+            gik9dof.viz.animatePurePursuitSimulation(basePathFull, basePathFull, simRes, obstacles, ...
+                'VideoFile', pureVideoPath, 'FrameRate', options.VideoFrameRate, ...
+                'FigureScale', options.FigureScale);
+        catch simAnimErr
+            warning('regenerate_iter_study_animations:PurePursuitRenderFailed', ...
+                'Failed to render pure pursuit animation for %s: %s', logFiles(k).name, simAnimErr.message);
+            pureVideoPath = "";
+        end
+
+        pureCmdName = sprintf('purepursuit_cmd_%s_iter%s.csv', modeLabel, iterLabel);
+        pureCmdPath = fullfile(resultsDir, pureCmdName);
+        timeCommand = (0:size(simRes.commands,1)-1)' * sampleTime;
+        cmdTable = [timeCommand, simRes.commands];
+        writematrix(cmdTable, pureCmdPath);
+    end
+
     outputs(k).Mode = modeLabel;
     outputs(k).IterationCap = iterVal;
     outputs(k).LogPath = logPath;
     outputs(k).VideoPath = videoPath;
+    outputs(k).PurePursuitVideoPath = pureVideoPath;
+    outputs(k).PurePursuitCommands = pureCmdPath;
 end
 
 if nargout == 0
