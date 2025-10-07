@@ -38,6 +38,7 @@ public:
         this->declare_parameter("distance_lower_bound", 0.1);  // meters
         this->declare_parameter("distance_weight", 1.0);
         this->declare_parameter("publish_diagnostics", true);
+        this->declare_parameter("use_warm_start", true);  // Use previous solution as initial guess
         
         // Get parameters
         control_rate_ = this->get_parameter("control_rate").as_double();
@@ -45,6 +46,7 @@ public:
         distance_lower_ = this->get_parameter("distance_lower_bound").as_double();
         distance_weight_ = this->get_parameter("distance_weight").as_double();
         publish_diagnostics_ = this->get_parameter("publish_diagnostics").as_bool();
+        use_warm_start_ = this->get_parameter("use_warm_start").as_bool();
         
         // Initialize state
         current_config_.resize(9, 0.0);
@@ -85,6 +87,7 @@ public:
         RCLCPP_INFO(this->get_logger(), "MATLAB solver initialized");
         RCLCPP_INFO(this->get_logger(), "Control rate: %.1f Hz", control_rate_);
         RCLCPP_INFO(this->get_logger(), "Max solve time: %.0f ms", max_solve_time_ * 1000.0);
+        RCLCPP_INFO(this->get_logger(), "Warm-start optimization: %s", use_warm_start_ ? "enabled" : "disabled");
     }
 
 private:
@@ -185,10 +188,19 @@ private:
     bool solveIK(const geometry_msgs::msg::Pose& target_pose)
     {
         // Prepare current configuration (9 DOF)
+        // Use previous successful solution as initial guess (warm-start optimization)
         double q_current[9];
         {
             std::lock_guard<std::mutex> lock(state_mutex_);
-            std::copy(current_config_.begin(), current_config_.end(), q_current);
+            // Warm-start: Use previous target as initial guess if it was successful
+            // This dramatically improves convergence for smooth trajectories
+            if (use_warm_start_ && last_solver_status_ == "success") {
+                std::copy(target_config_.begin(), target_config_.end(), q_current);
+                RCLCPP_DEBUG(this->get_logger(), "Using warm-start from previous solution");
+            } else {
+                std::copy(current_config_.begin(), current_config_.end(), q_current);
+                RCLCPP_DEBUG(this->get_logger(), "Using current config (cold-start)");
+            }
         }
         
         // Convert ROS Pose to 4x4 homogeneous transform (column-major for MATLAB)
@@ -230,7 +242,11 @@ private:
         double q_next[9];
         gik9dof::struct0_T solver_info;
         
+        // Add timeout safety: track solve start time
+        auto solve_start_time = std::chrono::steady_clock::now();
+        
         // Call MATLAB-generated solver
+        // Note: The solver itself has MaxTime=50ms configured in MATLAB code
         matlab_solver_->gik9dof_codegen_realtime_solveGIKStepWrapper(
             q_current,
             target_matrix,
@@ -239,6 +255,17 @@ private:
             q_next,
             &solver_info
         );
+        
+        // Check solve time and warn if exceeded expected duration
+        auto solve_end_time = std::chrono::steady_clock::now();
+        auto solve_duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            solve_end_time - solve_start_time).count();
+        
+        if (solve_duration_ms > 50) {
+            RCLCPP_WARN(this->get_logger(), 
+                       "IK solve exceeded 50ms timeout: actual=%ld ms (solver should auto-terminate)",
+                       solve_duration_ms);
+        }
         
         // Extract status string
         std::string status_str(solver_info.Status.data, 
@@ -256,8 +283,8 @@ private:
         // Log if failed
         if (status_str != "success") {
             RCLCPP_WARN(this->get_logger(), 
-                       "Solver failed: status='%s', iterations=%d, exit_flag=%d",
-                       status_str.c_str(), last_solver_iterations_, last_exit_flag_);
+                       "Solver failed: status='%s', iterations=%d, exit_flag=%d, time=%ld ms",
+                       status_str.c_str(), last_solver_iterations_, last_exit_flag_, solve_duration_ms);
         }
         
         return (status_str == "success");
@@ -331,6 +358,7 @@ private:
     double distance_lower_;
     double distance_weight_;
     bool publish_diagnostics_;
+    bool use_warm_start_;  // Enable warm-start from previous solution
     
     // MATLAB solver instance (persistent robot/solver state)
     std::unique_ptr<gik9dof::GIKSolver> matlab_solver_;

@@ -149,7 +149,7 @@ See detailed code in `docs/ORIN_MATLAB_INTEGRATION.md` (Section 3, "Replace the 
 Key parts:
 - Populate `q_current[9]` from odom + arm state
 - Create `target_matrix[16]` from waypoint pose
-- Call `matlab_solver_->gik9dof_codegen_realtime_solveGIKStepWrapper(...)`
+- Call `matlab_solver_->gik9dof_codegen_inuse_solveGIKStepWrapper(...)`
 - Extract solver info (status, iterations, solve time)
 - Update diagnostics message
 

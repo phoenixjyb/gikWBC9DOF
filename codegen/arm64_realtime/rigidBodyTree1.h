@@ -2,7 +2,7 @@
 // File: rigidBodyTree1.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 07-Oct-2025 08:09:07
 //
 
 #ifndef RIGIDBODYTREE1_H
@@ -89,7 +89,7 @@ public:
                  robotics::manip::internal::RigidBody &iobj_2);
   rigidBodyTree();
   ~rigidBodyTree();
-  boolean_T matlabCodegenIsDeleted;
+  bool matlabCodegenIsDeleted;
   robotics::manip::internal::RigidBodyTree TreeInternal;
   robotics::manip::internal::CollisionSet _pobj0;
 };

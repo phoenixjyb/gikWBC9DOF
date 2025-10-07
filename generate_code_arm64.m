@@ -37,8 +37,10 @@ cfg.CppNamespace = 'gik9dof';
 cfg.CppInterfaceStyle = 'Methods';
 cfg.CppInterfaceClassName = 'GIKSolver';
 
-% Note: Hardware-specific settings are applied during cross-compilation on target
-% For now, generate generic ARM64-compatible C++ code
+% ARM64-specific hardware settings
+% Configure for ARM NEON SIMD (not x86 SSE)
+cfg.HardwareImplementation.ProdHWDeviceType = 'ARM Compatible->ARM Cortex-A';
+cfg.HardwareImplementation.ProdLongLongMode = true;
 
 % Memory settings
 % Enable dynamic allocation for MATLAB handle classes (constraints, solver)
@@ -56,23 +58,26 @@ cfg.BuildConfiguration = 'Faster Runs';
 
 %% Code generation execution
 fprintf('===================================================\n');
-fprintf('Generating C++ code for ARM64 (NVIDIA AGX Orin)...\n');
+fprintf('Generating C++ code for ARM64 (NVIDIA AGX Orin - REAL-TIME)...\n');
 fprintf('===================================================\n');
-fprintf('Target function: gik9dof.codegen_realtime.solveGIKStepWrapper\n');
+fprintf('Target function: gik9dof.codegen_inuse.solveGIKStepWrapper\n');
 fprintf('Output directory: %s\n', CODEGEN_OUTPUT);
+fprintf('Purpose: Real-time deployment on NVIDIA AGX Orin\n');
 fprintf('Configuration:\n');
 fprintf('  - Language: C++17\n');
-fprintf('  - Architecture: Generic (ARM64-compatible)\n');
+fprintf('  - Architecture: ARM Cortex-A (ARM64 with NEON SIMD)\n');
+fprintf('  - SIMD: ARM NEON (not x86 SSE)\n');
 fprintf('  - OpenMP: Enabled\n');
 fprintf('  - Dynamic Memory: Enabled (required for IK constraints)\n');
 fprintf('  - Dynamic Memory Threshold: 64KB\n');
 fprintf('  - Build Tool: CMake\n');
-fprintf('Note: ARM64-specific optimizations (NEON) applied during cross-compile\n');
+fprintf('  - Solver MaxTime: 50ms (REAL-TIME CONSTRAINT)\n');
+fprintf('  - Solver MaxIterations: 50\n');
 fprintf('===================================================\n\n');
 
 % Generate code
 codegen('-config', cfg, ...
-    'gik9dof.codegen_realtime.solveGIKStepWrapper', ...
+    'gik9dof.codegen_inuse.solveGIKStepWrapper', ...
     '-args', {qCurrent, targetPose, distanceLower, distanceWeight}, ...
     '-d', CODEGEN_OUTPUT, ...
     '-report');

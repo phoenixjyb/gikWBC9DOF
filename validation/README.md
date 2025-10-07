@@ -1,3 +1,43 @@
+# Validation Directory
+
+## 🚨 NEW: ARM64 IK Validation (Oct 7, 2025)
+
+**Purpose**: Validate ARM64-compiled C++ solver produces correct IK solutions  
+**Status**: ✅ Phase 1-2 complete, 🔄 Phase 3 ready to run
+
+### Quick Reference
+
+| Phase | Location | Command | Output | Status |
+|-------|----------|---------|--------|--------|
+| 1. MATLAB Reference | Windows | `cd matlab/validation`<br>`generate_matlab_reference` | `validation/matlab_reference_results.json` | ✅ **DONE** (27KB, 20 waypoints) |
+| 2. Transfer | Windows | `scp validation\matlab_reference_results.json cr@192.168.100.150:~/gikWBC9DOF/validation/` | - | ✅ **DONE** |
+| 3. C++ Test | AGX Orin | See [`PHASE3_ORIN_INSTRUCTIONS.md`](PHASE3_ORIN_INSTRUCTIONS.md) | `cpp_arm64_results.json` | 🔄 **READY** |
+| 4. Compare | Windows | `cd matlab/validation`<br>`compare_results` | `validation/validation_comparison.json` | ⏳ Pending Phase 3 |
+
+**MATLAB Results Summary** (Phase 1):
+- Waypoints tested: 20 (from `1_pull_world_scaled.json`)
+- Success rate: **10%** (2/20) - baseline for comparison
+- Average solve time: 45.61 ms
+- Position errors: Mean 344mm, Max 689mm (for non-converged solutions)
+
+**Next Action**: Follow [`PHASE3_ORIN_INSTRUCTIONS.md`](PHASE3_ORIN_INSTRUCTIONS.md) to run C++ test on AGX Orin
+
+**Test Configuration:**
+- Trajectory: `1_pull_world_scaled.json`
+- Waypoints tested: First 20 (of 1,928 total)
+- Success criteria: Joint error < 0.01 rad, Position error < 1mm
+- Target platform: AGX Orin ARM64 (aarch64)
+
+**Full Details**: See [`VALIDATION_PLAN.md`](VALIDATION_PLAN.md)
+
+**Created Scripts:**
+- `matlab/validation/generate_matlab_reference.m` - Phase 1 MATLAB reference generator
+- Phase 3-4 scripts pending solver validation
+
+---
+
+## Original WSL x86_64 Validation
+
 # MATLAB vs C++ Solver Validation
 
 This directory contains scripts to validate that the C++ code generated from MATLAB produces identical results to the original MATLAB implementation.

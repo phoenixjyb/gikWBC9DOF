@@ -2,7 +2,7 @@
 // File: rigidBodyJoint.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 07-Oct-2025 08:09:07
 //
 
 #ifndef RIGIDBODYJOINT_H
@@ -84,7 +84,7 @@ public:
   ~rigidBodyJoint();
   double VelocityNumber;
   double PositionNumber;
-  boolean_T InTree;
+  bool InTree;
   double JointToParentTransform[16];
   double ChildToJointTransform[16];
   robotics::manip::internal::CharacterVector NameInternal;

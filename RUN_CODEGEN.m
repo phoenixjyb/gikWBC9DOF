@@ -19,7 +19,7 @@ ros2Target = fullfile(projectRoot, 'ros2', 'gik9dof_solver', 'matlab_codegen');
 %% Step 1: Pre-generation validation
 fprintf('Step 1: Pre-generation validation...\n');
 try
-    robot = gik9dof.codegen_realtime.buildRobotForCodegen();
+    robot = gik9dof.codegen_inuse.buildRobotForCodegen();
     fprintf('  ✓ Robot builds successfully\n');
 catch ME
     error('Robot builder failed: %s', ME.message);
@@ -28,7 +28,7 @@ end
 try
     q0 = zeros(9, 1);
     T = eye(4); T(1:3, 4) = [0.5; 0.2; 0.8];
-    [~, info] = gik9dof.codegen_realtime.solveGIKStepWrapper(q0, T, 0.1, 1.0);
+    [~, info] = gik9dof.codegen_inuse.solveGIKStepWrapper(q0, T, 0.1, 1.0);
     if isfield(info, 'Status')
         fprintf('  ✓ Solver works (status: %s)\n\n', info.Status);
     else
@@ -149,7 +149,7 @@ fprintf('  - Deployment package: %s\n\n', zipFile);
 
 fprintf('Next steps:\n');
 fprintf('1. Transfer deployment package to AGX Orin:\n');
-fprintf('   scp %s nvidia@<orin-ip>:~/\n\n', zipFile);
+fprintf('   scp %s cr@<orin-ip>:~/\n\n', zipFile);
 
 fprintf('2. On AGX Orin, extract and build:\n');
 fprintf('   cd ~/gikWBC9DOF/ros2\n');

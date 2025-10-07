@@ -2,7 +2,7 @@
 // File: RigidBodyTree.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 07-Oct-2025 08:09:07
 //
 
 #ifndef RIGIDBODYTREE_H
@@ -51,7 +51,7 @@ public:
   double validateInputBodyName(const char bodyname[17]);
   RigidBodyTree();
   ~RigidBodyTree();
-  boolean_T matlabCodegenIsDeleted;
+  bool matlabCodegenIsDeleted;
   double NumBodies;
   RigidBody Base;
   FastVisualizationHelper b_FastVisualizationHelper;
@@ -73,7 +73,7 @@ public:
   void matlabCodegenDestructor();
   ~b_RigidBodyTree();
   b_RigidBodyTree();
-  boolean_T matlabCodegenIsDeleted;
+  bool matlabCodegenIsDeleted;
   b_RigidBody Base;
   FastVisualizationHelper b_FastVisualizationHelper;
   b_RigidBody *Bodies[1];
@@ -88,10 +88,10 @@ public:
 
 // Function Declarations
 namespace gik9dof {
-void binary_expand_op_10(boolean_T in1[9], const double in2[9],
+void binary_expand_op_10(bool in1[9], const double in2[9],
                          const ::coder::array<double, 2U> &in3);
 
-void binary_expand_op_11(boolean_T in1[9], const double in2[9],
+void binary_expand_op_11(bool in1[9], const double in2[9],
                          const ::coder::array<double, 2U> &in3);
 
 } // namespace gik9dof

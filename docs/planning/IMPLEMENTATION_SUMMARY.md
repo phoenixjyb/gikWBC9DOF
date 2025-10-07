@@ -3,7 +3,7 @@
 ## ✅ What's Been Built (Last 90 Minutes)
 
 ### 📦 MATLAB Code Generation Package
-**Location:** `matlab/+gik9dof/+codegen_realtime/`
+**Location:** `matlab/+gik9dof/+codegen_inuse/`
 
 1. **buildRobotForCodegen.m** (200 lines)
    - Procedural robot builder for 9-DOF mobile manipulator
@@ -104,7 +104,7 @@
 
 ### Step 1: Validate in MATLAB (NOW - 15 min)
 ```matlab
-cd matlab/+gik9dof/+codegen_realtime
+cd matlab/+gik9dof/+codegen_inuse
 validate_robot_builder  % Must pass all 7 tests
 ```
 
@@ -198,7 +198,7 @@ Follow FAST_TRACK_2DAY.md Day 2 schedule
 gikWBC9DOF/
 ├── matlab/
 │   └── +gik9dof/
-│       └── +codegen_realtime/        ← NEW: Code generation package
+│       └── +codegen_inuse/        ← NEW: Code generation package
 │           ├── buildRobotForCodegen.m
 │           ├── solveGIKStepRealtime.m
 │           ├── solveGIKStepWrapper.m
@@ -251,7 +251,7 @@ You now have a **complete, production-ready implementation** of:
 
 ```bash
 # 1. In MATLAB (Windows)
-cd matlab/+gik9dof/+codegen_realtime
+cd matlab/+gik9dof/+codegen_inuse
 validate_robot_builder  # Must pass!
 generateCodeARM64       # Generates C++ code
 

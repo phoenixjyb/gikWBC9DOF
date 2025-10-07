@@ -2,14 +2,14 @@
 // File: constraintDistanceBounds.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 07-Oct-2025 08:09:07
 //
 
 #ifndef CONSTRAINTDISTANCEBOUNDS_H
 #define CONSTRAINTDISTANCEBOUNDS_H
 
 // Include Files
-#include "gik9dof_codegen_realtime_solveGIKStepWrapper_types.h"
+#include "gik9dof_codegen_inuse_solveGIKStepWrapper_types.h"
 #include "rtwtypes.h"
 #include "coder_array.h"
 #include <cstddef>
@@ -29,7 +29,7 @@ public:
   double Weights;
 
 protected:
-  cell_51 ConstructorPropertyDefaultValues;
+  cell_55 ConstructorPropertyDefaultValues;
 };
 
 } // namespace coder

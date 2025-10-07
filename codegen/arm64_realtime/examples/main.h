@@ -2,7 +2,7 @@
 // File: main.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 07-Oct-2025 08:09:07
 //
 
 /*************************************************************************/
@@ -42,8 +42,8 @@
 // Function Declarations
 extern int main(int argc, char **argv);
 
-extern void main_gik9dof_codegen_realtime_solveGIKStepWrapper(
-    gik9dof::GIKSolver *instancePtr);
+extern void
+main_gik9dof_codegen_inuse_solveGIKStepWrapper(gik9dof::GIKSolver *instancePtr);
 
 #endif
 //

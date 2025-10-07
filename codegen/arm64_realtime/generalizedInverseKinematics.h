@@ -2,7 +2,7 @@
 // File: generalizedInverseKinematics.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 07-Oct-2025 08:09:07
 //
 
 #ifndef GENERALIZEDINVERSEKINEMATICS_H
@@ -44,6 +44,16 @@ class generalizedInverseKinematics {
 public:
   generalizedInverseKinematics *init(GIKSolver *aInstancePtr,
                                      rigidBodyTree &varargin_2);
+  void set_SolverParameters(double solverparams_MaxIterations,
+                            double solverparams_MaxTime,
+                            double solverparams_GradientTolerance,
+                            double solverparams_SolutionTolerance,
+                            bool solverparams_EnforceJointLimits,
+                            bool solverparams_AllowRandomRestart,
+                            double solverparams_StepTolerance,
+                            double solverparams_ErrorChangeTolerance,
+                            double solverparams_DampingBias,
+                            bool solverparams_UseErrorDamping);
   double step(GIKSolver *aInstancePtr, const double varargin_1[9],
               constraintPoseTarget &varargin_2,
               constraintJointBounds &varargin_3,
@@ -68,11 +78,11 @@ protected:
                   double &solutionInfo_ExitFlag);
 
 public:
-  boolean_T matlabCodegenIsDeleted;
+  bool matlabCodegenIsDeleted;
   robotics::core::internal::ErrorDampedLevenbergMarquardt *Solver;
   robotics::manip::internal::RigidBodyTree *Tree;
   robotics::manip::internal::GIKProblem Problem;
-  boolean_T EnforceJointLimits;
+  bool EnforceJointLimits;
   rigidBodyJoint _pobj0[22];
   robotics::manip::internal::RigidBody _pobj1[11];
   robotics::manip::internal::CollisionSet _pobj2[23];
@@ -81,8 +91,8 @@ public:
 
 private:
   int isInitialized;
-  boolean_T isSetupComplete;
-  boolean_T RigidBodyTreeHasBeenSet;
+  bool isSetupComplete;
+  bool RigidBodyTreeHasBeenSet;
 };
 
 } // namespace coder

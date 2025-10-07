@@ -26,7 +26,7 @@ You have **2 days** to get the 9-DOF IK solver running on AGX Orin. This guide p
 
 #### Step 1: Validate Robot Builder (30 min)
 ```matlab
-cd matlab/+gik9dof/+codegen_realtime
+cd matlab/+gik9dof/+codegen_inuse
 validate_robot_builder
 ```
 
@@ -35,12 +35,12 @@ validate_robot_builder
 #### Step 2: Test IK Solver in MATLAB (30 min)
 ```matlab
 % Quick smoke test
-robot = gik9dof.codegen_realtime.buildRobotForCodegen();
+robot = gik9dof.codegen_inuse.buildRobotForCodegen();
 q0 = zeros(9, 1);
 targetPose = eye(4);
 targetPose(1:3, 4) = [0.5; 0.2; 0.8];
 
-[qNext, info] = gik9dof.codegen_realtime.solveGIKStepWrapper(...
+[qNext, info] = gik9dof.codegen_inuse.solveGIKStepWrapper(...
     q0, targetPose, 0.1, 1.0);
 
 % Should converge
@@ -50,7 +50,7 @@ fprintf('✓ IK solver works: %d iterations\n', info.Iterations);
 
 #### Step 3: Generate C++ Code (1 hour)
 ```matlab
-cd matlab/+gik9dof/+codegen_realtime
+cd matlab/+gik9dof/+codegen_inuse
 generateCodeARM64
 ```
 

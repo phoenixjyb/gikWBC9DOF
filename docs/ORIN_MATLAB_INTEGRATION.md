@@ -161,7 +161,7 @@ gik9dof::struct0_T solver_info;
 
 // Call MATLAB-generated solver
 auto start_time = this->now();
-matlab_solver_->gik9dof_codegen_realtime_solveGIKStepWrapper(
+matlab_solver_->gik9dof_codegen_inuse_solveGIKStepWrapper(
     q_current,
     target_matrix,
     distance_lower,

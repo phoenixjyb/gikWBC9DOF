@@ -2,14 +2,14 @@
 // File: GIKSolver.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 07-Oct-2025 08:09:07
 //
 
 #ifndef GIKSOLVER_H
 #define GIKSOLVER_H
 
 // Include Files
-#include "gik9dof_codegen_realtime_solveGIKStepWrapper_types.h"
+#include "gik9dof_codegen_inuse_solveGIKStepWrapper_types.h"
 #include "rtwtypes.h"
 #include <cstddef>
 #include <cstdlib>
@@ -20,17 +20,17 @@ class GIKSolver {
 public:
   GIKSolver();
   ~GIKSolver();
-  void gik9dof_codegen_realtime_solveGIKStepWrapper(const double qCurrent[9],
-                                                    const double targetPose[16],
-                                                    double distanceLower,
-                                                    double distanceWeight,
-                                                    double qNext[9],
-                                                    struct0_T *solverInfo);
-  gik9dof_codegen_realtime_solveGIKStepWrapperStackData *getStackData();
+  void gik9dof_codegen_inuse_solveGIKStepWrapper(const double qCurrent[9],
+                                                 const double targetPose[16],
+                                                 double distanceLower,
+                                                 double distanceWeight,
+                                                 double qNext[9],
+                                                 struct0_T *solverInfo);
+  gik9dof_codegen_inuse_solveGIKStepWrapperStackData *getStackData();
 
 private:
-  gik9dof_codegen_realtime_solveGIKStepWrapperPersistentData pd_;
-  gik9dof_codegen_realtime_solveGIKStepWrapperStackData SD_;
+  gik9dof_codegen_inuse_solveGIKStepWrapperPersistentData pd_;
+  gik9dof_codegen_inuse_solveGIKStepWrapperStackData SD_;
 };
 
 } // namespace gik9dof

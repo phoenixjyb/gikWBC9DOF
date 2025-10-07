@@ -18,7 +18,7 @@ fprintf('  ✓ Paths added\n\n');
 fprintf('Step 2: Running robot builder validation...\n');
 
 try
-    gik9dof.codegen_realtime.validate_robot_builder;
+    gik9dof.codegen_inuse.validate_robot_builder;
     fprintf('  ✓ Robot builder validation PASSED\n\n');
 catch ME
     fprintf('  ✗ Robot builder validation FAILED\n');
@@ -31,7 +31,7 @@ end
 %% Step 3: Quick IK solver test
 fprintf('Step 3: Testing IK solver convergence...\n');
 
-robot = gik9dof.codegen_realtime.buildRobotForCodegen();
+robot = gik9dof.codegen_inuse.buildRobotForCodegen();
 q0 = zeros(9, 1);
 
 % Simple reachable target
@@ -39,7 +39,7 @@ targetPose = eye(4);
 targetPose(1:3, 4) = [0.5; 0.2; 0.8];
 
 try
-    [qNext, info] = gik9dof.codegen_realtime.solveGIKStepWrapper(...
+    [qNext, info] = gik9dof.codegen_inuse.solveGIKStepWrapper(...
         q0, targetPose, 0.1, 1.0);
     
     % Check if solver succeeded (Status is a string: 'success' or other)
@@ -70,10 +70,10 @@ fprintf('Step 4: Checking code generation readiness...\n');
 
 % Check if functions are on path
 funcs = {
-    'gik9dof.codegen_realtime.buildRobotForCodegen'
-    'gik9dof.codegen_realtime.solveGIKStepRealtime'
-    'gik9dof.codegen_realtime.solveGIKStepWrapper'
-    'gik9dof.codegen_realtime.generateCodeARM64'
+    'gik9dof.codegen_inuse.buildRobotForCodegen'
+    'gik9dof.codegen_inuse.solveGIKStepRealtime'
+    'gik9dof.codegen_inuse.solveGIKStepWrapper'
+    'gik9dof.codegen_inuse.generateCodeARM64'
 };
 
 allFound = true;
@@ -99,5 +99,5 @@ fprintf('✓ ALL VALIDATIONS PASSED\n');
 fprintf('========================================\n');
 fprintf('You are ready for code generation!\n\n');
 fprintf('Next step: Run code generation\n');
-fprintf('>> cd matlab/+gik9dof/+codegen_realtime\n');
+fprintf('>> cd matlab/+gik9dof/+codegen_inuse\n');
 fprintf('>> generateCodeARM64\n\n');

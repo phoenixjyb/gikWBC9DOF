@@ -2,7 +2,7 @@
 // File: JointPositionBounds.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 07-Oct-2025 08:09:07
 //
 
 #ifndef JOINTPOSITIONBOUNDS_H
@@ -39,7 +39,7 @@ public:
   void get_KinematicPath(::coder::array<double, 2U> &b_value) const;
   JointPositionBounds();
   ~JointPositionBounds();
-  boolean_T matlabCodegenIsDeleted;
+  bool matlabCodegenIsDeleted;
   double NumElements;
   RigidBodyTree *Tree;
   ::coder::array<double, 2U> BoundsInternal;

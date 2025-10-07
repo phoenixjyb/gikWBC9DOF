@@ -7,7 +7,7 @@ param(
     [string]$OrinIP,
     
     [Parameter(Mandatory=$false)]
-    [string]$Username = "nvidia"
+    [string]$Username = "cr"
 )
 
 $ErrorActionPreference = "Stop"

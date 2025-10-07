@@ -2,7 +2,7 @@
 // File: GIKProblem.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 07-Oct-2025 08:09:07
 //
 
 #ifndef GIKPROBLEM_H
@@ -12,7 +12,7 @@
 #include "DistanceBoundsConstraint.h"
 #include "JointPositionBounds.h"
 #include "PoseTarget.h"
-#include "gik9dof_codegen_realtime_solveGIKStepWrapper_types1.h"
+#include "gik9dof_codegen_inuse_solveGIKStepWrapper_types1.h"
 #include "rtwtypes.h"
 #include "coder_array.h"
 #include <cstddef>
@@ -50,7 +50,7 @@ public:
   void residualsInternal(const ::coder::array<double, 1U> &x,
                          ::coder::array<double, 1U> &f,
                          ::coder::array<double, 2U> &J);
-  void set_EnforceJointLimits(boolean_T b_value);
+  void set_EnforceJointLimits(bool b_value);
   void update(const constraintPoseTarget &varargin_1,
               const constraintJointBounds &varargin_2,
               const constraintDistanceBounds &varargin_3);
@@ -64,7 +64,7 @@ public:
   void get_KinematicPath(double value_data[], int value_size[2]);
   GIKProblem();
   ~GIKProblem();
-  boolean_T matlabCodegenIsDeleted;
+  bool matlabCodegenIsDeleted;
   ::coder::array<double, 2U> DesignVariableBoundsInternal;
   ::coder::array<double, 2U> ConstraintMatrixInternal;
   ::coder::array<double, 1U> ConstraintBoundInternal;
@@ -76,7 +76,7 @@ public:
   double NumVariables;
   cell_wrap_7 ResidualIndices[3];
   cell_wrap_7 SlackIndices[3];
-  boolean_T EnforceJointLimitsInternal;
+  bool EnforceJointLimitsInternal;
   cell_wrap_8 EqualityFlags[3];
   ::coder::array<double, 1U> LastX;
   ::coder::array<double, 1U> LastF;

@@ -2,7 +2,7 @@
 // File: DistanceBoundsConstraint.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 07-Oct-2025 08:09:07
 //
 
 #ifndef DISTANCEBOUNDSCONSTRAINT_H
@@ -40,7 +40,7 @@ public:
   void get_ReferenceBody(char value_data[], int value_size[2]);
   DistanceBoundsConstraint();
   ~DistanceBoundsConstraint();
-  boolean_T matlabCodegenIsDeleted;
+  bool matlabCodegenIsDeleted;
   double NumElements;
   RigidBodyTree *Tree;
   ::coder::array<double, 2U> BoundsInternal;

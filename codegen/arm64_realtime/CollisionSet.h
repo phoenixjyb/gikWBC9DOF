@@ -2,7 +2,7 @@
 // File: CollisionSet.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 07-Oct-2025 08:09:07
 //
 
 #ifndef COLLISIONSET_H
@@ -27,7 +27,7 @@ public:
   void matlabCodegenDestructor();
   ~CollisionSet();
   CollisionSet();
-  boolean_T matlabCodegenIsDeleted;
+  bool matlabCodegenIsDeleted;
   ::coder::array<CollisionGeometry, 2U> CollisionGeometries;
   double MaxElements;
   double Size;

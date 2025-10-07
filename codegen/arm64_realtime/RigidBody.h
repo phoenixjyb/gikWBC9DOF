@@ -2,7 +2,7 @@
 // File: RigidBody.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 07-Oct-2025 08:09:07
 //
 
 #ifndef RIGIDBODY_H
@@ -32,7 +32,7 @@ public:
   void matlabCodegenDestructor();
   ~RigidBody();
   RigidBody();
-  boolean_T matlabCodegenIsDeleted;
+  bool matlabCodegenIsDeleted;
   CharacterVector NameInternal;
   double Index;
   rigidBodyJoint *JointInternal;
@@ -51,7 +51,7 @@ public:
   void matlabCodegenDestructor();
   ~b_RigidBody();
   b_RigidBody();
-  boolean_T matlabCodegenIsDeleted;
+  bool matlabCodegenIsDeleted;
   CharacterVector NameInternal;
   rigidBodyJoint JointInternal;
   CollisionSet CollisionsInternal;

@@ -1,0 +1,48 @@
+========================================
+MATLAB Reference IK Generation
+========================================
+
+Step 1: Loading trajectory...
+  Total waypoints in file: 148
+  Using first 20 waypoints for validation
+
+Step 2: Building robot model...
+  Robot: 11 bodies, 9 DOF
+  End-effector: left_gripper_link
+
+Step 3: Initializing GIK solver...
+  Solver configured:
+    Max iterations: 100
+    Max time: 50 ms
+    Solution tolerance: 1.0e-06
+
+Step 4: Solving initial configuration...
+  ⚠️  Initial solve: best available (using best available configuration)
+    Time: 646.59 ms
+    Iterations: 100
+    Note: Proceeding with best available solution
+
+Step 5: Solving 20 waypoints...
+  Progress: ....5 ....10 ....15 ....20  DONE
+
+Step 6: Computing summary statistics...
+  Success rate: 2/20 (10.0%)
+  Solve time: 45.61 ± 13.85 ms (range: 27.15 - 89.46 ms)
+  Pose errors:
+    Position: 689.122 mm (max), 343.920 mm (mean)
+    Orientation: 6.363 deg (max), 3.176 deg (mean)
+
+Step 7: Exporting results...
+  ✅ Results saved to:
+     H:\wSpace\codegenGIKsample\Trial\gikWBC9DOF\validation\matlab_reference_results.json
+  File size: 26.6 KB
+
+========================================
+✅ MATLAB Reference Generation Complete
+========================================
+
+Next steps:
+  1. Transfer this file to AGX Orin
+  2. Run C++ solver test on Orin
+  3. Run comparison analysis
+

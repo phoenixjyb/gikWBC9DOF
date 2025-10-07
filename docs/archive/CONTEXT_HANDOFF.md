@@ -75,7 +75,7 @@ gikWBC9DOF/
 │   ├── ROS2_INTEGRATION_GUIDE.md      ← ROS2 node details
 │   └── ORIGIN_MAIN_MERGE_ANALYSIS.md  ← Merge impact analysis
 │
-├── matlab/+gik9dof/+codegen_realtime/
+├── matlab/+gik9dof/+codegen_inuse/
 │   ├── buildRobotForCodegen.m         (169 lines) - Procedural robot builder
 │   ├── solveGIKStepRealtime.m         (52 lines) - Real-time IK solver
 │   ├── solveGIKStepWrapper.m          (38 lines) - Codegen-compatible wrapper
@@ -111,7 +111,7 @@ RUN_VALIDATION
 
 **Success criteria**: All tests pass, "✓ ALL VALIDATIONS PASSED"
 
-**Recent fix**: Changed to use package namespace `gik9dof.codegen_realtime.validate_robot_builder` (was breaking before)
+**Recent fix**: Changed to use package namespace `gik9dof.codegen_inuse.validate_robot_builder` (was breaking before)
 
 ---
 
@@ -216,7 +216,7 @@ cd C:\Users\yanbo\wSpace\codegenGIKsample\Trial\gikWBC9DOF
 
 **Build on AGX Orin** (SSH to Orin):
 ```bash
-ssh nvidia@<orin-ip>
+ssh cr@<orin-ip>
 cd ~/gikWBC9DOF/ros2
 source /opt/ros/humble/setup.bash
 
@@ -428,7 +428,7 @@ e1a53fb docs: Add WSL quick reference for fast copy/paste workflow
 - `RUN_CODEGEN.m` - Code generation script
 
 ### Known Issues (Resolved)
-- ✅ **RUN_VALIDATION namespace error**: Fixed (uses `gik9dof.codegen_realtime.*` now)
+- ✅ **RUN_VALIDATION namespace error**: Fixed (uses `gik9dof.codegen_inuse.*` now)
 - ✅ **Documentation navigation**: Fixed (README.md is master index)
 - ⚠️ **Build artifacts not committed**: Intentional (colcon build outputs are gitignored)
 

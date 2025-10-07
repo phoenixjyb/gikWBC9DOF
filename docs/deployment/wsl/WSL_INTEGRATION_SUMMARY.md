@@ -203,7 +203,7 @@ cd C:\Users\yanbo\wSpace\codegenGIKsample\Trial\gikWBC9DOF
 
 SSH to Orin:
 ```bash
-ssh nvidia@<orin-ip>
+ssh cr@<orin-ip>
 cd ~/gikWBC9DOF/ros2
 source /opt/ros/humble/setup.bash
 
@@ -258,7 +258,7 @@ gikWBC9DOF/
 ├── RUN_CODEGEN.m                    ← Run this second
 ├── deploy_to_orin.ps1               ← Run this fourth (after WSL)
 ├── matlab/
-│   └── +gik9dof/+codegen_realtime/
+│   └── +gik9dof/+codegen_inuse/
 │       ├── buildRobotForCodegen.m
 │       ├── solveGIKStepRealtime.m
 │       ├── solveGIKStepWrapper.m

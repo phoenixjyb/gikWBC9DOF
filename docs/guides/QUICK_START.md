@@ -11,7 +11,7 @@ cd C:\Users\yanbo\wSpace\codegenGIKsample\Trial\gikWBC9DOF
 addpath(genpath('matlab'))
 
 % Run validation
-cd matlab/+gik9dof/+codegen_realtime
+cd matlab/+gik9dof/+codegen_inuse
 validate_robot_builder
 ```
 
@@ -28,7 +28,7 @@ validate_robot_builder
 
 ### Generate C++ Code
 ```matlab
-% Still in matlab/+gik9dof/+codegen_realtime
+% Still in matlab/+gik9dof/+codegen_inuse
 generateCodeARM64
 ```
 
@@ -56,7 +56,7 @@ Generated files location: C:\...\codegen\arm64_realtime
 Compress-Archive -Path codegen\arm64_realtime\* -DestinationPath gik_codegen.zip
 
 # SCP to AGX Orin (replace <orin-ip>)
-scp gik_codegen.zip nvidia@<orin-ip>:~/
+scp gik_codegen.zip cr@<orin-ip>:~/
 ```
 
 ### On AGX Orin
@@ -153,7 +153,7 @@ ros2 topic pub /gik9dof/target_trajectory gik9dof_msgs/msg/EndEffectorTrajectory
 |------|---------|
 | `FAST_TRACK_2DAY.md` | Complete hour-by-hour guide |
 | `IMPLEMENTATION_SUMMARY.md` | What you have and where it is |
-| `matlab/+gik9dof/+codegen_realtime/` | All MATLAB code |
+| `matlab/+gik9dof/+codegen_inuse/` | All MATLAB code |
 | `ros2/gik9dof_solver/src/gik9dof_solver_node.cpp` | ROS2 wrapper (edit this!) |
 
 ---

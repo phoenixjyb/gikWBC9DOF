@@ -205,7 +205,7 @@ gikWBC9DOF/
 │
 ├── 🔧 MATLAB CODE
 │   └── matlab/
-│       └── +gik9dof/+codegen_realtime/
+│       └── +gik9dof/+codegen_inuse/
 │           ├── buildRobotForCodegen.m        (169 lines)
 │           ├── solveGIKStepRealtime.m        (52 lines)
 │           ├── solveGIKStepWrapper.m         (38 lines)

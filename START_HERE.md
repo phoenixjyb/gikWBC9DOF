@@ -12,7 +12,7 @@
 
 | Component | Status | Location |
 |-----------|--------|----------|
-| MATLAB code | ✅ Ready | `matlab/+gik9dof/+codegen_realtime/` |
+| MATLAB code | ✅ Ready | `matlab/+gik9dof/+codegen_inuse/` |
 | ROS2 packages | ✅ Ready | `ros2/gik9dof_msgs/`, `ros2/gik9dof_solver/` |
 | Documentation | ✅ Complete | `*.md` files in root |
 | Automation scripts | ✅ Ready | `RUN_VALIDATION.m`, `RUN_CODEGEN.m` |
@@ -60,10 +60,10 @@ Step 3: Testing IK solver convergence...
   ✓ Pose error: 0.000234
 
 Step 4: Checking code generation readiness...
-  ✓ Found: gik9dof.codegen_realtime.buildRobotForCodegen
-  ✓ Found: gik9dof.codegen_realtime.solveGIKStepRealtime
-  ✓ Found: gik9dof.codegen_realtime.solveGIKStepWrapper
-  ✓ Found: gik9dof.codegen_realtime.generateCodeARM64
+  ✓ Found: gik9dof.codegen_inuse.buildRobotForCodegen
+  ✓ Found: gik9dof.codegen_inuse.solveGIKStepRealtime
+  ✓ Found: gik9dof.codegen_inuse.solveGIKStepWrapper
+  ✓ Found: gik9dof.codegen_inuse.generateCodeARM64
 
 ========================================
 ✓ ALL VALIDATIONS PASSED
@@ -222,7 +222,7 @@ cd C:\Users\yanbo\wSpace\codegenGIKsample\Trial\gikWBC9DOF
 
 SSH to your AGX Orin:
 ```bash
-ssh nvidia@<orin-ip>
+ssh cr@<orin-ip>
 ```
 
 ### Build ROS2 Packages
