@@ -18,6 +18,7 @@
 
 #include <memory>
 #include <vector>
+#include <deque>
 #include <chrono>
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
@@ -52,8 +53,6 @@ public:
         // Initialize state
         current_config_.resize(9, 0.0);
         target_config_.resize(9, 0.0);
-        prev_target_config_.resize(9, 0.0);
-        prev_target_time_ = this->now();
         
         // Subscribers
         joint_state_sub_ = this->create_subscription<sensor_msgs::msg::JointState>(
@@ -323,49 +322,22 @@ private:
         
         std::lock_guard<std::mutex> lock(state_mutex_);
         
-        // Compute time difference
+        // Add current target to history
         auto now = this->now();
-        double dt = (now - prev_target_time_).seconds();
+        config_history_.push_back(target_config_);
+        time_history_.push_back(now);
         
-        // Only compute velocities if we have a reasonable time step
-        if (dt > 1e-6 && dt < 1.0) {
-            // Compute world-frame velocities via differentiation
-            double vx_world = (target_config_[0] - prev_target_config_[0]) / dt;
-            double vy_world = (target_config_[1] - prev_target_config_[1]) / dt;
-            double dtheta = target_config_[2] - prev_target_config_[2];
-            
-            // Wrap angle difference to [-pi, pi]
-            while (dtheta > M_PI) dtheta -= 2.0 * M_PI;
-            while (dtheta < -M_PI) dtheta += 2.0 * M_PI;
-            double wz = dtheta / dt;
-            
-            // Transform velocities from world frame to robot frame
-            // Robot's current orientation
-            double theta = current_config_[2];
-            double cos_theta = std::cos(theta);
-            double sin_theta = std::sin(theta);
-            
-            // Rotation matrix: world → robot
-            // [vx_robot]   [ cos(θ)  sin(θ)] [vx_world]
-            // [vy_robot] = [-sin(θ)  cos(θ)] [vy_world]
-            double vx_robot = cos_theta * vx_world + sin_theta * vy_world;
-            double vy_robot = -sin_theta * vx_world + cos_theta * vy_world;
-            
-            // For differential drive: vy should be ~0, use only vx and wz
-            msg.linear.x = vx_robot;
-            msg.linear.y = 0.0;  // Differential drive constraint (no lateral motion)
-            msg.linear.z = 0.0;  // No vertical motion
-            
-            msg.angular.x = 0.0;
-            msg.angular.y = 0.0;
-            msg.angular.z = wz;
-            
-            // Log velocity commands for debugging (throttled)
-            RCLCPP_DEBUG(this->get_logger(), 
-                        "Base cmd: vx=%.3f m/s, wz=%.3f rad/s (dt=%.3f s)", 
-                        vx_robot, wz, dt);
-        } else {
-            // Invalid time step - send zero velocity
+        // Maintain buffer size of 5
+        if (config_history_.size() > HISTORY_SIZE) {
+            config_history_.pop_front();
+            time_history_.pop_front();
+        }
+        
+        // Need at least 5 points for 5-point stencil, fall back to simpler methods if fewer
+        size_t n = config_history_.size();
+        
+        if (n < 2) {
+            // Not enough history - send zero velocity
             msg.linear.x = 0.0;
             msg.linear.y = 0.0;
             msg.linear.z = 0.0;
@@ -373,17 +345,142 @@ private:
             msg.angular.y = 0.0;
             msg.angular.z = 0.0;
             
-            if (dt >= 1.0) {
-                RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
-                                    "Time step too large (%.2f s), sending zero velocity", dt);
+            base_cmd_pub_->publish(msg);
+            return;
+        }
+        
+        // Compute velocities using 5-point stencil (or best available)
+        double vx_world, vy_world, wz;
+        
+        if (n >= 5) {
+            // Use 5-point central difference: O(h^4) accuracy
+            // f'(x) ≈ [-f(x-2h) + 8f(x-h) - 8f(x+h) + f(x+2h)] / (12h)
+            // For real-time: use backward stencil at current point
+            // f'(x) ≈ [3f(x) - 16f(x-h) + 36f(x-2h) - 48f(x-3h) + 25f(x-4h)] / (12h)
+            
+            // Get time steps (assume roughly uniform for simplicity)
+            double h = 0.0;
+            for (size_t i = 1; i < n; ++i) {
+                h += (time_history_[i] - time_history_[i-1]).seconds();
+            }
+            h /= (n - 1);  // Average time step
+            
+            if (h < 1e-6 || h > 1.0) {
+                // Invalid time step - use fallback
+                vx_world = vy_world = wz = 0.0;
+            } else {
+                // 5-point backward difference
+                // Indices: [0]=oldest, [4]=newest
+                const auto& q0 = config_history_[0];  // x-4h
+                const auto& q1 = config_history_[1];  // x-3h
+                const auto& q2 = config_history_[2];  // x-2h
+                const auto& q3 = config_history_[3];  // x-h
+                const auto& q4 = config_history_[4];  // x (current)
+                
+                // x-velocity: [25*q4 - 48*q3 + 36*q2 - 16*q1 + 3*q0] / (12*h)
+                vx_world = (25.0*q4[0] - 48.0*q3[0] + 36.0*q2[0] - 16.0*q1[0] + 3.0*q0[0]) / (12.0 * h);
+                
+                // y-velocity
+                vy_world = (25.0*q4[1] - 48.0*q3[1] + 36.0*q2[1] - 16.0*q1[1] + 3.0*q0[1]) / (12.0 * h);
+                
+                // Angular velocity (with angle wrapping)
+                // First unwrap angles to avoid discontinuities
+                std::vector<double> theta_unwrapped(5);
+                theta_unwrapped[0] = q0[2];
+                for (size_t i = 1; i < 5; ++i) {
+                    const auto& q_prev = config_history_[i-1];
+                    const auto& q_curr = config_history_[i];
+                    double dtheta = q_curr[2] - q_prev[2];
+                    
+                    // Wrap to [-pi, pi]
+                    while (dtheta > M_PI) dtheta -= 2.0 * M_PI;
+                    while (dtheta < -M_PI) dtheta += 2.0 * M_PI;
+                    
+                    theta_unwrapped[i] = theta_unwrapped[i-1] + dtheta;
+                }
+                
+                // Apply 5-point stencil to unwrapped angles
+                wz = (25.0*theta_unwrapped[4] - 48.0*theta_unwrapped[3] + 36.0*theta_unwrapped[2] 
+                      - 16.0*theta_unwrapped[1] + 3.0*theta_unwrapped[0]) / (12.0 * h);
+            }
+            
+        } else if (n >= 3) {
+            // Use 3-point backward difference: O(h^2) accuracy
+            // f'(x) ≈ [3f(x) - 4f(x-h) + f(x-2h)] / (2h)
+            
+            double h = (time_history_[n-1] - time_history_[n-2]).seconds();
+            
+            if (h < 1e-6 || h > 1.0) {
+                vx_world = vy_world = wz = 0.0;
+            } else {
+                const auto& q0 = config_history_[n-3];  // x-2h
+                const auto& q1 = config_history_[n-2];  // x-h
+                const auto& q2 = config_history_[n-1];  // x (current)
+                
+                vx_world = (3.0*q2[0] - 4.0*q1[0] + q0[0]) / (2.0 * h);
+                vy_world = (3.0*q2[1] - 4.0*q1[1] + q0[1]) / (2.0 * h);
+                
+                // Angle unwrapping for 3 points
+                double theta0 = q0[2];
+                double dtheta1 = q1[2] - q0[2];
+                while (dtheta1 > M_PI) dtheta1 -= 2.0 * M_PI;
+                while (dtheta1 < -M_PI) dtheta1 += 2.0 * M_PI;
+                double theta1 = theta0 + dtheta1;
+                
+                double dtheta2 = q2[2] - q1[2];
+                while (dtheta2 > M_PI) dtheta2 -= 2.0 * M_PI;
+                while (dtheta2 < -M_PI) dtheta2 += 2.0 * M_PI;
+                double theta2 = theta1 + dtheta2;
+                
+                wz = (3.0*theta2 - 4.0*theta1 + theta0) / (2.0 * h);
+            }
+            
+        } else {
+            // Use simple 2-point difference: O(h) accuracy
+            double dt = (time_history_[1] - time_history_[0]).seconds();
+            
+            if (dt < 1e-6 || dt > 1.0) {
+                vx_world = vy_world = wz = 0.0;
+            } else {
+                const auto& q0 = config_history_[0];
+                const auto& q1 = config_history_[1];
+                
+                vx_world = (q1[0] - q0[0]) / dt;
+                vy_world = (q1[1] - q0[1]) / dt;
+                
+                double dtheta = q1[2] - q0[2];
+                while (dtheta > M_PI) dtheta -= 2.0 * M_PI;
+                while (dtheta < -M_PI) dtheta += 2.0 * M_PI;
+                wz = dtheta / dt;
             }
         }
         
-        base_cmd_pub_->publish(msg);
+        // Transform velocities from world frame to robot frame
+        double theta = current_config_[2];
+        double cos_theta = std::cos(theta);
+        double sin_theta = std::sin(theta);
         
-        // Update history for next iteration
-        prev_target_config_ = target_config_;
-        prev_target_time_ = now;
+        // Rotation matrix: world → robot
+        // [vx_robot]   [ cos(θ)  sin(θ)] [vx_world]
+        // [vy_robot] = [-sin(θ)  cos(θ)] [vy_world]
+        double vx_robot = cos_theta * vx_world + sin_theta * vy_world;
+        double vy_robot = -sin_theta * vx_world + cos_theta * vy_world;
+        
+        // For differential drive: vy should be ~0, use only vx and wz
+        msg.linear.x = vx_robot;
+        msg.linear.y = 0.0;  // Differential drive constraint (no lateral motion)
+        msg.linear.z = 0.0;  // No vertical motion
+        
+        msg.angular.x = 0.0;
+        msg.angular.y = 0.0;
+        msg.angular.z = wz;
+        
+        // Log velocity commands for debugging (throttled)
+        RCLCPP_DEBUG(this->get_logger(), 
+                    "Base cmd [%zu-pt]: vx=%.3f m/s, wz=%.3f rad/s", 
+                    n, vx_robot, wz);
+        
+        base_cmd_pub_->publish(msg);
     }
     
     void publishDiagnostics(double solve_time_ms, const geometry_msgs::msg::Pose& target_pose)
@@ -416,8 +513,12 @@ private:
     // State variables
     std::vector<double> current_config_;  // 9 DOF: [x, y, theta, arm1-6]
     std::vector<double> target_config_;   // 9 DOF
-    std::vector<double> prev_target_config_;  // For velocity calculation (differentiation)
-    rclcpp::Time prev_target_time_;           // Timestamp of previous target
+    
+    // History buffer for 5-point finite difference velocity estimation
+    static constexpr size_t HISTORY_SIZE = 5;
+    std::deque<std::vector<double>> config_history_;  // Last 5 target configs
+    std::deque<rclcpp::Time> time_history_;           // Last 5 timestamps
+    
     gik9dof_msgs::msg::EndEffectorTrajectory::SharedPtr current_trajectory_;
     uint32_t trajectory_sequence_ = 0;
     
