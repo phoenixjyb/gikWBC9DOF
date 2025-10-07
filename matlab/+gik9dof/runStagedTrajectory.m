@@ -39,6 +39,10 @@ arguments
     options.StageBDesiredLinearVelocity (1,1) double = 0.6
     options.StageBMaxAngularVelocity (1,1) double {mustBePositive} = 2.5
     options.EnvironmentConfig struct = struct()
+    options.StageBMode (1,1) string {mustBeMember(options.StageBMode, ["gikInLoop","pureHyb"])} = "gikInLoop"
+    options.StageBDockingPositionTolerance (1,1) double {mustBeNonnegative} = 0.02
+    options.StageBDockingYawTolerance (1,1) double {mustBeNonnegative} = 2*pi/180
+    options.MaxIterations (1,1) double {mustBePositive} = 1500
 end
 
 configTools = options.ConfigTools;
@@ -72,7 +76,7 @@ stageAPoses = generateStagePoses(T0, T1, NA, 'arm');
 trajA = struct('Poses', stageAPoses);
 trajA.EndEffectorName = trajStruct.EndEffectorName;
 
-bundleA = gik9dof.createGikSolver(robot);
+bundleA = gik9dof.createGikSolver(robot, 'MaxIterations', options.MaxIterations);
 lockJointBounds(bundleA.constraints.joint, baseIdx, q0);
 
 logA = gik9dof.runTrajectoryControl(bundleA, trajA, ...
@@ -85,69 +89,33 @@ logA = gik9dof.runTrajectoryControl(bundleA, trajA, ...
 qA_end = logA.qTraj(:, end);
 
 %% Stage B: base-only alignment of x-y while arm frozen
+stageBMode = lower(string(options.StageBMode));
 stageBStart = getTransform(robot, qA_end, trajStruct.EndEffectorName);
-if options.UseStageBHybridAStar
-    try
-        stageBStates = planStageBHybridAStarPath(qA_end, baseIdx, T1, options, robot, trajStruct.EndEffectorName, options.FloorDiscs);
-    catch plannerErr
-        if ~isempty(plannerErr.stack)
-            origin = sprintf('%s:%d', plannerErr.stack(1).name, plannerErr.stack(1).line);
-        else
-            origin = 'unknown origin';
-        end
-        warning('gik9dof:runStagedTrajectory:HybridAStarFailed', ...
-            'Stage B hybrid A* failed (%s at %s); falling back to interpolation.', plannerErr.message, origin);
-        stageBStates = [];
-    end
-    cmdLogPP = [];
-    if isempty(stageBStates)
-        stageBPoses = generateStagePoses(stageBStart, T1, NB, 'base');
-    else
-        dt = 1 / options.RateHz;
-        [statesPP, cmdLogPP] = simulatePurePursuit(stageBStates, qA_end(baseIdx), dt, options);
-        if isempty(statesPP)
-            stageBPoses = generateStagePoses(stageBStart, T1, NB, 'base');
-            stageBStates = [];
-            cmdLogPP = [];
-        else
-            stageBStates = statesPP;
-            stageBPoses = statesToEndEffectorPoses(robot, qA_end, baseIdx, stageBStates, trajStruct.EndEffectorName);
-        end
-    end
-else
-    stageBPoses = generateStagePoses(stageBStart, T1, NB, 'base');
-    stageBStates = [];
-    cmdLogPP = [];
-end
-trajB = struct('Poses', stageBPoses);
-trajB.EndEffectorName = trajStruct.EndEffectorName;
-
-bundleB = gik9dof.createGikSolver(robot);
-lockJointBounds(bundleB.constraints.joint, armIdx, qA_end);
-
-logB = gik9dof.runTrajectoryControl(bundleB, trajB, ...
-    'InitialConfiguration', qA_end, ...
-    'RateHz', options.RateHz, ...
-    'CommandFcn', options.CommandFcn, ...
-    'Verbose', options.Verbose, ...
-    'VelocityLimits', velLimits);
-
-if isempty(stageBStates)
-    % Fallback: reconstruct base states from executed trajectory
-    baseStates = logB.qTraj(baseIdx, :)';
-else
-    baseStates = stageBStates;
-end
-logB.pathStates = baseStates;
-if ~isempty(cmdLogPP)
-    logB.cmdLog = array2table(cmdLogPP, 'VariableNames', {'time','Vx','Wz'});
+switch stageBMode
+    case "gikinloop"
+        stageBResult = executeStageBGikInLoop(robot, trajStruct.EndEffectorName, qA_end, baseIdx, armIdx, ...
+            T1, stageBStart, NB, velLimits, options);
+    case "purehyb"
+        stageBResult = executeStageBPureHyb(robot, trajStruct.EndEffectorName, qA_end, baseIdx, armIdx, ...
+            T1, NB, velLimits, options);
+    otherwise
+        error('gik9dof:runStagedTrajectory:UnsupportedStageBMode', ...
+            'Unknown Stage B mode "%s".', stageBMode);
 end
 
-qB_end = logB.qTraj(:, end);
+logB = stageBResult.log;
+qB_end = stageBResult.qFinal;
+
+if isfield(stageBResult, 'goalBase') && isfield(stageBResult, 'achievedBase') && ...
+        ~isempty(stageBResult.goalBase) && ~isempty(stageBResult.achievedBase)
+    checkStageBDocking(stageBResult.goalBase, stageBResult.achievedBase, ...
+        options.StageBDockingPositionTolerance, options.StageBDockingYawTolerance, stageBMode);
+end
 
 %% Stage C: full-body tracking of remaining reference
 bundleC = gik9dof.createGikSolver(robot, ...
-    'DistanceSpecs', options.DistanceSpecs);
+    'DistanceSpecs', options.DistanceSpecs, ...
+    'MaxIterations', options.MaxIterations);
 
 trajC = trajStruct;
 logC = struct();
@@ -171,11 +139,301 @@ pipeline.distanceSpecs = options.DistanceSpecs;
 pipeline.rateHz = options.RateHz;
 pipeline.referenceTrajectory = trajStruct;
 pipeline.environment = options.EnvironmentConfig;
+pipeline.stageBMode = stageBMode;
+if isfield(stageBResult, 'goalBase')
+    pipeline.stageBGoal = stageBResult.goalBase;
+end
 end
 
 function lockJointBounds(jointConstraint, indices, values)
 for idx = indices
     jointConstraint.Bounds(idx, :) = [values(idx) values(idx)];
+end
+end
+
+function result = executeStageBGikInLoop(robot, eeName, qStart, baseIdx, armIdx, targetPose, stageBStartPose, nSamples, velLimits, options)
+%EXECUTESTAGEBGIKINLOOP Stage B implementation matching legacy behaviour.
+cmdLogPP = [];
+stageBStates = [];
+goalBase = [];
+
+if options.UseStageBHybridAStar
+    try
+        [plannerStates, plannerGoalBase] = planStageBHybridAStarPath(qStart, baseIdx, targetPose, options, robot, eeName, options.FloorDiscs);
+        goalBase = plannerGoalBase;
+    catch plannerErr
+        if ~isempty(plannerErr.stack)
+            origin = sprintf('%s:%d', plannerErr.stack(1).name, plannerErr.stack(1).line);
+        else
+            origin = 'unknown origin';
+        end
+        warning('gik9dof:runStagedTrajectory:HybridAStarFailed', ...
+            'Stage B hybrid A* failed (%s at %s); falling back to interpolation.', plannerErr.message, origin);
+        plannerStates = [];
+    end
+
+    if ~isempty(plannerStates)
+        dt = 1 / options.RateHz;
+        [statesPP, cmdLogPP] = simulatePurePursuit(plannerStates, qStart(baseIdx), dt, options);
+        if isempty(statesPP)
+            warning('gik9dof:runStagedTrajectory:PurePursuitEmpty', ...
+                'Pure pursuit integration returned no states; reverting to interpolation trajectory.');
+            stageBStates = [];
+            cmdLogPP = [];
+            stageBPoses = generateStagePoses(stageBStartPose, targetPose, nSamples, 'base');
+        else
+            stageBStates = statesPP;
+            stageBPoses = statesToEndEffectorPoses(robot, qStart, baseIdx, stageBStates, eeName);
+        end
+    else
+        stageBPoses = generateStagePoses(stageBStartPose, targetPose, nSamples, 'base');
+    end
+else
+    [goalBase, ~] = computeStageBGoalBase(robot, qStart, baseIdx, targetPose, eeName, options.MaxIterations);
+    stageBPoses = generateStagePoses(stageBStartPose, targetPose, nSamples, 'base');
+end
+
+if isempty(goalBase)
+    [goalBase, ~] = computeStageBGoalBase(robot, qStart, baseIdx, targetPose, eeName, options.MaxIterations);
+end
+
+trajB = struct('Poses', stageBPoses);
+trajB.EndEffectorName = eeName;
+
+bundleB = gik9dof.createGikSolver(robot, 'MaxIterations', options.MaxIterations);
+lockJointBounds(bundleB.constraints.joint, armIdx, qStart);
+
+logB = gik9dof.runTrajectoryControl(bundleB, trajB, ...
+    'InitialConfiguration', qStart, ...
+    'RateHz', options.RateHz, ...
+    'CommandFcn', options.CommandFcn, ...
+    'Verbose', options.Verbose, ...
+    'VelocityLimits', velLimits);
+
+qFinal = logB.qTraj(:, end);
+achievedBase = qFinal(baseIdx).';
+if isempty(goalBase)
+    goalBase = achievedBase;
+end
+
+if isempty(stageBStates)
+    baseStates = logB.qTraj(baseIdx, :)';
+else
+    baseStates = stageBStates;
+end
+logB.pathStates = baseStates;
+logB.execBaseStates = logB.qTraj(baseIdx, :)';
+logB.mode = "gikInLoop";
+logB.goalBase = goalBase;
+logB.achievedBase = achievedBase;
+if ~isempty(cmdLogPP)
+    logB.cmdLog = array2table(cmdLogPP, 'VariableNames', {'time','Vx','Wz'});
+else
+    logB.cmdLog = table('Size', [0 3], 'VariableTypes', {'double','double','double'}, ...
+        'VariableNames', {'time','Vx','Wz'});
+end
+
+result = struct();
+result.log = logB;
+result.qFinal = qFinal;
+result.pathStates = baseStates;
+result.goalBase = goalBase;
+result.achievedBase = achievedBase;
+result.mode = "gikInLoop";
+end
+
+function result = executeStageBPureHyb(robot, eeName, qStart, baseIdx, ~, targetPose, nSamples, ~, options)
+%EXECUTESTAGEBPUREHYB Stage B implementation using planner + pure pursuit.
+
+[goalBase, ~] = computeStageBGoalBase(robot, qStart, baseIdx, targetPose, eeName, options.MaxIterations);
+
+plannerStates = [];
+if options.UseStageBHybridAStar
+    try
+    [plannerStates, plannerGoalBase] = planStageBHybridAStarPath(qStart, baseIdx, targetPose, options, robot, eeName, options.FloorDiscs);
+        if ~isempty(plannerGoalBase)
+            goalBase = plannerGoalBase;
+        end
+    catch plannerErr
+        if ~isempty(plannerErr.stack)
+            origin = sprintf('%s:%d', plannerErr.stack(1).name, plannerErr.stack(1).line);
+        else
+            origin = 'unknown origin';
+        end
+        warning('gik9dof:runStagedTrajectory:HybridAStarFailed', ...
+            'Stage B hybrid A* failed (%s at %s); falling back to interpolation.', plannerErr.message, origin);
+        plannerStates = [];
+    end
+end
+
+if isempty(plannerStates)
+    plannerStates = interpolateBaseStates(qStart(baseIdx).', goalBase, max(nSamples, 2));
+end
+
+dt = 1 / options.RateHz;
+[statesPP, cmdLogPP] = simulatePurePursuit(plannerStates, qStart(baseIdx), dt, options);
+
+if isempty(statesPP)
+    if size(plannerStates,1) > 1
+        statesPP = plannerStates(2:end, :);
+        numSteps = size(statesPP,1);
+        cmdLogPP = [(0:numSteps-1)' * dt, zeros(numSteps,2)];
+    else
+        statesPP = zeros(0, 3);
+        cmdLogPP = zeros(0, 3);
+    end
+end
+
+baseStates = assembleBaseStateSequence(qStart(baseIdx).', statesPP);
+
+qTraj = repmat(qStart, 1, size(baseStates,1));
+for k = 1:size(baseStates,1)
+    qTraj(baseIdx, k) = baseStates(k, :).';
+end
+
+executedStates = baseStates(2:end, :);
+eePoses = statesToEndEffectorPoses(robot, qStart, baseIdx, executedStates, eeName);
+nSteps = size(executedStates,1);
+timestamps = (1:nSteps) * dt;
+
+logB = buildSyntheticStageBLog(robot, qTraj, timestamps, eePoses, options.RateHz);
+logB.pathStates = baseStates;
+logB.execBaseStates = baseStates;
+logB.mode = "pureHyb";
+logB.goalBase = goalBase;
+logB.achievedBase = baseStates(end, :);
+
+if ~isempty(cmdLogPP)
+    logB.cmdLog = array2table(cmdLogPP, 'VariableNames', {'time','Vx','Wz'});
+else
+    logB.cmdLog = table('Size', [0 3], 'VariableTypes', {'double','double','double'}, ...
+        'VariableNames', {'time','Vx','Wz'});
+end
+
+result = struct();
+result.log = logB;
+result.qFinal = qTraj(:, end);
+result.pathStates = baseStates;
+result.goalBase = goalBase;
+result.achievedBase = baseStates(end, :);
+result.mode = "pureHyb";
+result.cmdLog = logB.cmdLog;
+end
+
+function [goalBase, goalInfo] = computeStageBGoalBase(robot, qStart, baseIdx, targetPose, eeName, maxIterations)
+%COMPUTESTAGEBGOALBASE Solve for the base pose with frozen arm joints.
+nJoints = numel(qStart);
+armIdx = setdiff(1:nJoints, baseIdx);
+
+if nargin < 6 || isempty(maxIterations)
+    maxIterations = 1500;
+end
+
+goalBundle = gik9dof.createGikSolver(robot, "EndEffector", eeName, ...
+    "MaxIterations", maxIterations);
+lockJointBounds(goalBundle.constraints.joint, armIdx, qStart);
+[qGoal, info] = goalBundle.solve(qStart, "TargetPose", targetPose);
+
+exitFlag = NaN;
+if isstruct(info) && isfield(info, "ExitFlag")
+    exitFlag = double(info.ExitFlag);
+end
+if ~(isfinite(exitFlag) && exitFlag > 0)
+    error("gik9dof:runStagedTrajectory:StageBGoalIK", ...
+        "Failed to resolve Stage B base goal configuration (ExitFlag=%g).", exitFlag);
+end
+
+goalBase = reshape(qGoal(baseIdx), 1, []);
+goalInfo = info;
+end
+
+function states = interpolateBaseStates(startState, goalState, numSamples)
+%INTERPOLATEBASESTATES Linear interpolation between two base poses.
+if iscolumn(startState)
+    startState = startState.';
+end
+if iscolumn(goalState)
+    goalState = goalState.';
+end
+
+numSamples = max(2, round(numSamples));
+alpha = linspace(0, 1, numSamples).';
+
+yawDelta = wrapToPi(goalState(3) - startState(3));
+yawInterp = wrapToPi(startState(3) + yawDelta * alpha);
+xInterp = startState(1) + (goalState(1) - startState(1)) * alpha;
+yInterp = startState(2) + (goalState(2) - startState(2)) * alpha;
+
+states = [xInterp, yInterp, yawInterp];
+end
+
+function seq = assembleBaseStateSequence(startState, statesOut)
+%ASSEMBLEBASESTATESEQUENCE Include start pose ahead of executed states.
+if iscolumn(startState)
+    startState = startState.';
+end
+if isempty(statesOut)
+    seq = startState;
+else
+    seq = [startState; statesOut]; %#ok<AGROW>
+end
+end
+
+function log = buildSyntheticStageBLog(robot, qTraj, timestamps, eePoses, rateHz)
+%BUILDSYNTHETICSTAGEBLOG Construct a log struct compatible with Stage B.
+numSteps = numel(timestamps);
+log = emptyLog(robot, qTraj(:, end), rateHz);
+
+log.qTraj = qTraj;
+log.rateHz = rateHz;
+log.timestamps = timestamps(:)';
+log.time = [0, log.timestamps];
+log.successMask = true(1, numSteps);
+log.completedWaypoints = numSteps;
+log.solutionInfo = repmat({struct('ExitFlag', NaN, 'Status', 'pureHyb')}, 1, numSteps);
+log.exitFlags = nan(1, numSteps);
+log.iterations = nan(1, numSteps);
+log.constraintViolationMax = nan(1, numSteps);
+
+log.targetPoses = eePoses;
+log.eePoses = eePoses;
+if numSteps > 0
+    log.targetPositions = reshape(eePoses(1:3,4,:), 3, numSteps);
+    orientations = zeros(4, numSteps);
+    for idx = 1:numSteps
+        orientations(:, idx) = tform2quat(eePoses(:,:,idx)).';
+    end
+    log.targetOrientations = orientations;
+    log.eePositions = log.targetPositions;
+    log.eeOrientations = orientations;
+else
+    log.targetPositions = zeros(3,0);
+    log.targetOrientations = zeros(4,0);
+    log.eePositions = zeros(3,0);
+    log.eeOrientations = zeros(4,0);
+end
+log.positionError = zeros(3, numSteps);
+log.positionErrorNorm = zeros(1, numSteps);
+log.orientationErrorQuat = zeros(4, numSteps);
+log.orientationErrorAngle = zeros(1, numSteps);
+end
+
+function checkStageBDocking(goalBase, achievedBase, posTol, yawTol, stageBMode)
+%CHECKSTAGEBDOCKING Issue warnings when docking tolerance violated.
+if isempty(goalBase) || isempty(achievedBase)
+    return
+end
+
+posError = hypot(goalBase(1) - achievedBase(1), goalBase(2) - achievedBase(2));
+yawError = wrapToPi(goalBase(3) - achievedBase(3));
+
+triggerPos = posTol > 0 && posError > posTol;
+triggerYaw = yawTol > 0 && abs(yawError) > yawTol;
+
+if triggerPos || triggerYaw
+    warning('gik9dof:runStagedTrajectory:StageBDockingTolerance', ...
+        'Stage B (%s) docking error exceeds tolerance (pos %.3fm, yaw %.2fdeg).', ...
+        stageBMode, posError, rad2deg(yawError));
 end
 end
 
@@ -344,24 +602,10 @@ combined.orientationErrorAngle = orientationErrorAngle;
 combined.time = time;
 end
 
-function states = planStageBHybridAStarPath(qStart, baseIdx, targetPose, options, robot, eeName, floorDiscs)
+function [states, goalBase] = planStageBHybridAStarPath(qStart, baseIdx, targetPose, options, robot, eeName, floorDiscs)
 %PLANSTAGEBHYBRIDASTARPATH Plan a base trajectory using Hybrid A*.
 startBase = reshape(qStart(baseIdx), 1, []);
-nJoints = numel(qStart);
-armIdx = setdiff(1:nJoints, baseIdx);
-
-goalBundle = gik9dof.createGikSolver(robot, "EndEffector", eeName);
-lockJointBounds(goalBundle.constraints.joint, armIdx, qStart);
-[qGoal, info] = goalBundle.solve(qStart, "TargetPose", targetPose);
-exitFlag = nan;
-if isstruct(info) && isfield(info, "ExitFlag")
-    exitFlag = double(info.ExitFlag);
-end
-if ~(isfinite(exitFlag) && exitFlag > 0)
-    error("gik9dof:runStagedTrajectory:HybridAStarGoalIK", ...
-        "Failed to resolve Stage B base goal configuration (ExitFlag=%g).", exitFlag);
-end
-goalBase = reshape(qGoal(baseIdx), 1, []);
+[goalBase, ~] = computeStageBGoalBase(robot, qStart, baseIdx, targetPose, eeName, options.MaxIterations);
 
 resolution = options.StageBHybridResolution;
 safetyMargin = options.StageBHybridSafetyMargin;

@@ -6,6 +6,8 @@ artifacts_*.mat
 report_*.mat
 floor_demo_artifacts.mat
 external_plot_outputs.mat
+*.mat
+*.mp4
 
 # MATLAB cache/temp
 *.asv

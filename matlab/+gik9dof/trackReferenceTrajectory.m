@@ -51,7 +51,11 @@ arguments
     options.StageBLookaheadDistance (1,1) double {mustBePositive} = 0.6
     options.StageBDesiredLinearVelocity (1,1) double = 0.6
     options.StageBMaxAngularVelocity (1,1) double {mustBePositive} = 2.5
+    options.StageBMode (1,1) string {mustBeMember(options.StageBMode, ["gikInLoop","pureHyb"])} = "gikInLoop"
+    options.StageBDockingPositionTolerance (1,1) double {mustBeNonnegative} = 0.02
+    options.StageBDockingYawTolerance (1,1) double {mustBeNonnegative} = 2*pi/180
     options.EnvironmentConfig (1,1) struct = gik9dof.environmentConfig()
+    options.MaxIterations (1,1) double {mustBePositive} = 1500
 end
 
 % Resolve assets and instantiate robot.
@@ -67,6 +71,11 @@ if isfield(envConfig, "BaseHome") && numel(envConfig.BaseHome) == 3
     baseHome = envConfig.BaseHome;
 else
     baseHome = options.BaseHome;
+end
+
+usingDefaults = {};
+if isfield(options, 'UsingDefaults')
+    usingDefaults = options.UsingDefaults;
 end
 
 baseMap = struct('joint_x', baseHome(1), ...
@@ -114,6 +123,31 @@ if isfield(envConfig, "DistanceWeight")
     distanceWeight = envConfig.DistanceWeight;
 end
 
+stageBMode = string(options.StageBMode);
+if ismember('StageBMode', usingDefaults) && isfield(envConfig, "StageBMode") && ~isempty(envConfig.StageBMode)
+    try
+        stageBMode = string(validatestring(string(envConfig.StageBMode), {"gikInLoop", "pureHyb"}));
+    catch
+        warning('gik9dof:trackReferenceTrajectory:InvalidStageBMode', ...
+            'Environment config StageBMode "%s" is invalid; using %s.', ...
+            string(envConfig.StageBMode), stageBMode);
+    end
+end
+
+stageBDockPosTol = options.StageBDockingPositionTolerance;
+if ismember('StageBDockingPositionTolerance', usingDefaults) && ...
+        isfield(envConfig, "StageBDockingPositionTolerance") && ...
+        ~isempty(envConfig.StageBDockingPositionTolerance)
+    stageBDockPosTol = max(0, envConfig.StageBDockingPositionTolerance);
+end
+
+stageBDockYawTol = options.StageBDockingYawTolerance;
+if ismember('StageBDockingYawTolerance', usingDefaults) && ...
+        isfield(envConfig, "StageBDockingYawTolerance") && ...
+        ~isempty(envConfig.StageBDockingYawTolerance)
+    stageBDockYawTol = max(0, envConfig.StageBDockingYawTolerance);
+end
+
 floorDiscInfo = struct('Name', {}, 'Radius', {}, 'SafetyMargin', {});
 distanceSpecs = struct([]);
 
@@ -138,7 +172,8 @@ colTools.apply();
 bundle = gik9dof.createGikSolver(robot, ...
     "EnableAiming", options.EnableAiming, ...
     "DistanceSpecs", distanceSpecs, ...
-    "DistanceWeight", distanceWeight);
+    "DistanceWeight", distanceWeight, ...
+    "MaxIterations", options.MaxIterations);
 
 % Prepare trajectory struct from JSON file.
 trajStruct = loadJsonTrajectory(jsonPath);
@@ -205,7 +240,11 @@ switch options.Mode
             'StageBLookaheadDistance', options.StageBLookaheadDistance, ...
             'StageBDesiredLinearVelocity', options.StageBDesiredLinearVelocity, ...
             'StageBMaxAngularVelocity', options.StageBMaxAngularVelocity, ...
-            'EnvironmentConfig', envConfig);
+            'StageBMode', stageBMode, ...
+            'StageBDockingPositionTolerance', stageBDockPosTol, ...
+            'StageBDockingYawTolerance', stageBDockYawTol, ...
+            'EnvironmentConfig', envConfig, ...
+            'MaxIterations', options.MaxIterations);
         log = pipeline;
     otherwise
         error("gik9dof:trackReferenceTrajectory:UnknownMode", options.Mode);

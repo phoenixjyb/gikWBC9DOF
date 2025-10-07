@@ -78,6 +78,13 @@
 **Still in progress**
 - Add a holistic pre-planning step (reuse the Stage B Hybrid A*) so the base can clear Disc 1 before switching to full-body tracking.
 - Evaluate margin/weight combinations that guarantee clearance yet keep the solver feasible; log the resulting clearances to verify.
+
+## 2025-10-07 – Stage B Dual-Mode Refactor
+
+- Split `runStagedTrajectory` Stage B into selectable `gikInLoop` (legacy) and `pureHyb` (Hybrid A* + pure pursuit) pipelines with a shared logging surface; the mode can now be toggled via `StageBMode` or the environment config.
+- Pure-hybrid Stage B bypasses GIK entirely: it synthesizes joint trajectories by freezing the arm, time-parameterizing the base path, and logging `(time, Vx, Wz)` commands so downstream animation and metrics remain aligned.
+- Added docking tolerances with warnings when the base goal deviates, recorded goal/achieved poses in the Stage B log, and plumbed the new options through `trackReferenceTrajectory` alongside environment overrides.
+- Environment config now publishes default Stage B mode and docking tolerances so batch harnesses inherit consistent behaviour; staged pipeline metadata includes the active submode and target base pose for Stage C hand-off.
 - Update the regen helper to preserve existing MP4 timestamps when overwriting, or add an option to skip regeneration for long runs.
 
 ## 2025-10-06 – Mesh Refresh & Collision Catalog Cleanup

@@ -56,6 +56,7 @@ arguments
     options.DistanceBounds (1,2) double = [0.2 Inf]
     options.DistanceWeight (1,1) double = 0.5
     options.DistanceSpecs = struct([])
+    options.MaxIterations (1,1) double {mustBePositive} = 1500
 end
 
 % Keep a configuration toolbox around for conversions.
@@ -103,6 +104,15 @@ gik = generalizedInverseKinematics( ...
     'RigidBodyTree', robot, ...
     'SolverAlgorithm', options.SolverAlgorithm, ...
     'ConstraintInputs', constraintInputs);
+
+params = gik.SolverParameters;
+if isfield(params, 'MaxIterations')
+    params.MaxIterations = options.MaxIterations;
+    gik.SolverParameters = params;
+else
+    warning('gik9dof:createGikSolver:MaxIterationsUnsupported', ...
+        'Solver does not expose MaxIterations; leaving at default.');
+end
 
 % Package solver bundle.
 bundle.solver = gik;

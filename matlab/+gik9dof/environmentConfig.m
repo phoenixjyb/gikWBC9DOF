@@ -45,5 +45,9 @@ env.FloorDiscs = [discTemplate(center1, 'floor_disc_1'), discTemplate(center2, '
 env.DistanceMargin = distanceMargin;
 env.DistanceWeight = distanceWeight;
 
+env.StageBMode = "gikInLoop";
+env.StageBDockingPositionTolerance = 0.02;
+env.StageBDockingYawTolerance = 2*pi/180;
+
 cachedEnv = env;
 end
