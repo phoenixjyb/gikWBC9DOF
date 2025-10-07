@@ -1,0 +1,263 @@
+/**
+ * @file stage_b_chassis_plan.hpp
+ * @brief Stage B Chassis Planning Controller (Mode 2 - Staged Control)
+ * 
+ * Implements Stage B of staged control architecture:
+ * - Stage B1: Pure Hybrid A* → Velocity Controller
+ * - Stage B2: Hybrid A* → GIK 3-DOF → Velocity Controller
+ * 
+ * Stage B executes chassis planning while arm is in static gripping pose.
+ * Transitions to Stage C (full-body tracking) when chassis reaches goal.
+ * 
+ * Target: NVIDIA AGX Orin, Ubuntu 22.04, ROS2 Humble, ARM64
+ */
+
+#ifndef STAGE_B_CHASSIS_PLAN_HPP
+#define STAGE_B_CHASSIS_PLAN_HPP
+
+#include <rclcpp/rclcpp.hpp>
+#include <nav_msgs/msg/occupancy_grid.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <geometry_msgs/msg/twist.hpp>
+#include <sensor_msgs/msg/joint_state.hpp>
+#include <Eigen/Dense>
+#include <Eigen/Geometry>
+#include <memory>
+#include <vector>
+#include <deque>
+
+// MATLAB Coder generated planner
+#include "HybridAStarPlanner.h"
+#include "OccupancyGrid2D.h"
+#include "gik9dof_planHybridAStarCodegen_types.h"
+
+// MATLAB Coder generated GIK solver (for Stage B2)
+#include "GIKSolver.h"
+#include "gik9dof_codegen_realtime_solveGIKStepWrapper_types.h"
+
+// MATLAB Coder generated velocity controllers
+#include "velocity_controller/holisticVelocityController.h"
+#include "velocity_controller/holisticVelocityController_types.h"
+#include "purepursuit/purePursuitVelocityController.h"
+#include "purepursuit/purePursuitVelocityController_types.h"
+
+namespace gik9dof {
+
+/**
+ * @brief Stage B execution modes
+ */
+enum class StageBMode {
+    B1_PURE_HYBRID_ASTAR,  // Pure Hybrid A* → Velocity
+    B2_GIK_ASSISTED        // Hybrid A* → GIK 3-DOF → Velocity
+};
+
+/**
+ * @brief Stage B controller parameters
+ */
+struct StageBParams {
+    // Mode selection
+    StageBMode mode;
+    
+    // Hybrid A* planner parameters
+    double grid_resolution;          // Occupancy grid resolution (m/cell)
+    double max_planning_time;        // Max planning time (s)
+    double robot_radius;             // Robot footprint radius (m)
+    double replan_threshold;         // Replan if goal moves > threshold (m)
+    
+    // Goal tolerance
+    double xy_tolerance;             // Position tolerance (m)
+    double theta_tolerance;          // Heading tolerance (rad)
+    
+    // GIK 3-DOF parameters (for Stage B2)
+    double distance_lower_bound;     // Min distance weight (m)
+    double distance_weight;          // Distance cost weight
+    bool use_warm_start;             // Use previous solution as init guess
+    
+    // Velocity controller selection (shared with holistic mode)
+    int velocity_control_mode;       // 0=legacy, 1=simple heading, 2=pure pursuit
+};
+
+/**
+ * @brief Stage B controller state
+ */
+struct StageBState {
+    bool is_active;                  // Stage B currently executing?
+    bool path_valid;                 // Valid path to goal?
+    int current_waypoint_idx;        // Current waypoint in path
+    int total_waypoints;             // Total waypoints in path
+    
+    // Current pose (base only: x, y, theta)
+    Eigen::Vector3d current_pose;
+    
+    // Goal pose (base only: x, y, theta)
+    Eigen::Vector3d goal_pose;
+    
+    // Planned path from Hybrid A*
+    std::vector<gik9dof::struct1_T> path;
+    
+    // Search statistics
+    gik9dof::struct2_T search_stats;
+    
+    // Arm static gripping configuration (6-DOF)
+    std::vector<double> arm_grip_config;
+    
+    // Last planning time
+    rclcpp::Time last_plan_time;
+    
+    // Occupancy grid received?
+    bool grid_received;
+};
+
+/**
+ * @brief Stage B Chassis Planning Controller
+ * 
+ * Manages chassis planning during Stage B of staged control:
+ * 1. Subscribe to occupancy grid
+ * 2. Plan Hybrid A* path from current base pose to goal
+ * 3. Execute path:
+ *    - B1: Pure Hybrid A* → Velocity Controller
+ *    - B2: Hybrid A* waypoints → GIK 3-DOF → Velocity Controller
+ * 4. Check goal reached
+ * 5. Transition to Stage C when chassis at goal
+ */
+class StageBController {
+public:
+    /**
+     * @brief Constructor
+     * 
+     * @param node ROS2 node pointer for publishers/subscribers
+     * @param params Stage B parameters
+     */
+    StageBController(rclcpp::Node* node, const StageBParams& params);
+    
+    /**
+     * @brief Destructor
+     */
+    ~StageBController();
+    
+    /**
+     * @brief Activate Stage B controller
+     * 
+     * @param current_base_pose Current base pose [x, y, theta]
+     * @param goal_base_pose Goal base pose [x, y, theta]
+     * @param arm_static_config Arm gripping configuration (6-DOF)
+     */
+    void activate(const Eigen::Vector3d& current_base_pose,
+                  const Eigen::Vector3d& goal_base_pose,
+                  const std::vector<double>& arm_static_config);
+    
+    /**
+     * @brief Deactivate Stage B controller
+     */
+    void deactivate();
+    
+    /**
+     * @brief Execute one step of Stage B controller
+     * 
+     * Called at control loop rate (e.g., 10 Hz)
+     * 
+     * @param current_base_pose Current base pose [x, y, theta]
+     * @param current_arm_config Current arm configuration (6-DOF)
+     * @param[out] base_cmd Output base velocity command
+     * @param[out] arm_cmd Output arm joint state (static during Stage B)
+     * @return true if Stage B still active, false if goal reached
+     */
+    bool executeStep(const Eigen::Vector3d& current_base_pose,
+                     const std::vector<double>& current_arm_config,
+                     geometry_msgs::msg::Twist& base_cmd,
+                     sensor_msgs::msg::JointState& arm_cmd);
+    
+    /**
+     * @brief Check if chassis has reached goal
+     * 
+     * @param current_base_pose Current base pose [x, y, theta]
+     * @return true if within tolerance of goal
+     */
+    bool chassisReachedGoal(const Eigen::Vector3d& current_base_pose) const;
+    
+    /**
+     * @brief Get current Stage B state (for diagnostics)
+     */
+    const StageBState& getState() const { return state_; }
+
+private:
+    /**
+     * @brief Occupancy grid callback
+     */
+    void occupancyGridCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
+    
+    /**
+     * @brief Plan Hybrid A* path
+     * 
+     * @return true if path found
+     */
+    bool planPath();
+    
+    /**
+     * @brief Execute Stage B1 (Pure Hybrid A* → Velocity)
+     * 
+     * @param current_base_pose Current base pose
+     * @param[out] base_cmd Output velocity command
+     */
+    void executeB1_PureHybridAStar(const Eigen::Vector3d& current_base_pose,
+                                    geometry_msgs::msg::Twist& base_cmd);
+    
+    /**
+     * @brief Execute Stage B2 (Hybrid A* → GIK 3-DOF → Velocity)
+     * 
+     * @param current_base_pose Current base pose
+     * @param current_arm_config Current arm configuration
+     * @param[out] base_cmd Output velocity command
+     */
+    void executeB2_GIKAssisted(const Eigen::Vector3d& current_base_pose,
+                               const std::vector<double>& current_arm_config,
+                               geometry_msgs::msg::Twist& base_cmd);
+    
+    /**
+     * @brief Convert ROS OccupancyGrid to MATLAB Coder format
+     * 
+     * @param ros_grid Input ROS occupancy grid
+     * @param[out] matlab_grid Output MATLAB Coder grid
+     * @return true if conversion successful
+     */
+    bool convertOccupancyGrid(const nav_msgs::msg::OccupancyGrid& ros_grid,
+                              gik9dof::OccupancyGrid2D& matlab_grid);
+    
+    // ROS2 node pointer
+    rclcpp::Node* node_;
+    
+    // Parameters
+    StageBParams params_;
+    
+    // State
+    StageBState state_;
+    
+    // MATLAB Coder objects
+    std::unique_ptr<gik9dof::HybridAStarPlanner> planner_;
+    std::unique_ptr<gik9dof::GIKSolver> gik_solver_;  // For Stage B2
+    gik9dof::OccupancyGrid2D occupancy_grid_;
+    
+    // ROS2 subscribers
+    rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr grid_sub_;
+    
+    // Occupancy grid storage
+    nav_msgs::msg::OccupancyGrid::SharedPtr latest_grid_;
+    std::mutex grid_mutex_;
+    
+    // Velocity controller state (mode 1: simple heading)
+    gik9dof_velocity::struct0_T vel_state_;
+    gik9dof_velocity::struct1_T vel_params_;
+    bool vel_controller_initialized_;
+    
+    // Pure Pursuit state (mode 2)
+    gik9dof_purepursuit::struct0_T pp_state_;
+    gik9dof_purepursuit::struct1_T pp_params_;
+    bool pp_controller_initialized_;
+    
+    // Logger
+    rclcpp::Logger logger_;
+};
+
+} // namespace gik9dof
+
+#endif // STAGE_B_CHASSIS_PLAN_HPP

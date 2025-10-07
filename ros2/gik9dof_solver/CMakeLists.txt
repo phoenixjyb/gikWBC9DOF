@@ -73,9 +73,55 @@ target_link_libraries(gik_matlab_solver
 # Disable warnings for MATLAB generated code
 target_compile_options(gik_matlab_solver PRIVATE -w)
 
+# ========================================
+# Hybrid A* Planner (MATLAB Coder ARM64)
+# ========================================
+set(PLANNER_GENERATED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/generated/planner")
+
+# Collect all planner source files
+file(GLOB PLANNER_SOURCES
+    "${PLANNER_GENERATED_DIR}/*.cpp"
+    "${PLANNER_GENERATED_DIR}/*.c"
+)
+
+# Remove main/example files if any (not needed for library)
+list(FILTER PLANNER_SOURCES EXCLUDE REGEX ".*main\\.cpp$")
+list(FILTER PLANNER_SOURCES EXCLUDE REGEX ".*example.*\\.cpp$")
+list(FILTER PLANNER_SOURCES EXCLUDE REGEX ".*_rtw\\.cpp$")
+list(FILTER PLANNER_SOURCES EXCLUDE REGEX ".*setup_.*\\.cpp$")
+
+message(STATUS "Planner sources: ${PLANNER_SOURCES}")
+
+# Create planner library
+add_library(hybrid_astar_planner STATIC ${PLANNER_SOURCES})
+
+target_include_directories(hybrid_astar_planner PUBLIC
+  ${PLANNER_GENERATED_DIR}
+)
+
+# Apply same architecture-specific flags as GIK solver
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64|ARM64")
+  message(STATUS "Configuring Hybrid A* planner for ARM64")
+  target_compile_definitions(hybrid_astar_planner PRIVATE 
+    __SSE2__=0
+    __AVX__=0
+    __AVX2__=0
+  )
+  target_compile_options(hybrid_astar_planner PRIVATE 
+    -march=armv8-a
+    -mtune=cortex-a78
+  )
+else()
+  message(STATUS "Configuring Hybrid A* planner for x86_64")
+endif()
+
+# Disable warnings for MATLAB generated code
+target_compile_options(hybrid_astar_planner PRIVATE -w)
+
 # Solver node executable
 add_executable(gik9dof_solver_node
   src/gik9dof_solver_node.cpp
+  # src/stage_b_chassis_plan.cpp    # Stage B chassis planning controller (DISABLED - needs fixing)
   src/collisioncodegen_stubs.cpp  # Stub implementations for MATLAB collision functions
   src/coder_posix_time_stubs.cpp  # Stub implementations for MATLAB POSIX time functions
   # MATLAB Coder generated velocity controller (simple heading)
@@ -102,6 +148,7 @@ ament_target_dependencies(gik9dof_solver_node
 
 target_link_libraries(gik9dof_solver_node
   gik_matlab_solver  # MATLAB generated solver library
+  hybrid_astar_planner  # MATLAB generated planner library (NEW)
   Eigen3::Eigen
   OpenMP::OpenMP_CXX
 )

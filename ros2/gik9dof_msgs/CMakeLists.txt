@@ -21,6 +21,7 @@ find_package(builtin_interfaces REQUIRED)
 set(msg_files
   "msg/EndEffectorTrajectory.msg"
   "msg/SolverDiagnostics.msg"
+  "msg/PlannerDiagnostics.msg"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}

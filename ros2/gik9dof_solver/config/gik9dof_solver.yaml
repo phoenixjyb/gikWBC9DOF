@@ -1,0 +1,115 @@
+# GIK9DOF Solver Node Configuration
+# Target: NVIDIA AGX Orin, Ubuntu 22.04, ROS2 Humble, ARM64
+
+gik9dof_solver_node:
+  ros__parameters:
+    # ==================================================
+    # CONTROL MODE SELECTION
+    # ==================================================
+    # "holistic" = Mode 1: Holistic 9-DOF GIK → Velocity Controller
+    # "staged" = Mode 2: Staged control (A → B → C)
+    control_mode: "staged"
+    
+    # ==================================================
+    # GENERAL SOLVER PARAMETERS
+    # ==================================================
+    control_rate: 10.0  # Hz (control loop frequency)
+    max_solve_time: 0.05  # seconds (50ms timeout for GIK solver)
+    max_solver_iterations: 50  # Max iterations for GIK solver (default 50, MATLAB default was 1500)
+    distance_lower_bound: 0.1  # meters (min distance weight)
+    distance_weight: 1.0  # Cost weight for distance term
+    publish_diagnostics: true  # Publish solver diagnostics
+    use_warm_start: true  # Use previous solution as initial guess
+    
+    # ==================================================
+    # VELOCITY CONTROLLER SELECTION (Shared by all modes)
+    # ==================================================
+    # 0 = Legacy (5-point differentiation)
+    # 1 = Simple Heading Controller (P + feedforward)
+    # 2 = Pure Pursuit (lookahead path following) - RECOMMENDED
+    velocity_control_mode: 2
+    
+    # --------------------------------------------------
+    # Simple Heading Controller Parameters (mode 1)
+    # --------------------------------------------------
+    vel_ctrl:
+      track: 0.674           # Wheel track width (m)
+      vwheel_max: 2.0        # Max wheel speed (m/s)
+      vx_max: 1.0            # Max forward velocity (m/s)
+      w_max: 2.0             # Max yaw rate (rad/s)
+      yaw_kp: 2.0            # Heading error P gain
+      yaw_kff: 0.9           # Yaw rate feedforward gain
+    
+    # --------------------------------------------------
+    # Pure Pursuit Controller Parameters (mode 2)
+    # --------------------------------------------------
+    purepursuit:
+      lookahead_base: 0.8       # Base lookahead distance (m)
+      lookahead_vel_gain: 0.3   # Velocity-dependent lookahead gain
+      lookahead_time_gain: 0.1  # Time-based lookahead gain
+      vx_nominal: 1.0           # Nominal forward velocity (m/s)
+      vx_max: 1.5               # Max forward velocity (m/s)
+      wz_max: 2.0               # Max angular velocity (rad/s)
+      track: 0.674              # Wheel track width (m)
+      vwheel_max: 2.0           # Max wheel speed (m/s)
+      waypoint_spacing: 0.15    # Target waypoint spacing (m)
+      path_buffer_size: 30.0    # Max waypoints in buffer
+      goal_tolerance: 0.2       # Goal reached tolerance (m)
+      interp_spacing: 0.05      # Path interpolation spacing (m)
+    
+    # ==================================================
+    # STAGED CONTROL PARAMETERS (Mode 2)
+    # ==================================================
+    staged:
+      # ------------------------------------------------
+      # Stage A: Arm Ramp-Up (6-DOF, chassis frozen)
+      # ------------------------------------------------
+      stage_a:
+        enabled: true
+        max_arm_velocity: 0.5      # rad/s (max joint velocity)
+        position_tolerance: 0.01   # rad (joint position tolerance)
+        timeout: 10.0              # seconds (max time for Stage A)
+      
+      # ------------------------------------------------
+      # Stage B: Chassis Planning
+      # ------------------------------------------------
+      stage_b:
+        # Submode selection:
+        # "pure_hybrid_astar" = B1: Pure Hybrid A* → Velocity
+        # "gik_assisted" = B2: Hybrid A* → GIK 3-DOF → Velocity
+        submode: "pure_hybrid_astar"
+        
+        # Hybrid A* planner parameters
+        grid_resolution: 0.1       # m/cell (occupancy grid resolution)
+        max_planning_time: 0.05    # seconds (50ms max planning time)
+        robot_radius: 0.5          # meters (robot footprint radius)
+        replan_threshold: 0.5      # meters (replan if goal moves > threshold)
+        
+        # Goal tolerance
+        xy_tolerance: 0.15         # meters (position tolerance)
+        theta_tolerance: 0.175     # radians (10 degrees heading tolerance)
+        
+        # GIK 3-DOF parameters (for B2 submode)
+        gik_3dof:
+          distance_lower_bound: 0.1
+          distance_weight: 1.0
+          use_warm_start: true
+        
+        # Stage B timeout
+        timeout: 30.0              # seconds (max time for Stage B)
+      
+      # ------------------------------------------------
+      # Stage C: Full-Body Tracking (9-DOF)
+      # ------------------------------------------------
+      stage_c:
+        enabled: true
+        max_tracking_error: 0.1    # meters (max end-effector tracking error)
+        timeout: 60.0              # seconds (max time for Stage C)
+    
+    # ==================================================
+    # HOLISTIC CONTROL PARAMETERS (Mode 1)
+    # ==================================================
+    holistic:
+      tracking_frequency: 10.0     # Hz (trajectory tracking frequency)
+      max_tracking_error: 0.1      # meters (max end-effector error)
+      timeout: 60.0                # seconds (max time for holistic mode)

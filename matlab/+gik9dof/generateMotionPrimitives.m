@@ -16,12 +16,13 @@ function primitives = generateMotionPrimitives(params)
 %                                 .min_turning_radius, .wheelbase
 %
 %   OUTPUTS:
-%       primitives - Struct array with fields:
+%       primitives - FIXED-SIZE struct array with fields:
 %           .Vx  - Forward velocity [m/s]
 %           .Wz  - Yaw rate [rad/s]
 %           .dt  - Duration [s]
 %           .arc_length - Approximate distance traveled [m]
-%           .description - String description
+%           NOTE: Invalid primitives have Vx=0, Wz=0, dt=0
+%                 Check dt > 0 to identify valid primitives
 %
 %   Primitive design strategy:
 %       1. Forward arcs (Vx > 0, Wz varied) - primary motion
@@ -29,7 +30,7 @@ function primitives = generateMotionPrimitives(params)
 %       3. NO spin-in-place (passive rear prevents Vx=0 rotation)
 %       4. Enforce R = |Vx/Wz| >= min_turning_radius
 %
-%   Primitive count: ~18-20 primitives
+%   Primitive count: ~18-20 primitives (fixed array size: 30)
 %       - 8 forward: straight + left/right arcs (3 speeds × 5 yaw rates - duplicates)
 %       - 6 backward: straight + left/right arcs
 %       - Coverage: left/straight/right, slow/medium/fast
@@ -54,87 +55,123 @@ Vx_backward = [-0.3, -0.5];            % [m/s] Backward speeds (slower)
 % For R_min = 0.34 m and Vx = 0.8 m/s: Wz_max_for_R_min = 0.8/0.34 = 2.35 rad/s
 Wz_options_base = [-2.0, -1.0, 0.0, 1.0, 2.0];  % [rad/s]
 
-% Preallocate primitive array (estimate ~20 primitives)
+% Preallocate primitive array with FIXED SIZE for codegen
 max_primitives = 30;
 primitives = repmat(struct('Vx', 0.0, 'Wz', 0.0, 'dt', 0.0, ...
-                           'arc_length', 0.0, 'description', ''), ...
+                           'arc_length', 0.0), ...
                     max_primitives, 1);
 
-primitive_count = 0;
+% Use fixed index - iterate through ALL slots
+idx = int32(1);
 
 %% Generate forward primitives
 for i_vx = 1:length(Vx_forward)
     Vx = Vx_forward(i_vx);
     
     for i_wz = 1:length(Wz_options_base)
+        if idx > max_primitives
+            break;
+        end
+        
         Wz = Wz_options_base(i_wz);
         
         % Check constraints
-        if ~checkPrimitiveConstraints(Vx, Wz, track, Vwheel_max, Wz_max, R_min)
-            continue;  % Skip invalid primitive
+        is_valid = checkPrimitiveConstraints(Vx, Wz, track, Vwheel_max, Wz_max, R_min);
+        
+        if is_valid
+            % Use medium duration (1.0s) for most primitives
+            dt = 1.0;
+            
+            % Add primitive at current index
+            primitives(idx).Vx = Vx;
+            primitives(idx).Wz = Wz;
+            primitives(idx).dt = dt;
+            primitives(idx).arc_length = abs(Vx) * dt;
+            
+            idx = idx + 1;
         end
-        
-        % Use medium duration (1.0s) for most primitives
-        dt = 1.0;
-        
-        % Add primitive
-        primitive_count = primitive_count + 1;
-        primitives(primitive_count).Vx = Vx;
-        primitives(primitive_count).Wz = Wz;
-        primitives(primitive_count).dt = dt;
-        primitives(primitive_count).arc_length = abs(Vx) * dt;
-        primitives(primitive_count).description = sprintf('FWD Vx=%.1f Wz=%.1f', Vx, Wz);
     end
 end
 
 %% Generate backward primitives (fewer, slower)
 for i_vx = 1:length(Vx_backward)
+    if idx > max_primitives
+        break;
+    end
+    
     Vx = Vx_backward(i_vx);
     
     % Fewer yaw options for backward (straight, gentle left/right)
     Wz_backward = [-1.0, 0.0, 1.0];  % [rad/s]
     
     for i_wz = 1:length(Wz_backward)
+        if idx > max_primitives
+            break;
+        end
+        
         Wz = Wz_backward(i_wz);
         
         % Check constraints
-        if ~checkPrimitiveConstraints(Vx, Wz, track, Vwheel_max, Wz_max, R_min)
-            continue;
+        is_valid = checkPrimitiveConstraints(Vx, Wz, track, Vwheel_max, Wz_max, R_min);
+        
+        if is_valid
+            dt = 1.0;  % Standard duration
+            
+            % Add primitive at current index
+            primitives(idx).Vx = Vx;
+            primitives(idx).Wz = Wz;
+            primitives(idx).dt = dt;
+            primitives(idx).arc_length = abs(Vx) * dt;
+            
+            idx = idx + 1;
         end
-        
-        dt = 1.0;  % Standard duration
-        
-        % Add primitive
-        primitive_count = primitive_count + 1;
-        primitives(primitive_count).Vx = Vx;
-        primitives(primitive_count).Wz = Wz;
-        primitives(primitive_count).dt = dt;
-        primitives(primitive_count).arc_length = abs(Vx) * dt;
-        primitives(primitive_count).description = sprintf('BCK Vx=%.1f Wz=%.1f', Vx, Wz);
     end
 end
 
 %% Add a few longer-duration primitives for straight motion
-Vx_straight = 0.8;   % [m/s] Fast forward
-Wz_straight = 0.0;   % [rad/s] No turning
-dt_long = 1.5;       % [s] Longer duration
-
-if checkPrimitiveConstraints(Vx_straight, Wz_straight, track, Vwheel_max, Wz_max, R_min)
-    primitive_count = primitive_count + 1;
-    primitives(primitive_count).Vx = Vx_straight;
-    primitives(primitive_count).Wz = Wz_straight;
-    primitives(primitive_count).dt = dt_long;
-    primitives(primitive_count).arc_length = abs(Vx_straight) * dt_long;
-    primitives(primitive_count).description = 'FWD FAST STRAIGHT';
+if idx <= max_primitives
+    Vx_straight = 0.8;   % [m/s] Fast forward
+    Wz_straight = 0.0;   % [rad/s] No turning
+    dt_long = 1.5;       % [s] Longer duration
+    
+    is_valid = checkPrimitiveConstraints(Vx_straight, Wz_straight, track, Vwheel_max, Wz_max, R_min);
+    if is_valid
+        primitives(idx).Vx = Vx_straight;
+        primitives(idx).Wz = Wz_straight;
+        primitives(idx).dt = dt_long;
+        primitives(idx).arc_length = abs(Vx_straight) * dt_long;
+        
+        idx = idx + 1;
+    end
 end
 
-% Trim unused slots
-primitives = primitives(1:primitive_count);
+% DO NOT TRIM - Keep fixed-size array for codegen compatibility
+% Unused slots have dt=0, which caller can filter out
+% primitives = primitives(1:primitive_count);  % REMOVED for codegen
 
 % Display summary
-fprintf('Generated %d motion primitives\n', primitive_count);
-fprintf('  - Forward: %d\n', sum([primitives.Vx] > 0));
-fprintf('  - Backward: %d\n', sum([primitives.Vx] < 0));
+valid_count = int32(0);
+for i = 1:max_primitives
+    if primitives(i).dt > 0
+        valid_count = valid_count + 1;
+    end
+end
+fprintf('Generated %d motion primitives\n', valid_count);
+if valid_count > 0
+    fwd_count = int32(0);
+    bck_count = int32(0);
+    for i = 1:max_primitives
+        if primitives(i).dt > 0
+            if primitives(i).Vx > 0
+                fwd_count = fwd_count + 1;
+            elseif primitives(i).Vx < 0
+                bck_count = bck_count + 1;
+            end
+        end
+    end
+    fprintf('  - Forward: %d\n', fwd_count);
+    fprintf('  - Backward: %d\n', bck_count);
+end
 fprintf('  - Min radius enforced: %.3f m\n', R_min);
 
 end

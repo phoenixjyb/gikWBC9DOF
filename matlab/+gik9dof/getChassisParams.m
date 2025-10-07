@@ -39,8 +39,28 @@ arguments
     variant (1,:) char {mustBeMember(variant, {'compact', 'fourwheel'})} = 'fourwheel'
 end
 
+% Pre-allocate ALL struct fields for MATLAB Coder compatibility
 params = struct();
-params.chassis_type = 'front_diff_rear_passive';  % Hybrid: diff front + passive rear
+params.chassis_type = 'front_diff_rear_passive';
+params.wheelbase = 0.0;
+params.track = 0.0;
+params.wheel_radius = 0.0;
+params.robot_length = 0.0;
+params.robot_width = 0.0;
+params.robot_radius = 0.0;
+params.Vwheel_max = 0.0;
+params.Vx_max = 0.0;
+params.Wz_max_front_axle = 0.0;
+params.Wz_max_at_speed = 0.0;
+params.Wz_max = 0.0;
+params.accel_max = 0.0;
+params.min_turning_radius_theoretical = 0.0;
+params.min_turning_radius = 0.0;
+params.min_turning_radius_kinematic = 0.0;
+params.safety_margin = 0.0;
+params.inflation_radius = 0.0;
+params.max_speed_for_planning = 0.0;
+params.nominal_speed = 0.0;
 
 switch variant
     case 'compact'

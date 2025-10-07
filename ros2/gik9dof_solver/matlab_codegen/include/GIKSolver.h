@@ -26,11 +26,13 @@ public:
                                                     double distanceWeight,
                                                     double qNext[9],
                                                     struct0_T *solverInfo);
+  void setMaxIterations(int max_iterations);
   gik9dof_codegen_realtime_solveGIKStepWrapperStackData *getStackData();
 
 private:
   gik9dof_codegen_realtime_solveGIKStepWrapperPersistentData pd_;
   gik9dof_codegen_realtime_solveGIKStepWrapperStackData SD_;
+  int max_iterations_{1500};  // Default max iterations, can be overridden
 };
 
 } // namespace gik9dof

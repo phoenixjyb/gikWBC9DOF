@@ -50,6 +50,7 @@ public:
         // Declare parameters
         this->declare_parameter("control_rate", 10.0);  // Hz
         this->declare_parameter("max_solve_time", 0.05);  // 50ms
+        this->declare_parameter("max_solver_iterations", 50);  // Max solver iterations
         this->declare_parameter("distance_lower_bound", 0.1);  // meters
         this->declare_parameter("distance_weight", 1.0);
         this->declare_parameter("publish_diagnostics", true);
@@ -86,6 +87,7 @@ public:
         // Get parameters
         control_rate_ = this->get_parameter("control_rate").as_double();
         max_solve_time_ = this->get_parameter("max_solve_time").as_double();
+        max_solver_iterations_ = this->get_parameter("max_solver_iterations").as_int();
         distance_lower_ = this->get_parameter("distance_lower_bound").as_double();
         distance_weight_ = this->get_parameter("distance_weight").as_double();
         publish_diagnostics_ = this->get_parameter("publish_diagnostics").as_bool();
@@ -187,10 +189,14 @@ public:
         // Initialize MATLAB solver
         matlab_solver_ = std::make_unique<gik9dof::GIKSolver>();
         
+        // Set max iterations (default 50, configurable via parameter)
+        matlab_solver_->setMaxIterations(max_solver_iterations_);
+        
         RCLCPP_INFO(this->get_logger(), "GIK9DOF Solver Node initialized");
         RCLCPP_INFO(this->get_logger(), "MATLAB solver initialized");
         RCLCPP_INFO(this->get_logger(), "Control rate: %.1f Hz", control_rate_);
         RCLCPP_INFO(this->get_logger(), "Max solve time: %.0f ms", max_solve_time_ * 1000.0);
+        RCLCPP_INFO(this->get_logger(), "Max solver iterations: %d", max_solver_iterations_);
         RCLCPP_INFO(this->get_logger(), "Warm-start optimization: %s", use_warm_start_ ? "enabled" : "disabled");
         
         // Log velocity controller mode
@@ -387,6 +393,7 @@ private:
         
         // Add timeout safety: track solve start time
         auto solve_start_time = std::chrono::steady_clock::now();
+        rclcpp::Time solve_start_ros = this->now();
         
         // Call MATLAB-generated solver
         // Note: The solver itself has MaxTime=50ms configured in MATLAB code
@@ -401,6 +408,7 @@ private:
         
         // Check solve time and warn if exceeded expected duration
         auto solve_end_time = std::chrono::steady_clock::now();
+        rclcpp::Time solve_end_ros = this->now();
         auto solve_duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
             solve_end_time - solve_start_time).count();
         
@@ -414,6 +422,51 @@ private:
         std::string status_str(solver_info.Status.data, 
                               solver_info.Status.size[1]);
         
+        // Enhanced diagnostics: extract constraint violations
+        // ConstraintViolations is an array of struct1_T[3] with fields: Type (string), Violation (array)
+        double pose_violation = 0.0;
+        double position_error = 0.0;
+        double orientation_error = 0.0;
+        bool joint_limit_violation = false;
+        bool distance_constraint_met = true;
+        std::vector<double> all_violations;
+        
+        // Iterate through the 3 constraint violation structs
+        for (int cv_idx = 0; cv_idx < 3; cv_idx++) {
+            const auto& cv = solver_info.ConstraintViolations[cv_idx];
+            std::string type_str(cv.Type.data, cv.Type.size[1]);
+            
+            // Extract violation values from the array
+            int num_violations = cv.Violation.size(0);
+            for (int i = 0; i < num_violations; i++) {
+                double val = cv.Violation[i];
+                all_violations.push_back(val);
+                
+                // Parse based on constraint type
+                if (type_str.find("pose") != std::string::npos) {
+                    // Pose constraints: first 3 are position, next 3 are orientation
+                    if (i < 3) {
+                        position_error = std::max(position_error, std::abs(val));
+                    } else if (i < 6) {
+                        orientation_error = std::max(orientation_error, std::abs(val));
+                    }
+                } else if (type_str.find("joint") != std::string::npos) {
+                    // Joint limit constraints
+                    if (std::abs(val) > 1e-6) {
+                        joint_limit_violation = true;
+                    }
+                } else if (type_str.find("distance") != std::string::npos) {
+                    // Distance constraints
+                    if (std::abs(val) > 1e-3) {
+                        distance_constraint_met = false;
+                    }
+                }
+            }
+        }
+        
+        pose_violation = std::max(position_error, orientation_error);
+
+        
         // Store result and solver info
         {
             std::lock_guard<std::mutex> lock(state_mutex_);
@@ -421,13 +474,32 @@ private:
             last_solver_iterations_ = static_cast<int>(solver_info.Iterations);
             last_solver_status_ = status_str;
             last_exit_flag_ = static_cast<int>(solver_info.ExitFlag);
+            last_random_restarts_ = static_cast<int>(solver_info.NumRandomRestarts);
+            last_pose_violation_ = pose_violation;
+            last_position_error_ = position_error;
+            last_orientation_error_ = orientation_error;
+            last_joint_limit_violation_ = joint_limit_violation;
+            last_distance_constraint_met_ = distance_constraint_met;
+            last_constraint_violations_ = all_violations;
+            last_solve_start_ = solve_start_ros;
+            last_solve_end_ = solve_end_ros;
         }
         
-        // Log if failed
+        // Log detailed diagnostics on failure or with DEBUG level
         if (status_str != "success") {
             RCLCPP_WARN(this->get_logger(), 
                        "Solver failed: status='%s', iterations=%d, exit_flag=%d, time=%ld ms",
                        status_str.c_str(), last_solver_iterations_, last_exit_flag_, solve_duration_ms);
+            RCLCPP_WARN(this->get_logger(), 
+                       "  Violations: pose=%.4f (pos=%.4f, ori=%.4f), joint_limits=%s, dist_constraint=%s, restarts=%d",
+                       pose_violation, position_error, orientation_error,
+                       joint_limit_violation ? "YES" : "no",
+                       distance_constraint_met ? "yes" : "NO",
+                       last_random_restarts_);
+        } else {
+            RCLCPP_DEBUG(this->get_logger(), 
+                        "Solver success: iter=%d, time=%ld ms, pose_err=%.4f, restarts=%d",
+                        last_solver_iterations_, solve_duration_ms, pose_violation, last_random_restarts_);
         }
         
         return (status_str == "success");
@@ -742,10 +814,29 @@ private:
         msg.status = last_solver_status_.empty() ? "unknown" : last_solver_status_;
         msg.iterations = last_solver_iterations_;
         msg.exit_flag = last_exit_flag_;
-        msg.pose_error_norm = 0.0;  // TODO: Calculate if needed
+        
+        // Enhanced diagnostics
+        msg.pose_error_norm = last_pose_violation_;
+        msg.position_error = last_position_error_;
+        msg.orientation_error = last_orientation_error_;
+        msg.joint_limits_violated = last_joint_limit_violation_;
+        msg.distance_constraint_met = last_distance_constraint_met_;
+        
+        // Configuration
         msg.current_config = current_config_;
         msg.target_config = target_config_;
+        
+        // Poses (target provided, current would need FK calculation)
         msg.target_ee_pose = target_pose;
+        // TODO: Compute current_ee_pose via forward kinematics if needed
+        
+        // Timestamps
+        msg.solve_start = last_solve_start_;
+        msg.solve_end = last_solve_end_;
+        // Get trajectory timestamp if available
+        if (current_trajectory_) {
+            msg.trajectory_stamp = current_trajectory_->header.stamp;
+        }
         
         diagnostics_pub_->publish(msg);
     }
@@ -782,11 +873,21 @@ private:
     // Solver diagnostics
     int last_solver_iterations_ = 0;
     int last_exit_flag_ = 0;
+    int last_random_restarts_ = 0;
     std::string last_solver_status_ = "not_started";
+    double last_pose_violation_ = 0.0;
+    double last_position_error_ = 0.0;
+    double last_orientation_error_ = 0.0;
+    bool last_joint_limit_violation_ = false;
+    bool last_distance_constraint_met_ = true;
+    std::vector<double> last_constraint_violations_;
+    rclcpp::Time last_solve_start_;
+    rclcpp::Time last_solve_end_;
     
     // Parameters
     double control_rate_;
     double max_solve_time_;
+    int max_solver_iterations_;
     double distance_lower_;
     double distance_weight_;
     bool publish_diagnostics_;

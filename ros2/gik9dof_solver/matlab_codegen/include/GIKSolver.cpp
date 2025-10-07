@@ -237,6 +237,23 @@ gik9dof_codegen_realtime_solveGIKStepWrapperStackData *GIKSolver::getStackData()
 }
 
 //
+// Set maximum solver iterations
+// Arguments    : int max_iterations - Maximum iterations (clamped to >= 1)
+// Return Type  : void
+//
+void GIKSolver::setMaxIterations(int max_iterations)
+{
+  // Clamp to valid range (at least 1 iteration)
+  max_iterations_ = (max_iterations >= 1) ? max_iterations : 1;
+  
+  // If solver is already initialized, update the solver parameters immediately
+  if (pd_.initialized_not_empty) {
+    pd_.solver.Solver->MaxNumIteration = static_cast<double>(max_iterations_);
+    pd_.solver.Solver->MaxNumIterationInternal = static_cast<double>(max_iterations_);
+  }
+}
+
+//
 // SOLVEGIKSTEPWRAPPER Wrapper for GIK solver with persistent robot and solver
 //    This wrapper initializes the robot and solver once and reuses them.
 //    Use this for code generation - it will generate initialization code.
@@ -498,7 +515,18 @@ void GIKSolver::gik9dof_codegen_realtime_solveGIKStepWrapper(
     //  Note: generalizedInverseKinematics solver parameters are set during
     //  call, not as properties. See solveGIKStepRealtime for usage.
     pd_.initialized_not_empty = true;
+    
+    // Apply max iterations if set
+    pd_.solver.Solver->MaxNumIteration = static_cast<double>(max_iterations_);
+    pd_.solver.Solver->MaxNumIterationInternal = static_cast<double>(max_iterations_);
   }
+  
+  // Ensure max iterations is applied every cycle (in case it was updated)
+  if (pd_.initialized_not_empty) {
+    pd_.solver.Solver->MaxNumIteration = static_cast<double>(max_iterations_);
+    pd_.solver.Solver->MaxNumIterationInternal = static_cast<double>(max_iterations_);
+  }
+  
   //  Call the realtime solver
   solverInfo->Iterations = codegen_realtime::solveGIKStepRealtime(
       this, pd_.robot, pd_.solver, qCurrent, targetPose, distanceLower,
