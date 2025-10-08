@@ -2,7 +2,7 @@
 // File: CoderTimeAPI.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 08-Oct-2025 12:14:03
 //
 
 #ifndef CODERTIMEAPI_H
@@ -13,20 +13,11 @@
 #include <cstddef>
 #include <cstdlib>
 
-// Type Declarations
-namespace gik9dof {
-class GIKSolver;
-
-}
-
 // Type Definitions
-namespace gik9dof {
 class CoderTimeAPI {
 public:
-  static void callCoderClockGettime_init(GIKSolver *aInstancePtr);
+  static void callCoderClockGettime_init();
 };
-
-} // namespace gik9dof
 
 #endif
 //

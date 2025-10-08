@@ -2,26 +2,26 @@
 // File: strcmp.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 08-Oct-2025 12:14:03
 //
 
 // Include Files
 #include "strcmp.h"
 #include "rt_nonfinite.h"
 #include "coder_array.h"
+#include <cstring>
 
 // Function Definitions
 //
 // Arguments    : const char a_data[]
 //                const int a_size[2]
-//                const ::coder::array<char, 2U> &b
+//                const array<char, 2U> &b
 // Return Type  : boolean_T
 //
-namespace gik9dof {
 namespace coder {
 namespace internal {
 boolean_T b_strcmp(const char a_data[], const int a_size[2],
-                   const ::coder::array<char, 2U> &b)
+                   const array<char, 2U> &b)
 {
   int nb;
   boolean_T b_b;
@@ -91,7 +91,6 @@ boolean_T b_strcmp(const char a_data[], const int a_size[2],
 
 } // namespace internal
 } // namespace coder
-} // namespace gik9dof
 
 //
 // File trailer for strcmp.cpp

@@ -2,7 +2,7 @@
 // File: DistanceBoundsConstraint.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 08-Oct-2025 12:14:03
 //
 
 #ifndef DISTANCEBOUNDSCONSTRAINT_H
@@ -15,7 +15,6 @@
 #include <cstdlib>
 
 // Type Declarations
-namespace gik9dof {
 namespace coder {
 namespace robotics {
 namespace manip {
@@ -25,26 +24,27 @@ class RigidBodyTree;
 }
 } // namespace manip
 } // namespace robotics
+class constraintDistanceBounds;
+
 } // namespace coder
-} // namespace gik9dof
 
 // Type Definitions
-namespace gik9dof {
 namespace coder {
 namespace robotics {
 namespace manip {
 namespace internal {
 class DistanceBoundsConstraint {
 public:
+  DistanceBoundsConstraint *init(RigidBodyTree *tree);
+  double evaluate(const array<double, 1U> &q, double J_data[], int J_size[2]);
+  void update(const constraintDistanceBounds *other);
   void get_EndEffector(char value_data[], int value_size[2]);
   void get_ReferenceBody(char value_data[], int value_size[2]);
-  DistanceBoundsConstraint();
-  ~DistanceBoundsConstraint();
   boolean_T matlabCodegenIsDeleted;
   double NumElements;
   RigidBodyTree *Tree;
-  ::coder::array<double, 2U> BoundsInternal;
-  ::coder::array<double, 2U> Weights;
+  array<double, 2U> BoundsInternal;
+  array<double, 2U> Weights;
   double ReferenceBodyIndex;
   double EndEffectorIndex;
 };
@@ -53,7 +53,6 @@ public:
 } // namespace manip
 } // namespace robotics
 } // namespace coder
-} // namespace gik9dof
 
 #endif
 //

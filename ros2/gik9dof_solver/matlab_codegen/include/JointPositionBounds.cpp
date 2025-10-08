@@ -2,7 +2,7 @@
 // File: JointPositionBounds.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 08-Oct-2025 12:14:03
 //
 
 // Include Files
@@ -13,38 +13,25 @@
 #include "sort.h"
 #include "coder_array.h"
 #include <cmath>
+#include <cstring>
 
 // Function Definitions
 //
-// Arguments    : void
-// Return Type  : JointPositionBounds
+// Arguments    : array<double, 2U> &b_value
+// Return Type  : void
 //
-namespace gik9dof {
 namespace coder {
 namespace robotics {
 namespace manip {
 namespace internal {
-JointPositionBounds::JointPositionBounds() = default;
-
-//
-// Arguments    : void
-// Return Type  : void
-//
-JointPositionBounds::~JointPositionBounds() = default;
-
-//
-// Arguments    : ::coder::array<double, 2U> &b_value
-// Return Type  : void
-//
-void JointPositionBounds::get_KinematicPath(
-    ::coder::array<double, 2U> &b_value) const
+void JointPositionBounds::get_KinematicPath(array<double, 2U> &b_value) const
 {
-  ::coder::array<double, 1U> b;
-  ::coder::array<double, 1U> b_ii;
-  ::coder::array<int, 1U> ii;
-  ::coder::array<int, 1U> iwork;
-  ::coder::array<boolean_T, 2U> x;
-  ::coder::array<boolean_T, 1U> b_x;
+  array<double, 1U> b;
+  array<double, 1U> b_ii;
+  array<int, 1U> ii;
+  array<int, 1U> iwork;
+  array<boolean_T, 2U> x;
+  array<boolean_T, 1U> b_x;
   double xtmp;
   int b_i;
   int i;
@@ -122,7 +109,7 @@ void JointPositionBounds::get_KinematicPath(
   for (i = 0; i < pEnd; i++) {
     b_ii[i + 1] = ii[i];
   }
-  ::gik9dof::coder::internal::sort(b_ii);
+  ::coder::internal::sort(b_ii);
   j2 = b_ii.size(0);
   i1 = b_ii.size(0) + 1;
   ii.set_size(b_ii.size(0));
@@ -252,11 +239,44 @@ void JointPositionBounds::get_KinematicPath(
   }
 }
 
+//
+// Arguments    : RigidBodyTree *tree
+// Return Type  : JointPositionBounds *
+//
+JointPositionBounds *JointPositionBounds::init(RigidBodyTree *tree)
+{
+  JointPositionBounds *obj;
+  double numElements;
+  int obj_idx_0;
+  obj = this;
+  numElements = tree->PositionNumber;
+  obj->Tree = tree;
+  obj->NumElements = numElements;
+  obj_idx_0 = static_cast<int>(obj->NumElements);
+  obj->BoundsInternal.set_size(obj_idx_0, 2);
+  obj_idx_0 <<= 1;
+  for (int i{0}; i < obj_idx_0; i++) {
+    obj->BoundsInternal[i] = 0.0;
+  }
+  obj_idx_0 = static_cast<int>(obj->NumElements);
+  obj->Weights.set_size(1, obj_idx_0);
+  for (int i{0}; i < obj_idx_0; i++) {
+    obj->Weights[i] = 1.0;
+  }
+  obj->Tree->get_JointPositionLimits(obj->BoundsInternal);
+  obj_idx_0 = static_cast<int>(obj->NumElements);
+  obj->Weights.set_size(1, obj_idx_0);
+  for (int i{0}; i < obj_idx_0; i++) {
+    obj->Weights[i] = 1.0;
+  }
+  obj->matlabCodegenIsDeleted = false;
+  return obj;
+}
+
 } // namespace internal
 } // namespace manip
 } // namespace robotics
 } // namespace coder
-} // namespace gik9dof
 
 //
 // File trailer for JointPositionBounds.cpp

@@ -2,7 +2,7 @@
 // File: ErrorDampedLevenbergMarquardt.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 08-Oct-2025 12:14:03
 //
 
 #ifndef ERRORDAMPEDLEVENBERGMARQUARDT_H
@@ -10,14 +10,13 @@
 
 // Include Files
 #include "SystemTimeProvider.h"
-#include "gik9dof_codegen_realtime_solveGIKStepWrapper_types1.h"
+#include "gik9dof_codegen_inuse_solveGIKStepWrapper_internal_types.h"
 #include "rtwtypes.h"
 #include "coder_array.h"
 #include <cstddef>
 #include <cstdlib>
 
 // Type Declarations
-namespace gik9dof {
 namespace coder {
 namespace robotics {
 namespace manip {
@@ -28,23 +27,22 @@ class GIKProblem;
 } // namespace manip
 } // namespace robotics
 } // namespace coder
-class GIKSolver;
-
-} // namespace gik9dof
 
 // Type Definitions
-namespace gik9dof {
 namespace coder {
 namespace robotics {
 namespace core {
 namespace internal {
 class ErrorDampedLevenbergMarquardt {
 public:
-  NLPSolverExitFlags solveInternal(GIKSolver *aInstancePtr,
-                                   ::coder::array<double, 1U> &xSol, double &en,
+  double getSolverParams(
+      char params_Name[18], double &params_MaxTime,
+      double &params_GradientTolerance, double &params_SolutionTolerance,
+      boolean_T &params_ConstraintsOn, boolean_T &params_RandomRestart,
+      double &params_StepTolerance, double &params_ErrorChangeTolerance,
+      double &params_DampingBias, boolean_T &params_UseErrorDamping) const;
+  NLPSolverExitFlags solveInternal(array<double, 1U> &xSol, double &en,
                                    double &iter);
-  ErrorDampedLevenbergMarquardt();
-  ~ErrorDampedLevenbergMarquardt();
   boolean_T matlabCodegenIsDeleted;
   char Name[18];
   boolean_T ConstraintsOn;
@@ -53,7 +51,7 @@ public:
   manip::internal::GIKProblem *ExtraArgs;
   double MaxNumIteration;
   double MaxTime;
-  ::coder::array<double, 1U> SeedInternal;
+  array<double, 1U> SeedInternal;
   double MaxTimeInternal;
   double MaxNumIterationInternal;
   double StepTolerance;
@@ -69,7 +67,6 @@ public:
 } // namespace core
 } // namespace robotics
 } // namespace coder
-} // namespace gik9dof
 
 #endif
 //

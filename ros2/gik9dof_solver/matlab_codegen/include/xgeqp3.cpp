@@ -2,7 +2,7 @@
 // File: xgeqp3.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 08-Oct-2025 12:14:03
 //
 
 // Include Files
@@ -11,26 +11,25 @@
 #include "xnrm2.h"
 #include "coder_array.h"
 #include <cmath>
+#include <cstring>
 #include <emmintrin.h>
 
 // Function Definitions
 //
-// Arguments    : ::coder::array<double, 2U> &A
-//                ::coder::array<double, 1U> &tau
-//                ::coder::array<int, 2U> &jpvt
+// Arguments    : array<double, 2U> &A
+//                array<double, 1U> &tau
+//                array<int, 2U> &jpvt
 // Return Type  : void
 //
-namespace gik9dof {
 namespace coder {
 namespace internal {
 namespace lapack {
-void xgeqp3(::coder::array<double, 2U> &A, ::coder::array<double, 1U> &tau,
-            ::coder::array<int, 2U> &jpvt)
+void xgeqp3(array<double, 2U> &A, array<double, 1U> &tau, array<int, 2U> &jpvt)
 {
   static const int offsets[4]{0, 1, 2, 3};
-  ::coder::array<double, 1U> vn1;
-  ::coder::array<double, 1U> vn2;
-  ::coder::array<double, 1U> work;
+  array<double, 1U> vn1;
+  array<double, 1U> vn2;
+  array<double, 1U> work;
   int i;
   int ii_tmp;
   int lastc;
@@ -342,7 +341,6 @@ void xgeqp3(::coder::array<double, 2U> &A, ::coder::array<double, 1U> &tau,
 } // namespace lapack
 } // namespace internal
 } // namespace coder
-} // namespace gik9dof
 
 //
 // File trailer for xgeqp3.cpp

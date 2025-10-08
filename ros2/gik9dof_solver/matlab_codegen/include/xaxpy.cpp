@@ -2,12 +2,13 @@
 // File: xaxpy.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 08-Oct-2025 12:14:03
 //
 
 // Include Files
 #include "xaxpy.h"
 #include "rt_nonfinite.h"
+#include <cstring>
 #include <emmintrin.h>
 
 // Function Definitions
@@ -18,7 +19,6 @@
 //                double y[3]
 // Return Type  : void
 //
-namespace gik9dof {
 namespace coder {
 namespace internal {
 namespace blas {
@@ -76,7 +76,6 @@ void xaxpy(int n, double a, int ix0, double y[9], int iy0)
 } // namespace blas
 } // namespace internal
 } // namespace coder
-} // namespace gik9dof
 
 //
 // File trailer for xaxpy.cpp

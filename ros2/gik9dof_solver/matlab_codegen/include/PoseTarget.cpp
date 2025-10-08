@@ -2,7 +2,7 @@
 // File: PoseTarget.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 08-Oct-2025 12:14:03
 //
 
 // Include Files
@@ -10,9 +10,11 @@
 #include "CharacterVector.h"
 #include "RigidBody.h"
 #include "RigidBodyTree.h"
+#include "gik9dof_codegen_inuse_solveGIKStepWrapper_data.h"
 #include "rt_nonfinite.h"
 #include "sqrt.h"
 #include "svd.h"
+#include "coder_array.h"
 #include "rt_defines.h"
 #include <algorithm>
 #include <cmath>
@@ -21,21 +23,51 @@
 
 // Function Definitions
 //
-// Arguments    : void
-// Return Type  : PoseTarget
+// Arguments    : const array<double, 1U> &q
+//                double g[2]
+//                double J_data[]
+//                int J_size[2]
+// Return Type  : void
 //
-namespace gik9dof {
 namespace coder {
 namespace robotics {
 namespace manip {
 namespace internal {
-PoseTarget::PoseTarget() = default;
-
-//
-// Arguments    : void
-// Return Type  : void
-//
-PoseTarget::~PoseTarget() = default;
+void PoseTarget::evaluate(const array<double, 1U> &q, double g[2],
+                          double J_data[], int J_size[2])
+{
+  array<double, 2U> C;
+  array<double, 2U> Jrobot;
+  double T_data[16];
+  double JTwist[12];
+  int T_size[2];
+  int coffset;
+  int n_tmp;
+  Tree->efficientFKAndJacobianForIK(q, EndEffectorIndex, ReferenceBodyIndex,
+                                    T_data, T_size, Jrobot);
+  evaluateFromTransform(T_data, T_size, g, JTwist);
+  n_tmp = Jrobot.size(1);
+  C.set_size(2, Jrobot.size(1));
+  for (int j{0}; j < n_tmp; j++) {
+    int boffset;
+    coffset = j << 1;
+    boffset = j * 6;
+    for (int i{0}; i < 2; i++) {
+      double s;
+      s = 0.0;
+      for (int k{0}; k < 6; k++) {
+        s += JTwist[(k << 1) + i] * Jrobot[boffset + k];
+      }
+      C[coffset + i] = s;
+    }
+  }
+  J_size[0] = 2;
+  J_size[1] = Jrobot.size(1);
+  n_tmp = C.size(1) << 1;
+  for (coffset = 0; coffset < n_tmp; coffset++) {
+    J_data[coffset] = C[coffset];
+  }
+}
 
 //
 // Arguments    : const double T_data[]
@@ -94,10 +126,10 @@ void PoseTarget::evaluateFromTransform(const double T_data[],
     boolean_T b;
     v.re = u_tmp + 1.0;
     v.im = 0.0;
-    ::gik9dof::coder::internal::scalar::b_sqrt(v);
+    ::coder::internal::scalar::b_sqrt(v);
     u.re = 1.0 - u_tmp;
     u.im = 0.0;
-    ::gik9dof::coder::internal::scalar::b_sqrt(u);
+    ::coder::internal::scalar::b_sqrt(u);
     rEQ0 = std::isnan(v.re);
     b = std::isnan(u.re);
     if (b || rEQ0) {
@@ -196,7 +228,7 @@ void PoseTarget::evaluateFromTransform(const double T_data[],
       }
       if (rEQ0) {
         double U[9];
-        ::gik9dof::coder::internal::svd(T, U, s, V);
+        ::coder::internal::svd(T, U, s, V);
       } else {
         for (i = 0; i < 9; i++) {
           V[i] = rtNaN;
@@ -334,11 +366,41 @@ void PoseTarget::get_ReferenceBody(char value_data[], int value_size[2])
   }
 }
 
+//
+// Arguments    : RigidBodyTree *tree
+// Return Type  : PoseTarget *
+//
+PoseTarget *PoseTarget::init(RigidBodyTree *tree)
+{
+  PoseTarget *obj;
+  int obj_idx_0;
+  obj = this;
+  for (int i{0}; i < 16; i++) {
+    obj->TargetTransform[i] = iv[i];
+  }
+  obj->Tree = tree;
+  obj->NumElements = 2.0;
+  obj_idx_0 = static_cast<int>(obj->NumElements);
+  obj->BoundsInternal.set_size(obj_idx_0, 2);
+  obj_idx_0 <<= 1;
+  for (int i{0}; i < obj_idx_0; i++) {
+    obj->BoundsInternal[i] = 0.0;
+  }
+  obj_idx_0 = static_cast<int>(obj->NumElements);
+  obj->Weights.set_size(1, obj_idx_0);
+  for (int i{0}; i < obj_idx_0; i++) {
+    obj->Weights[i] = 1.0;
+  }
+  obj->EndEffectorIndex = 1.0;
+  obj->ReferenceBodyIndex = 0.0;
+  obj->matlabCodegenIsDeleted = false;
+  return obj;
+}
+
 } // namespace internal
 } // namespace manip
 } // namespace robotics
 } // namespace coder
-} // namespace gik9dof
 
 //
 // File trailer for PoseTarget.cpp

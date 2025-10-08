@@ -135,6 +135,13 @@ private:
     bool last_joint_limit_violation_ = false;
     bool last_distance_constraint_met_ = true;
     std::vector<double> last_constraint_violations_;
+    
+    // Per-constraint distance violation tracking (20 constraints)
+    double last_dist_violations_[20];           // Violation value for each constraint
+    bool last_dist_constraint_met_[20];         // Status for each constraint
+    int last_num_active_constraints_ = 0;       // Count of enabled constraints
+    int last_num_violated_constraints_ = 0;     // Count of violated constraints
+    
     rclcpp::Time last_solve_start_;
     rclcpp::Time last_solve_end_;
     
@@ -142,8 +149,14 @@ private:
     double control_rate_;
     double max_solve_time_;
     int max_solver_iterations_;
-    double distance_lower_;
-    double distance_weight_;
+    
+    // Distance constraints (20 total) - NEW 7-parameter interface
+    int dist_body_indices_[20];       // Body indices for distance constraints
+    int dist_ref_body_indices_[20];   // Reference body indices
+    double dist_lower_bounds_[20];    // Lower distance bounds (meters)
+    double dist_upper_bounds_[20];    // Upper distance bounds (meters)
+    double dist_weights_[20];         // Constraint weights (0.0=disabled, >0.0=enabled)
+    
     bool publish_diagnostics_;
     bool use_warm_start_;  // Enable warm-start from previous solution
     int velocity_control_mode_;  // 0=legacy 5-pt diff, 1=heading ctrl, 2=pure pursuit
@@ -169,7 +182,8 @@ private:
     bool stage_b_enabled_;
     
     // ========== MATLAB SOLVER ==========
-    std::unique_ptr<gik9dof::GIKSolver> matlab_solver_;
+    // NOTE: With new codegen_inuse interface, solver is a free function (no object needed)
+    // std::unique_ptr<gik9dof::GIKSolver> matlab_solver_;  // DEPRECATED
 };
 
 #endif // GIK9DOF_SOLVER_NODE_H

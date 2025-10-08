@@ -2,7 +2,7 @@
 // File: ismember.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 08-Oct-2025 12:14:03
 //
 
 #ifndef ISMEMBER_H
@@ -15,13 +15,11 @@
 #include <cstdlib>
 
 // Function Declarations
-namespace gik9dof {
 namespace coder {
-void isMember(const ::coder::array<double, 1U> &a, const double s[22],
-              ::coder::array<boolean_T, 1U> &tf, ::coder::array<int, 1U> &loc);
+void isMember(const array<double, 1U> &a, const double s[22],
+              array<boolean_T, 1U> &tf, array<int, 1U> &loc);
 
 }
-} // namespace gik9dof
 
 #endif
 //

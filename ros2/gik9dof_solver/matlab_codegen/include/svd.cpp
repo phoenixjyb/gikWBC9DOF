@@ -2,7 +2,7 @@
 // File: svd.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 08-Oct-2025 12:14:03
 //
 
 // Include Files
@@ -17,6 +17,7 @@
 #include "xzlangeM.h"
 #include "xzlascl.h"
 #include <cmath>
+#include <cstring>
 #include <emmintrin.h>
 
 // Function Definitions
@@ -27,7 +28,6 @@
 //                double V[9]
 // Return Type  : void
 //
-namespace gik9dof {
 namespace coder {
 namespace internal {
 void svd(const double A[9], double U[9], double s[3], double V[9])
@@ -447,7 +447,6 @@ void svd(const double A[9], double U[9], double s[3], double V[9])
 
 } // namespace internal
 } // namespace coder
-} // namespace gik9dof
 
 //
 // File trailer for svd.cpp

@@ -2,16 +2,16 @@
 // File: RigidBodyTree.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 08-Oct-2025 12:14:03
 //
 
 // Include Files
 #include "RigidBodyTree.h"
 #include "CharacterVector.h"
 #include "CollisionSet.h"
-#include "GIKSolver.h"
 #include "RigidBody.h"
-#include "gik9dof_codegen_realtime_solveGIKStepWrapper_data.h"
+#include "find.h"
+#include "gik9dof_codegen_inuse_solveGIKStepWrapper_data.h"
 #include "rand.h"
 #include "rigidBodyJoint.h"
 #include "rt_nonfinite.h"
@@ -23,30 +23,28 @@
 #include <emmintrin.h>
 
 // Variable Definitions
-namespace gik9dof {
 static const char cv[10]{'d', 'u', 'm', 'm', 'y', 'b', 'o', 'd', 'y', '1'};
 
-}
-
 // Function Declarations
-namespace gik9dof {
-static int div_s32(int numerator, int denominator);
+static void binary_expand_op_29(boolean_T in1[9], const double in2[9],
+                                const coder::array<double, 2U> &in3);
 
-}
+static void binary_expand_op_30(boolean_T in1[9], const double in2[9],
+                                const coder::array<double, 2U> &in3);
+
+static int div_s32(int numerator, int denominator);
 
 // Function Definitions
 //
 // Arguments    : RigidBody *body
-//                ::coder::array<double, 2U> &indices
+//                array<double, 2U> &indices
 // Return Type  : void
 //
-namespace gik9dof {
 namespace coder {
 namespace robotics {
 namespace manip {
 namespace internal {
-void RigidBodyTree::ancestorIndices(RigidBody *body,
-                                    ::coder::array<double, 2U> &indices)
+void RigidBodyTree::ancestorIndices(RigidBody *body, array<double, 2U> &indices)
 {
   unsigned int b_i;
   int loop_ub;
@@ -70,14 +68,108 @@ void RigidBodyTree::ancestorIndices(RigidBody *body,
 }
 
 //
-// Arguments    : int numerator
-//                int denominator
-// Return Type  : int
+// Arguments    : RigidBody *body1
+//                RigidBody *body2
+//                array<double, 2U> &indices
+// Return Type  : void
+//
+void RigidBodyTree::kinematicPathInternal(RigidBody *body1, RigidBody *body2,
+                                          array<double, 2U> &indices)
+{
+  array<double, 2U> ancestorIndices1;
+  array<double, 2U> ancestorIndices2;
+  int b_i;
+  int b_loop_ub;
+  int i;
+  int i1;
+  int loop_ub;
+  int minPathLength;
+  boolean_T exitg1;
+  ancestorIndices(body1, ancestorIndices1);
+  ancestorIndices(body2, ancestorIndices2);
+  minPathLength = static_cast<int>(
+      std::fmin(static_cast<double>(ancestorIndices1.size(1)),
+                static_cast<double>(ancestorIndices2.size(1))));
+  i = 2;
+  exitg1 = false;
+  while ((!exitg1) && (i - 2 <= minPathLength - 2)) {
+    if (ancestorIndices1[ancestorIndices1.size(1) - i] !=
+        ancestorIndices2[ancestorIndices2.size(1) - i]) {
+      minPathLength = i - 1;
+      exitg1 = true;
+    } else {
+      i++;
+    }
+  }
+  b_i = ancestorIndices1.size(1) - minPathLength;
+  if (b_i < 1) {
+    loop_ub = 0;
+  } else {
+    loop_ub = b_i;
+  }
+  i = ancestorIndices2.size(1) - minPathLength;
+  if (i < 1) {
+    i = 0;
+    minPathLength = 1;
+    i1 = -1;
+  } else {
+    i--;
+    minPathLength = -1;
+    i1 = 0;
+  }
+  b_loop_ub = div_s32(i1 - i, minPathLength);
+  indices.set_size(1, (loop_ub + b_loop_ub) + 2);
+  for (i1 = 0; i1 < loop_ub; i1++) {
+    indices[i1] = ancestorIndices1[i1];
+  }
+  indices[loop_ub] = ancestorIndices1[b_i];
+  for (b_i = 0; b_i <= b_loop_ub; b_i++) {
+    indices[(b_i + loop_ub) + 1] = ancestorIndices2[i + minPathLength * b_i];
+  }
+}
+
+//
+// Arguments    : boolean_T in1[9]
+//                const double in2[9]
+//                const coder::array<double, 2U> &in3
+// Return Type  : void
 //
 } // namespace internal
 } // namespace manip
 } // namespace robotics
 } // namespace coder
+static void binary_expand_op_29(boolean_T in1[9], const double in2[9],
+                                const coder::array<double, 2U> &in3)
+{
+  int stride_0_0;
+  stride_0_0 = (in3.size(0) != 1);
+  for (int i{0}; i < 9; i++) {
+    in1[i] = (in2[i] >= in3[i * stride_0_0] - 4.4408920985006262E-16);
+  }
+}
+
+//
+// Arguments    : boolean_T in1[9]
+//                const double in2[9]
+//                const coder::array<double, 2U> &in3
+// Return Type  : void
+//
+static void binary_expand_op_30(boolean_T in1[9], const double in2[9],
+                                const coder::array<double, 2U> &in3)
+{
+  int stride_0_0;
+  stride_0_0 = (in3.size(0) != 1);
+  for (int i{0}; i < 9; i++) {
+    in1[i] =
+        (in2[i] <= in3[i * stride_0_0 + in3.size(0)] + 4.4408920985006262E-16);
+  }
+}
+
+//
+// Arguments    : int numerator
+//                int denominator
+// Return Type  : int
+//
 static int div_s32(int numerator, int denominator)
 {
   int quotient;
@@ -111,22 +203,6 @@ static int div_s32(int numerator, int denominator)
 }
 
 //
-// Arguments    : void
-// Return Type  : RigidBodyTree
-//
-namespace coder {
-namespace robotics {
-namespace manip {
-namespace internal {
-RigidBodyTree::RigidBodyTree() = default;
-
-//
-// Arguments    : void
-// Return Type  : void
-//
-RigidBodyTree::~RigidBodyTree() = default;
-
-//
 // Arguments    : RigidBody *bodyin
 //                const char parentName_data[]
 //                const int parentName_size[2]
@@ -135,6 +211,10 @@ RigidBodyTree::~RigidBodyTree() = default;
 //                RigidBody &iobj_2
 // Return Type  : void
 //
+namespace coder {
+namespace robotics {
+namespace manip {
+namespace internal {
 void RigidBodyTree::addBody(RigidBody *bodyin, const char parentName_data[],
                             const int parentName_size[2], CollisionSet &iobj_0,
                             rigidBodyJoint &iobj_1, RigidBody &iobj_2)
@@ -250,17 +330,18 @@ b_RigidBodyTree::~b_RigidBodyTree()
 }
 
 //
-// Arguments    : const ::coder::array<double, 1U> &qv
+// Arguments    : const array<double, 1U> &qv
 //                double bid1
 //                double bid2
 //                double T_data[]
 //                int T_size[2]
-//                ::coder::array<double, 2U> &Jac
+//                array<double, 2U> &Jac
 // Return Type  : void
 //
-void RigidBodyTree::efficientFKAndJacobianForIK(
-    const ::coder::array<double, 1U> &qv, double bid1, double bid2,
-    double T_data[], int T_size[2], ::coder::array<double, 2U> &Jac)
+void RigidBodyTree::efficientFKAndJacobianForIK(const array<double, 1U> &qv,
+                                                double bid1, double bid2,
+                                                double T_data[], int T_size[2],
+                                                array<double, 2U> &Jac)
 {
   static const char b_cv1[8]{'r', 'e', 'v', 'o', 'l', 'u', 't', 'e'};
   static const char b_cv2[8]{'f', 'l', 'o', 'a', 't', 'i', 'n', 'g'};
@@ -268,9 +349,9 @@ void RigidBodyTree::efficientFKAndJacobianForIK(
   RigidBody *body1;
   RigidBody *body2;
   rigidBodyJoint *joint;
-  ::coder::array<double, 2U> B;
-  ::coder::array<double, 2U> kinematicPathIndices;
-  ::coder::array<double, 1U> b_qv;
+  array<double, 2U> B;
+  array<double, 2U> kinematicPathIndices;
+  array<double, 1U> b_qv;
   double b_data[36];
   double y_data[36];
   double T1[16];
@@ -864,8 +945,8 @@ double RigidBodyTree::findBodyIndexByJointName(const char jointname_data[],
     if (loop_ub - 1 >= 0) {
       ::std::copy(&b_obj.Vector[0], &b_obj.Vector[loop_ub], &obj_data[0]);
     }
-    if (::gik9dof::coder::internal::b_strcmp(obj_data, obj_size, jointname_data,
-                                             jointname_size)) {
+    if (::coder::internal::b_strcmp(obj_data, obj_size, jointname_data,
+                                    jointname_size)) {
       bid = static_cast<double>(i) + 1.0;
       exitg1 = true;
     } else {
@@ -901,8 +982,8 @@ double RigidBodyTree::findBodyIndexByName(const char bodyname_data[],
   if (loop_ub - 1 >= 0) {
     ::std::copy(&obj.Vector[0], &obj.Vector[loop_ub], &obj_data[0]);
   }
-  if (::gik9dof::coder::internal::b_strcmp(obj_data, obj_size, bodyname_data,
-                                           bodyname_size)) {
+  if (::coder::internal::b_strcmp(obj_data, obj_size, bodyname_data,
+                                  bodyname_size)) {
     bid = 0.0;
   } else {
     double d;
@@ -924,8 +1005,8 @@ double RigidBodyTree::findBodyIndexByName(const char bodyname_data[],
       if (loop_ub - 1 >= 0) {
         ::std::copy(&obj.Vector[0], &obj.Vector[loop_ub], &obj_data[0]);
       }
-      if (::gik9dof::coder::internal::b_strcmp(obj_data, obj_size,
-                                               bodyname_data, bodyname_size)) {
+      if (::coder::internal::b_strcmp(obj_data, obj_size, bodyname_data,
+                                      bodyname_size)) {
         bid = static_cast<double>(i) + 1.0;
         exitg1 = true;
       } else {
@@ -937,10 +1018,10 @@ double RigidBodyTree::findBodyIndexByName(const char bodyname_data[],
 }
 
 //
-// Arguments    : ::coder::array<double, 2U> &limits
+// Arguments    : array<double, 2U> &limits
 // Return Type  : void
 //
-void RigidBodyTree::get_JointPositionLimits(::coder::array<double, 2U> &limits)
+void RigidBodyTree::get_JointPositionLimits(array<double, 2U> &limits)
 {
   static const char b_cv[5]{'f', 'i', 'x', 'e', 'd'};
   RigidBody *body;
@@ -1056,10 +1137,10 @@ void RigidBodyTree::get_JointPositionLimits(::coder::array<double, 2U> &limits)
 }
 
 //
-// Arguments    : GIKSolver *aInstancePtr
+// Arguments    : void
 // Return Type  : b_RigidBodyTree *
 //
-b_RigidBodyTree *b_RigidBodyTree::init(GIKSolver *aInstancePtr)
+b_RigidBodyTree *b_RigidBodyTree::init()
 {
   static const char jname[14]{'d', 'u', 'm', 'm', 'y', 'b', 'o',
                               'd', 'y', '1', '_', 'j', 'n', 't'};
@@ -1067,7 +1148,7 @@ b_RigidBodyTree *b_RigidBodyTree::init(GIKSolver *aInstancePtr)
   b_RigidBodyTree *obj;
   double unusedExpr[5];
   obj = this;
-  b_rand(aInstancePtr, unusedExpr);
+  b_rand(unusedExpr);
   s.Length = 200.0;
   for (int i{0}; i < 200; i++) {
     s.Vector[i] = ' ';
@@ -1098,16 +1179,16 @@ b_RigidBodyTree *b_RigidBodyTree::init(GIKSolver *aInstancePtr)
   obj->_pobj0.CollisionsInternal.init(static_cast<double>(0.0));
   obj->_pobj0.matlabCodegenIsDeleted = false;
   obj->Bodies[0] = &obj->_pobj0;
-  b_rand(aInstancePtr, unusedExpr);
+  b_rand(unusedExpr);
   obj->matlabCodegenIsDeleted = false;
   return obj;
 }
 
 //
-// Arguments    : GIKSolver *aInstancePtr
+// Arguments    : void
 // Return Type  : RigidBodyTree *
 //
-RigidBodyTree *RigidBodyTree::init(GIKSolver *aInstancePtr)
+RigidBodyTree *RigidBodyTree::init()
 {
   static const signed char b_iv[22]{0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
                                     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
@@ -1129,7 +1210,7 @@ RigidBodyTree *RigidBodyTree::init(GIKSolver *aInstancePtr)
   signed char c_I[36];
   signed char b_I[9];
   obj = this;
-  b_rand(aInstancePtr, unusedExpr);
+  b_rand(unusedExpr);
   s.Length = 200.0;
   for (int k{0}; k < 200; k++) {
     s.Vector[k] = ' ';
@@ -1189,7 +1270,7 @@ RigidBodyTree *RigidBodyTree::init(GIKSolver *aInstancePtr)
   obj->NumNonFixedBodies = 0.0;
   obj->PositionNumber = 0.0;
   obj->VelocityNumber = 0.0;
-  b_rand(aInstancePtr, unusedExpr);
+  b_rand(unusedExpr);
   for (int k{0}; k < 22; k++) {
     obj->PositionDoFMap[k] = b_iv[k];
   }
@@ -1201,64 +1282,36 @@ RigidBodyTree *RigidBodyTree::init(GIKSolver *aInstancePtr)
 }
 
 //
-// Arguments    : RigidBody *body1
-//                RigidBody *body2
-//                ::coder::array<double, 2U> &indices
+// Arguments    : const char body1Name_data[]
+//                const int body1Name_size[2]
+//                const char body2Name_data[]
+//                const int body2Name_size[2]
+//                array<double, 2U> &indices
 // Return Type  : void
 //
-void RigidBodyTree::kinematicPathInternal(RigidBody *body1, RigidBody *body2,
-                                          ::coder::array<double, 2U> &indices)
+void RigidBodyTree::kinematicPath(const char body1Name_data[],
+                                  const int body1Name_size[2],
+                                  const char body2Name_data[],
+                                  const int body2Name_size[2],
+                                  array<double, 2U> &indices)
 {
-  ::coder::array<double, 2U> ancestorIndices1;
-  ::coder::array<double, 2U> ancestorIndices2;
-  int b_i;
-  int b_loop_ub;
-  int i;
-  int i1;
-  int loop_ub;
-  int minPathLength;
-  boolean_T exitg1;
-  ancestorIndices(body1, ancestorIndices1);
-  ancestorIndices(body2, ancestorIndices2);
-  minPathLength = static_cast<int>(
-      std::fmin(static_cast<double>(ancestorIndices1.size(1)),
-                static_cast<double>(ancestorIndices2.size(1))));
-  i = 2;
-  exitg1 = false;
-  while ((!exitg1) && (i - 2 <= minPathLength - 2)) {
-    if (ancestorIndices1[ancestorIndices1.size(1) - i] !=
-        ancestorIndices2[ancestorIndices2.size(1) - i]) {
-      minPathLength = i - 1;
-      exitg1 = true;
-    } else {
-      i++;
-    }
-  }
-  b_i = ancestorIndices1.size(1) - minPathLength;
-  if (b_i < 1) {
-    loop_ub = 0;
+  RigidBody *body1;
+  RigidBody *body2;
+  double bid1;
+  double bid2;
+  bid1 = findBodyIndexByName(body1Name_data, body1Name_size);
+  bid2 = findBodyIndexByName(body2Name_data, body2Name_size);
+  if (bid1 == 0.0) {
+    body1 = &Base;
   } else {
-    loop_ub = b_i;
+    body1 = Bodies[static_cast<int>(bid1) - 1];
   }
-  i = ancestorIndices2.size(1) - minPathLength;
-  if (i < 1) {
-    i = 0;
-    minPathLength = 1;
-    i1 = -1;
+  if (bid2 == 0.0) {
+    body2 = &Base;
   } else {
-    i--;
-    minPathLength = -1;
-    i1 = 0;
+    body2 = Bodies[static_cast<int>(bid2) - 1];
   }
-  b_loop_ub = div_s32(i1 - i, minPathLength);
-  indices.set_size(1, (loop_ub + b_loop_ub) + 2);
-  for (i1 = 0; i1 < loop_ub; i1++) {
-    indices[i1] = ancestorIndices1[i1];
-  }
-  indices[loop_ub] = ancestorIndices1[b_i];
-  for (b_i = 0; b_i <= b_loop_ub; b_i++) {
-    indices[(b_i + loop_ub) + 1] = ancestorIndices2[i + minPathLength * b_i];
-  }
+  kinematicPathInternal(body1, body2, indices);
 }
 
 //
@@ -1269,6 +1322,86 @@ void b_RigidBodyTree::matlabCodegenDestructor()
 {
   if (!matlabCodegenIsDeleted) {
     matlabCodegenIsDeleted = true;
+  }
+}
+
+//
+// Arguments    : double Q[9]
+// Return Type  : void
+//
+void RigidBodyTree::validateConfigurationWithLimits(double Q[9])
+{
+  array<double, 2U> limits;
+  int indicesUpperBoundViolation_data[9];
+  int k;
+  boolean_T lbOK[9];
+  boolean_T ubOK[9];
+  boolean_T exitg1;
+  boolean_T guard1;
+  boolean_T y;
+  get_JointPositionLimits(limits);
+  if (limits.size(0) == 9) {
+    for (int i{0}; i < 9; i++) {
+      ubOK[i] = (Q[i] <= limits[i + limits.size(0)] + 4.4408920985006262E-16);
+    }
+  } else {
+    binary_expand_op_30(ubOK, Q, limits);
+  }
+  if (limits.size(0) == 9) {
+    for (int i{0}; i < 9; i++) {
+      lbOK[i] = (Q[i] >= limits[i] - 4.4408920985006262E-16);
+    }
+  } else {
+    binary_expand_op_29(lbOK, Q, limits);
+  }
+  y = true;
+  k = 0;
+  exitg1 = false;
+  while ((!exitg1) && (k <= 8)) {
+    if (!ubOK[k]) {
+      y = false;
+      exitg1 = true;
+    } else {
+      k++;
+    }
+  }
+  guard1 = false;
+  if (y) {
+    y = true;
+    k = 0;
+    exitg1 = false;
+    while ((!exitg1) && (k <= 8)) {
+      if (!lbOK[k]) {
+        y = false;
+        exitg1 = true;
+      } else {
+        k++;
+      }
+    }
+    if (!y) {
+      guard1 = true;
+    }
+  } else {
+    guard1 = true;
+  }
+  if (guard1) {
+    int i1;
+    for (int i{0}; i < 9; i++) {
+      ubOK[i] = !ubOK[i];
+    }
+    k = eml_find(ubOK, indicesUpperBoundViolation_data);
+    for (int i{0}; i < k; i++) {
+      i1 = indicesUpperBoundViolation_data[i];
+      Q[i1 - 1] = limits[(i1 + limits.size(0)) - 1];
+    }
+    for (int i{0}; i < 9; i++) {
+      lbOK[i] = !lbOK[i];
+    }
+    k = eml_find(lbOK, indicesUpperBoundViolation_data);
+    for (int i{0}; i < k; i++) {
+      i1 = indicesUpperBoundViolation_data[i];
+      Q[i1 - 1] = limits[i1 - 1];
+    }
   }
 }
 
@@ -1353,44 +1486,10 @@ double RigidBodyTree::validateInputBodyName(const char bodyname[17])
   return bid;
 }
 
-//
-// Arguments    : boolean_T in1[9]
-//                const double in2[9]
-//                const ::coder::array<double, 2U> &in3
-// Return Type  : void
-//
 } // namespace internal
 } // namespace manip
 } // namespace robotics
 } // namespace coder
-void binary_expand_op_10(boolean_T in1[9], const double in2[9],
-                         const ::coder::array<double, 2U> &in3)
-{
-  int stride_0_0;
-  stride_0_0 = (in3.size(0) != 1);
-  for (int i{0}; i < 9; i++) {
-    in1[i] = (in2[i] >= in3[i * stride_0_0] - 4.4408920985006262E-16);
-  }
-}
-
-//
-// Arguments    : boolean_T in1[9]
-//                const double in2[9]
-//                const ::coder::array<double, 2U> &in3
-// Return Type  : void
-//
-void binary_expand_op_11(boolean_T in1[9], const double in2[9],
-                         const ::coder::array<double, 2U> &in3)
-{
-  int stride_0_0;
-  stride_0_0 = (in3.size(0) != 1);
-  for (int i{0}; i < 9; i++) {
-    in1[i] =
-        (in2[i] <= in3[i * stride_0_0 + in3.size(0)] + 4.4408920985006262E-16);
-  }
-}
-
-} // namespace gik9dof
 
 //
 // File trailer for RigidBodyTree.cpp

@@ -2,18 +2,16 @@
 // File: rigidBodyJoint.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 08-Oct-2025 12:14:03
 //
 
 // Include Files
 #include "rigidBodyJoint.h"
 #include "CharacterVector.h"
 #include "GIKProblem.h"
-#include "GIKSolver.h"
 #include "RigidBody.h"
 #include "RigidBodyTree.h"
-#include "gik9dof_codegen_realtime_solveGIKStepWrapper_data.h"
-#include "gik9dof_codegen_realtime_solveGIKStepWrapper_types.h"
+#include "gik9dof_codegen_inuse_solveGIKStepWrapper_data.h"
 #include "ixfun.h"
 #include "rand.h"
 #include "randn.h"
@@ -27,26 +25,22 @@
 #include <emmintrin.h>
 
 // Function Declarations
-namespace gik9dof {
-static void binary_expand_op_5(::coder::array<double, 1U> &in1,
+static void binary_expand_op_5(coder::array<double, 1U> &in1,
                                const double in2_data[], const int in2_size[2]);
 
-static void binary_expand_op_6(::coder::array<double, 1U> &in1,
+static void binary_expand_op_6(coder::array<double, 1U> &in1,
                                const double in2_data[], const int in2_size[2],
-                               const ::coder::array<double, 1U> &in3);
+                               const coder::array<double, 1U> &in3);
 
-static void binary_expand_op_7(::coder::array<double, 1U> &in1,
+static void binary_expand_op_7(coder::array<double, 1U> &in1,
                                const double in2_data[], const int in2_size[2],
-                               const ::coder::array<double, 1U> &in3);
-
-} // namespace gik9dof
+                               const coder::array<double, 1U> &in3);
 
 // Function Definitions
 //
 // Arguments    : const double msubspace[6]
 // Return Type  : void
 //
-namespace gik9dof {
 namespace coder {
 void rigidBodyJoint::b_set_MotionSubspace(const double msubspace[6])
 {
@@ -105,7 +99,7 @@ void rigidBodyJoint::b_set_MotionSubspace(const double msubspace[6])
 //
 void rigidBodyJoint::resetHomePosition()
 {
-  ::coder::array<boolean_T, 1U> x;
+  array<boolean_T, 1U> x;
   double ub_data[7];
   double d;
   int loop_ub_tmp;
@@ -289,13 +283,13 @@ void rigidBodyJoint::resetHomePosition()
 }
 
 //
-// Arguments    : ::coder::array<double, 1U> &in1
+// Arguments    : coder::array<double, 1U> &in1
 //                const double in2_data[]
 //                const int in2_size[2]
 // Return Type  : void
 //
 } // namespace coder
-static void binary_expand_op_5(::coder::array<double, 1U> &in1,
+static void binary_expand_op_5(coder::array<double, 1U> &in1,
                                const double in2_data[], const int in2_size[2])
 {
   double b_in2_data[7];
@@ -331,15 +325,15 @@ static void binary_expand_op_5(::coder::array<double, 1U> &in1,
 }
 
 //
-// Arguments    : ::coder::array<double, 1U> &in1
+// Arguments    : coder::array<double, 1U> &in1
 //                const double in2_data[]
 //                const int in2_size[2]
-//                const ::coder::array<double, 1U> &in3
+//                const coder::array<double, 1U> &in3
 // Return Type  : void
 //
-static void binary_expand_op_6(::coder::array<double, 1U> &in1,
+static void binary_expand_op_6(coder::array<double, 1U> &in1,
                                const double in2_data[], const int in2_size[2],
-                               const ::coder::array<double, 1U> &in3)
+                               const coder::array<double, 1U> &in3)
 {
   int loop_ub;
   int stride_0_0;
@@ -358,15 +352,15 @@ static void binary_expand_op_6(::coder::array<double, 1U> &in1,
 }
 
 //
-// Arguments    : ::coder::array<double, 1U> &in1
+// Arguments    : coder::array<double, 1U> &in1
 //                const double in2_data[]
 //                const int in2_size[2]
-//                const ::coder::array<double, 1U> &in3
+//                const coder::array<double, 1U> &in3
 // Return Type  : void
 //
-static void binary_expand_op_7(::coder::array<double, 1U> &in1,
+static void binary_expand_op_7(coder::array<double, 1U> &in1,
                                const double in2_data[], const int in2_size[2],
-                               const ::coder::array<double, 1U> &in3)
+                               const coder::array<double, 1U> &in3)
 {
   int loop_ub;
   int stride_0_0;
@@ -741,78 +735,21 @@ void rigidBodyJoint::b_set_JointAxis()
 //
 void rigidBodyJoint::b_set_PositionLimits()
 {
-  double dv[2];
+  static double lims[2]{0.0, 0.0};
   double d;
-  int ix;
   int loop_ub;
-  boolean_T resetHome;
-  resetHome = false;
-  switch (static_cast<int>(PositionNumber)) {
-  case 0:
-  case 7:
-    break;
-  default: {
-    boolean_T x_data[7];
-    boolean_T exitg1;
-    boolean_T y;
-    d = PositionNumber;
-    if (d < 1.0) {
-      loop_ub = 0;
-    } else {
-      loop_ub = static_cast<int>(d);
-    }
-    for (ix = 0; ix < loop_ub; ix++) {
-      x_data[ix] = (HomePositionInternal[ix] > 2.8798);
-    }
-    y = false;
-    ix = 1;
-    exitg1 = false;
-    while ((!exitg1) && (ix <= loop_ub)) {
-      if (x_data[ix - 1]) {
-        y = true;
-        exitg1 = true;
-      } else {
-        ix++;
-      }
-    }
-    if (y) {
-      resetHome = true;
-    } else {
-      for (ix = 0; ix < loop_ub; ix++) {
-        x_data[ix] = (HomePositionInternal[ix] < -2.8798);
-      }
-      y = false;
-      ix = 1;
-      exitg1 = false;
-      while ((!exitg1) && (ix <= loop_ub)) {
-        if (x_data[ix - 1]) {
-          y = true;
-          exitg1 = true;
-        } else {
-          ix++;
-        }
-      }
-      if (y) {
-        resetHome = true;
-      }
-    }
-  } break;
-  }
+  lims[0U] = rtGetMinusInf();
+  lims[1U] = rtGetInf();
   d = PositionNumber;
-  dv[0] = -2.8798;
-  dv[1] = 2.8798;
   if (d < 1.0) {
     loop_ub = 0;
   } else {
     loop_ub = static_cast<int>(d);
   }
-  for (ix = 0; ix < 2; ix++) {
-    for (int i{0}; i < loop_ub; i++) {
-      PositionLimitsInternal[i + 7 * ix] = dv[i + loop_ub * ix];
+  for (int i{0}; i < 2; i++) {
+    for (int i1{0}; i1 < loop_ub; i1++) {
+      PositionLimitsInternal[i1 + 7 * i] = lims[i1 + loop_ub * i];
     }
-  }
-  if (resetHome) {
-    resetHomePosition();
   }
 }
 
@@ -1180,7 +1117,7 @@ void rigidBodyJoint::c_set_PositionLimits()
       loop_ub = static_cast<int>(d);
     }
     for (ix = 0; ix < loop_ub; ix++) {
-      x_data[ix] = (HomePositionInternal[ix] > 3.2289);
+      x_data[ix] = (HomePositionInternal[ix] > 2.8798);
     }
     y = false;
     ix = 1;
@@ -1197,7 +1134,7 @@ void rigidBodyJoint::c_set_PositionLimits()
       resetHome = true;
     } else {
       for (ix = 0; ix < loop_ub; ix++) {
-        x_data[ix] = (HomePositionInternal[ix] < 0.0);
+        x_data[ix] = (HomePositionInternal[ix] < -2.8798);
       }
       y = false;
       ix = 1;
@@ -1217,8 +1154,8 @@ void rigidBodyJoint::c_set_PositionLimits()
   } break;
   }
   d = PositionNumber;
-  dv[0] = 0.0;
-  dv[1] = 3.2289;
+  dv[0] = -2.8798;
+  dv[1] = 2.8798;
   if (d < 1.0) {
     loop_ub = 0;
   } else {
@@ -1960,7 +1897,7 @@ void rigidBodyJoint::d_set_PositionLimits()
       loop_ub = static_cast<int>(d);
     }
     for (ix = 0; ix < loop_ub; ix++) {
-      x_data[ix] = (HomePositionInternal[ix] > 0.0);
+      x_data[ix] = (HomePositionInternal[ix] > 3.2289);
     }
     y = false;
     ix = 1;
@@ -1977,7 +1914,7 @@ void rigidBodyJoint::d_set_PositionLimits()
       resetHome = true;
     } else {
       for (ix = 0; ix < loop_ub; ix++) {
-        x_data[ix] = (HomePositionInternal[ix] < -3.3161);
+        x_data[ix] = (HomePositionInternal[ix] < 0.0);
       }
       y = false;
       ix = 1;
@@ -1997,8 +1934,8 @@ void rigidBodyJoint::d_set_PositionLimits()
   } break;
   }
   d = PositionNumber;
-  dv[0] = -3.3161;
-  dv[1] = 0.0;
+  dv[0] = 0.0;
+  dv[1] = 3.2289;
   if (d < 1.0) {
     loop_ub = 0;
   } else {
@@ -2331,7 +2268,7 @@ void rigidBodyJoint::e_set_PositionLimits()
       loop_ub = static_cast<int>(d);
     }
     for (ix = 0; ix < loop_ub; ix++) {
-      x_data[ix] = (HomePositionInternal[ix] > 1.6581);
+      x_data[ix] = (HomePositionInternal[ix] > 0.0);
     }
     y = false;
     ix = 1;
@@ -2348,7 +2285,7 @@ void rigidBodyJoint::e_set_PositionLimits()
       resetHome = true;
     } else {
       for (ix = 0; ix < loop_ub; ix++) {
-        x_data[ix] = (HomePositionInternal[ix] < -1.6581);
+        x_data[ix] = (HomePositionInternal[ix] < -3.3161);
       }
       y = false;
       ix = 1;
@@ -2368,8 +2305,8 @@ void rigidBodyJoint::e_set_PositionLimits()
   } break;
   }
   d = PositionNumber;
-  dv[0] = -1.6581;
-  dv[1] = 1.6581;
+  dv[0] = -3.3161;
+  dv[1] = 0.0;
   if (d < 1.0) {
     loop_ub = 0;
   } else {
@@ -2673,6 +2610,87 @@ void rigidBodyJoint::f_setFixedTransform()
   ChildToJointTransform[5] = 1.0;
   ChildToJointTransform[10] = 1.0;
   ChildToJointTransform[15] = 1.0;
+}
+
+//
+// Arguments    : void
+// Return Type  : void
+//
+void rigidBodyJoint::f_set_PositionLimits()
+{
+  double dv[2];
+  double d;
+  int ix;
+  int loop_ub;
+  boolean_T resetHome;
+  resetHome = false;
+  switch (static_cast<int>(PositionNumber)) {
+  case 0:
+  case 7:
+    break;
+  default: {
+    boolean_T x_data[7];
+    boolean_T exitg1;
+    boolean_T y;
+    d = PositionNumber;
+    if (d < 1.0) {
+      loop_ub = 0;
+    } else {
+      loop_ub = static_cast<int>(d);
+    }
+    for (ix = 0; ix < loop_ub; ix++) {
+      x_data[ix] = (HomePositionInternal[ix] > 1.6581);
+    }
+    y = false;
+    ix = 1;
+    exitg1 = false;
+    while ((!exitg1) && (ix <= loop_ub)) {
+      if (x_data[ix - 1]) {
+        y = true;
+        exitg1 = true;
+      } else {
+        ix++;
+      }
+    }
+    if (y) {
+      resetHome = true;
+    } else {
+      for (ix = 0; ix < loop_ub; ix++) {
+        x_data[ix] = (HomePositionInternal[ix] < -1.6581);
+      }
+      y = false;
+      ix = 1;
+      exitg1 = false;
+      while ((!exitg1) && (ix <= loop_ub)) {
+        if (x_data[ix - 1]) {
+          y = true;
+          exitg1 = true;
+        } else {
+          ix++;
+        }
+      }
+      if (y) {
+        resetHome = true;
+      }
+    }
+  } break;
+  }
+  d = PositionNumber;
+  dv[0] = -1.6581;
+  dv[1] = 1.6581;
+  if (d < 1.0) {
+    loop_ub = 0;
+  } else {
+    loop_ub = static_cast<int>(d);
+  }
+  for (ix = 0; ix < 2; ix++) {
+    for (int i{0}; i < loop_ub; i++) {
+      PositionLimitsInternal[i + 7 * ix] = dv[i + loop_ub * ix];
+    }
+  }
+  if (resetHome) {
+    resetHomePosition();
+  }
 }
 
 //
@@ -5029,23 +5047,21 @@ rigidBodyJoint *rigidBodyJoint::l_init()
 }
 
 //
-// Arguments    : GIKSolver *aInstancePtr
-//                robotics::manip::internal::GIKProblem *problem
-//                ::coder::array<double, 1U> &rc
+// Arguments    : robotics::manip::internal::GIKProblem *problem
+//                array<double, 1U> &rc
 // Return Type  : void
 //
 void rigidBodyJoint::randomConfig(
-    GIKSolver *aInstancePtr, robotics::manip::internal::GIKProblem *problem,
-    ::coder::array<double, 1U> &rc)
+    robotics::manip::internal::GIKProblem *problem, array<double, 1U> &rc)
 {
   static const char b_cv[5]{'f', 'i', 'x', 'e', 'd'};
   rigidBodyJoint *b_obj;
   robotics::manip::internal::RigidBodyTree *obj;
-  ::coder::array<double, 2U> r;
-  ::coder::array<double, 1U> r1;
-  ::coder::array<double, 1U> x;
-  ::coder::array<double, 1U> y;
-  ::coder::array<boolean_T, 1U> b_x;
+  array<double, 2U> r;
+  array<double, 1U> r1;
+  array<double, 1U> x;
+  array<double, 1U> y;
+  array<boolean_T, 1U> b_x;
   double qr_data[77];
   double qi_data[49];
   double bounds_data[14];
@@ -5136,7 +5152,7 @@ void rigidBodyJoint::randomConfig(
         boolean_T guard1;
         boolean_T guard2;
         boolean_T guard3;
-        randn(aInstancePtr, b_r);
+        randn(b_r);
         n = std::sqrt(((b_r[0] * b_r[0] + b_r[1] * b_r[1]) + b_r[2] * b_r[2]) +
                       b_r[3] * b_r[3]);
         qi_data[0] = b_r[0] / n;
@@ -5195,7 +5211,7 @@ void rigidBodyJoint::randomConfig(
           }
           if (b_bool) {
             __m128d r4;
-            c_rand(aInstancePtr, rn);
+            c_rand(rn);
             r2 = _mm_loadu_pd(&translbounds[3]);
             r3 = _mm_loadu_pd(&translbounds[0]);
             r4 = _mm_loadu_pd(&rn[0]);
@@ -5229,7 +5245,7 @@ void rigidBodyJoint::randomConfig(
               }
             }
             if (b_bool) {
-              b_randn(aInstancePtr, c_x);
+              b_randn(c_x);
               dv[0] = std::abs(c_x[0]);
               dv[1] = std::abs(c_x[1]);
               r2 = _mm_loadu_pd(&translbounds[0]);
@@ -5274,7 +5290,7 @@ void rigidBodyJoint::randomConfig(
               }
             }
             if (b_bool) {
-              b_randn(aInstancePtr, c_x);
+              b_randn(c_x);
               dv[0] = std::abs(c_x[0]);
               dv[1] = std::abs(c_x[1]);
               r2 = _mm_loadu_pd(&translbounds[3]);
@@ -5289,7 +5305,7 @@ void rigidBodyJoint::randomConfig(
           }
         }
         if (guard1) {
-          b_randn(aInstancePtr, rn);
+          b_randn(rn);
         }
         kstr = i2 - i1;
         for (i2 = 0; i2 < kstr; i2++) {
@@ -5358,8 +5374,7 @@ void rigidBodyJoint::randomConfig(
           }
           if (b_bool) {
             x.reserve(7);
-            i1 = b_rand(aInstancePtr, static_cast<double>(b_loop_ub_tmp),
-                        (double *)x.data());
+            i1 = b_rand(static_cast<double>(b_loop_ub_tmp), (double *)x.data());
             (*(int(*)[1])x.size())[0] = i1;
             x.set_size(x.size(0));
             if (x.size(0) == 1) {
@@ -5419,7 +5434,7 @@ void rigidBodyJoint::randomConfig(
               dv[0] = b_loop_ub_tmp;
               dv[1] = 1.0;
               x.reserve(7);
-              i1 = randn(aInstancePtr, dv, (double *)x.data());
+              i1 = randn(dv, (double *)x.data());
               (*(int(*)[1])x.size())[0] = i1;
               x.set_size(x.size(0));
               kstr = x.size(0);
@@ -5486,7 +5501,7 @@ void rigidBodyJoint::randomConfig(
               dv[0] = b_loop_ub_tmp;
               dv[1] = 1.0;
               x.reserve(7);
-              i1 = randn(aInstancePtr, dv, (double *)x.data());
+              i1 = randn(dv, (double *)x.data());
               (*(int(*)[1])x.size())[0] = i1;
               x.set_size(x.size(0));
               kstr = x.size(0);
@@ -5520,7 +5535,7 @@ void rigidBodyJoint::randomConfig(
           dv[0] = b_loop_ub_tmp;
           dv[1] = 1.0;
           x.reserve(7);
-          i1 = randn(aInstancePtr, dv, (double *)x.data());
+          i1 = randn(dv, (double *)x.data());
           (*(int(*)[1])x.size())[0] = i1;
           x.set_size(x.size(0));
         }
@@ -5603,18 +5618,6 @@ void rigidBodyJoint::randomConfig(
     rc[i + static_cast<int>(posnum)] = x[i];
   }
 }
-
-//
-// Arguments    : void
-// Return Type  : rigidBodyJoint
-//
-rigidBodyJoint::rigidBodyJoint() = default;
-
-//
-// Arguments    : void
-// Return Type  : void
-//
-rigidBodyJoint::~rigidBodyJoint() = default;
 
 //
 // Arguments    : void
@@ -5838,40 +5841,11 @@ void rigidBodyJoint::set_PositionLimits()
 }
 
 //
-// Arguments    : GIKSolver *aInstancePtr
-// Return Type  : void
-//
-void rigidBodyJoint::set_PositionLimits(GIKSolver *aInstancePtr)
-{
-  static const double lims[2]{0.0, 0.0};
-  gik9dof_codegen_realtime_solveGIKStepWrapperStackData *localSD;
-  double d;
-  int loop_ub;
-  localSD = aInstancePtr->getStackData();
-  for (int b_j0{0}; b_j0 < 2; b_j0++) {
-    localSD->pd->lims[b_j0] = lims[b_j0];
-  }
-  localSD->pd->lims[0U] = rtGetMinusInf();
-  localSD->pd->lims[1U] = rtGetInf();
-  d = PositionNumber;
-  if (d < 1.0) {
-    loop_ub = 0;
-  } else {
-    loop_ub = static_cast<int>(d);
-  }
-  for (int i{0}; i < 2; i++) {
-    for (int i1{0}; i1 < loop_ub; i1++) {
-      PositionLimitsInternal[i1 + 7 * i] = localSD->pd->lims[i1 + loop_ub * i];
-    }
-  }
-}
-
-//
-// Arguments    : const ::coder::array<double, 1U> &q
+// Arguments    : const array<double, 1U> &q
 //                double T[16]
 // Return Type  : void
 //
-void rigidBodyJoint::transformBodyToParent(const ::coder::array<double, 1U> &q,
+void rigidBodyJoint::transformBodyToParent(const array<double, 1U> &q,
                                            double T[16]) const
 {
   static const char b_cv[8]{'r', 'e', 'v', 'o', 'l', 'u', 't', 'e'};
@@ -6179,7 +6153,6 @@ void rigidBodyJoint::transformBodyToParent(const ::coder::array<double, 1U> &q,
 }
 
 } // namespace coder
-} // namespace gik9dof
 
 //
 // File trailer for rigidBodyJoint.cpp

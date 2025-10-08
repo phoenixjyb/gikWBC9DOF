@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\yanbo\wSpace\codegenGIKsample\Trial\gikWBC9DOF\test_cpp\build\CMakeFiles\a3a7c94bd6c704246f6e4e381e8f0089\generate.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{C87D3D3D-90F9-36AE-8E7A-09A1B781B582}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

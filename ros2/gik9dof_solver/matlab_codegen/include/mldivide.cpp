@@ -2,7 +2,7 @@
 // File: mldivide.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 08-Oct-2025 12:14:03
 //
 
 // Include Files
@@ -11,23 +11,22 @@
 #include "xgeqp3.h"
 #include "coder_array.h"
 #include <cmath>
+#include <cstring>
 #include <emmintrin.h>
 
 // Function Definitions
 //
-// Arguments    : const ::coder::array<double, 2U> &A
-//                ::coder::array<double, 1U> &B
+// Arguments    : const array<double, 2U> &A
+//                array<double, 1U> &B
 // Return Type  : void
 //
-namespace gik9dof {
 namespace coder {
-void mldivide(const ::coder::array<double, 2U> &A,
-              ::coder::array<double, 1U> &B)
+void mldivide(const array<double, 2U> &A, array<double, 1U> &B)
 {
-  ::coder::array<double, 2U> b_A;
-  ::coder::array<double, 1U> b_B;
-  ::coder::array<double, 1U> tau;
-  ::coder::array<int, 2U> jpvt;
+  array<double, 2U> b_A;
+  array<double, 1U> b_B;
+  array<double, 1U> tau;
+  array<int, 2U> jpvt;
   if ((A.size(0) == 0) || (A.size(1) == 0) || (B.size(0) == 0)) {
     int minmn;
     minmn = A.size(1);
@@ -248,7 +247,6 @@ void mldivide(const ::coder::array<double, 2U> &A,
 }
 
 } // namespace coder
-} // namespace gik9dof
 
 //
 // File trailer for mldivide.cpp

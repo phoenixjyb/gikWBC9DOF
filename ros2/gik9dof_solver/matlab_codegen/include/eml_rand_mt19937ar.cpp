@@ -2,24 +2,24 @@
 // File: eml_rand_mt19937ar.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 08-Oct-2025 12:14:03
 //
 
 // Include Files
 #include "eml_rand_mt19937ar.h"
 #include "rt_nonfinite.h"
 #include <cmath>
+#include <cstring>
 
 // Function Definitions
 //
-// Arguments    : unsigned int state[625]
+// Arguments    : unsigned int b_state[625]
 // Return Type  : double
 //
-namespace gik9dof {
 namespace coder {
 namespace internal {
 namespace randfun {
-double b_eml_rand_mt19937ar(unsigned int state[625])
+double b_eml_rand_mt19937ar(unsigned int b_state[625])
 {
   static const double dv[257]{0.0,
                               0.215241895984875,
@@ -541,7 +541,7 @@ double b_eml_rand_mt19937ar(unsigned int state[625])
   int i;
   do {
     exitg1 = 0;
-    genrand_uint32_vector(state, u);
+    genrand_uint32_vector(b_state, u);
     i = static_cast<int>((u[1] >> 24U) + 1U);
     r = ((static_cast<double>(u[0] >> 3U) * 1.6777216E+7 +
           static_cast<double>(u[1] & 16777215U)) *
@@ -590,7 +590,7 @@ double b_eml_rand_mt19937ar(unsigned int state[625])
       //
       // =============================   END   =================================
       do {
-        genrand_uint32_vector(state, u);
+        genrand_uint32_vector(b_state, u);
         u[0] >>= 5U;
         u[1] >>= 6U;
       } while ((u[0] == 0U) && (u[1] == 0U));
@@ -646,7 +646,7 @@ double b_eml_rand_mt19937ar(unsigned int state[625])
         //
         // =============================   END =================================
         do {
-          genrand_uint32_vector(state, u);
+          genrand_uint32_vector(b_state, u);
           u[0] >>= 5U;
           u[1] >>= 6U;
         } while ((u[0] == 0U) && (u[1] == 0U));
@@ -696,7 +696,7 @@ double b_eml_rand_mt19937ar(unsigned int state[625])
         //
         // =============================   END =================================
         do {
-          genrand_uint32_vector(state, u);
+          genrand_uint32_vector(b_state, u);
           u[0] >>= 5U;
           u[1] >>= 6U;
         } while ((u[0] == 0U) && (u[1] == 0U));
@@ -716,19 +716,19 @@ double b_eml_rand_mt19937ar(unsigned int state[625])
 }
 
 //
-// Arguments    : unsigned int state[625]
+// Arguments    : unsigned int b_state[625]
 // Return Type  : void
 //
-void eml_rand_mt19937ar(unsigned int state[625])
+void eml_rand_mt19937ar(unsigned int b_state[625])
 {
   unsigned int r;
   r = 5489U;
-  state[0] = 5489U;
+  b_state[0] = 5489U;
   for (int mti{0}; mti < 623; mti++) {
     r = ((r ^ r >> 30U) * 1812433253U + static_cast<unsigned int>(mti)) + 1U;
-    state[mti + 1] = r;
+    b_state[mti + 1] = r;
   }
-  state[624] = 624U;
+  b_state[624] = 624U;
 }
 
 //
@@ -782,7 +782,6 @@ void genrand_uint32_vector(unsigned int mt[625], unsigned int u[2])
 } // namespace randfun
 } // namespace internal
 } // namespace coder
-} // namespace gik9dof
 
 //
 // File trailer for eml_rand_mt19937ar.cpp

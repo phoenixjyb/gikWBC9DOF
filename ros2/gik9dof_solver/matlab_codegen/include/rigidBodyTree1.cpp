@@ -2,21 +2,21 @@
 // File: rigidBodyTree1.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 08-Oct-2025 12:14:03
 //
 
 // Include Files
 #include "rigidBodyTree1.h"
 #include "CharacterVector.h"
 #include "CollisionSet.h"
-#include "GIKSolver.h"
 #include "RigidBody.h"
 #include "RigidBodyTree.h"
-#include "gik9dof_codegen_realtime_solveGIKStepWrapper_data.h"
+#include "gik9dof_codegen_inuse_solveGIKStepWrapper_data.h"
 #include "rigidBody1.h"
 #include "rigidBodyJoint.h"
 #include "rt_nonfinite.h"
 #include <algorithm>
+#include <cstring>
 
 // Function Definitions
 //
@@ -28,7 +28,6 @@
 //                robotics::manip::internal::RigidBody &iobj_2
 // Return Type  : void
 //
-namespace gik9dof {
 namespace coder {
 void rigidBodyTree::addBody(rigidBody &bodyin, const char parentName_data[],
                             const int parentName_size[2],
@@ -1692,14 +1691,14 @@ void rigidBodyTree::i_addBody(rigidBody &bodyin,
 }
 
 //
-// Arguments    : GIKSolver *aInstancePtr
+// Arguments    : void
 // Return Type  : rigidBodyTree *
 //
-rigidBodyTree *rigidBodyTree::init(GIKSolver *aInstancePtr)
+rigidBodyTree *rigidBodyTree::init()
 {
   rigidBodyTree *obj;
   obj = this;
-  obj->TreeInternal.init(aInstancePtr);
+  obj->TreeInternal.init();
   obj->TreeInternal.Base.CollisionsInternal = obj->_pobj0.init(10.0);
   obj->matlabCodegenIsDeleted = false;
   return obj;
@@ -1877,20 +1876,7 @@ void rigidBodyTree::j_addBody(rigidBody &bodyin,
   TreeInternal.VelocityNumber += jnt->VelocityNumber;
 }
 
-//
-// Arguments    : void
-// Return Type  : rigidBodyTree
-//
-rigidBodyTree::rigidBodyTree() = default;
-
-//
-// Arguments    : void
-// Return Type  : void
-//
-rigidBodyTree::~rigidBodyTree() = default;
-
 } // namespace coder
-} // namespace gik9dof
 
 //
 // File trailer for rigidBodyTree1.cpp

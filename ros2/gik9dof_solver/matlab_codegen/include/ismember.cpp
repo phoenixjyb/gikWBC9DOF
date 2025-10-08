@@ -2,7 +2,7 @@
 // File: ismember.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 08-Oct-2025 12:14:03
 //
 
 // Include Files
@@ -13,27 +13,23 @@
 #include "omp.h"
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 
 // Function Declarations
-namespace gik9dof {
 namespace coder {
-static int bsearchni(int k, const ::coder::array<double, 1U> &x,
-                     const double s[22]);
+static int bsearchni(int k, const array<double, 1U> &x, const double s[22]);
 
 }
-} // namespace gik9dof
 
 // Function Definitions
 //
 // Arguments    : int k
-//                const ::coder::array<double, 1U> &x
+//                const array<double, 1U> &x
 //                const double s[22]
 // Return Type  : int
 //
-namespace gik9dof {
 namespace coder {
-static int bsearchni(int k, const ::coder::array<double, 1U> &x,
-                     const double s[22])
+static int bsearchni(int k, const array<double, 1U> &x, const double s[22])
 {
   double b_x;
   int idx;
@@ -82,14 +78,14 @@ static int bsearchni(int k, const ::coder::array<double, 1U> &x,
 }
 
 //
-// Arguments    : const ::coder::array<double, 1U> &a
+// Arguments    : const array<double, 1U> &a
 //                const double s[22]
-//                ::coder::array<boolean_T, 1U> &tf
-//                ::coder::array<int, 1U> &loc
+//                array<boolean_T, 1U> &tf
+//                array<int, 1U> &loc
 // Return Type  : void
 //
-void isMember(const ::coder::array<double, 1U> &a, const double s[22],
-              ::coder::array<boolean_T, 1U> &tf, ::coder::array<int, 1U> &loc)
+void isMember(const array<double, 1U> &a, const double s[22],
+              array<boolean_T, 1U> &tf, array<int, 1U> &loc)
 {
   double ss[22];
   int k;
@@ -163,7 +159,6 @@ void isMember(const ::coder::array<double, 1U> &a, const double s[22],
 }
 
 } // namespace coder
-} // namespace gik9dof
 
 //
 // File trailer for ismember.cpp

@@ -2,16 +2,15 @@
 // File: ErrorDampedLevenbergMarquardt.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 08-Oct-2025 12:14:03
 //
 
 // Include Files
 #include "ErrorDampedLevenbergMarquardt.h"
 #include "GIKProblem.h"
-#include "GIKSolver.h"
 #include "SystemTimeProvider.h"
-#include "gik9dof_codegen_realtime_solveGIKStepWrapper_data.h"
-#include "gik9dof_codegen_realtime_solveGIKStepWrapper_types1.h"
+#include "gik9dof_codegen_inuse_solveGIKStepWrapper_data.h"
+#include "gik9dof_codegen_inuse_solveGIKStepWrapper_internal_types.h"
 #include "ixfun.h"
 #include "mldivide.h"
 #include "norm.h"
@@ -21,42 +20,37 @@
 #include "coder_array.h"
 #include "coder_posix_time.h"
 #include <cmath>
+#include <cstring>
 #include <emmintrin.h>
 
 // Function Declarations
-namespace gik9dof {
-static void binary_expand_op_3(const ::coder::array<double, 2U> &in1,
-                               double in2,
-                               const ::coder::array<double, 2U> &in3,
-                               ::coder::array<double, 1U> &in4);
+static void binary_expand_op_3(const coder::array<double, 2U> &in1, double in2,
+                               const coder::array<double, 2U> &in3,
+                               coder::array<double, 1U> &in4);
 
-static void minus(::coder::array<double, 1U> &in1,
-                  const ::coder::array<double, 1U> &in2);
+static void minus(coder::array<double, 1U> &in1,
+                  const coder::array<double, 1U> &in2);
 
-static void plus(::coder::array<double, 1U> &in1,
-                 const ::coder::array<double, 1U> &in2);
+static void plus(coder::array<double, 1U> &in1,
+                 const coder::array<double, 1U> &in2);
 
-static void plus(::coder::array<double, 1U> &in1,
-                 const ::coder::array<double, 1U> &in2,
-                 const ::coder::array<double, 1U> &in3);
-
-} // namespace gik9dof
+static void plus(coder::array<double, 1U> &in1,
+                 const coder::array<double, 1U> &in2,
+                 const coder::array<double, 1U> &in3);
 
 // Function Definitions
 //
-// Arguments    : const ::coder::array<double, 2U> &in1
+// Arguments    : const coder::array<double, 2U> &in1
 //                double in2
-//                const ::coder::array<double, 2U> &in3
-//                ::coder::array<double, 1U> &in4
+//                const coder::array<double, 2U> &in3
+//                coder::array<double, 1U> &in4
 // Return Type  : void
 //
-namespace gik9dof {
-static void binary_expand_op_3(const ::coder::array<double, 2U> &in1,
-                               double in2,
-                               const ::coder::array<double, 2U> &in3,
-                               ::coder::array<double, 1U> &in4)
+static void binary_expand_op_3(const coder::array<double, 2U> &in1, double in2,
+                               const coder::array<double, 2U> &in3,
+                               coder::array<double, 1U> &in4)
 {
-  ::coder::array<double, 2U> b_in1;
+  coder::array<double, 2U> b_in1;
   int aux_0_1;
   int aux_1_1;
   int b_loop_ub;
@@ -95,14 +89,14 @@ static void binary_expand_op_3(const ::coder::array<double, 2U> &in1,
 }
 
 //
-// Arguments    : ::coder::array<double, 1U> &in1
-//                const ::coder::array<double, 1U> &in2
+// Arguments    : coder::array<double, 1U> &in1
+//                const coder::array<double, 1U> &in2
 // Return Type  : void
 //
-static void minus(::coder::array<double, 1U> &in1,
-                  const ::coder::array<double, 1U> &in2)
+static void minus(coder::array<double, 1U> &in1,
+                  const coder::array<double, 1U> &in2)
 {
-  ::coder::array<double, 1U> b_in2;
+  coder::array<double, 1U> b_in2;
   int loop_ub;
   int stride_0_0;
   int stride_1_0;
@@ -124,14 +118,14 @@ static void minus(::coder::array<double, 1U> &in1,
 }
 
 //
-// Arguments    : ::coder::array<double, 1U> &in1
-//                const ::coder::array<double, 1U> &in2
+// Arguments    : coder::array<double, 1U> &in1
+//                const coder::array<double, 1U> &in2
 // Return Type  : void
 //
-static void plus(::coder::array<double, 1U> &in1,
-                 const ::coder::array<double, 1U> &in2)
+static void plus(coder::array<double, 1U> &in1,
+                 const coder::array<double, 1U> &in2)
 {
-  ::coder::array<double, 1U> b_in1;
+  coder::array<double, 1U> b_in1;
   int loop_ub;
   int stride_0_0;
   int stride_1_0;
@@ -153,14 +147,14 @@ static void plus(::coder::array<double, 1U> &in1,
 }
 
 //
-// Arguments    : ::coder::array<double, 1U> &in1
-//                const ::coder::array<double, 1U> &in2
-//                const ::coder::array<double, 1U> &in3
+// Arguments    : coder::array<double, 1U> &in1
+//                const coder::array<double, 1U> &in2
+//                const coder::array<double, 1U> &in3
 // Return Type  : void
 //
-static void plus(::coder::array<double, 1U> &in1,
-                 const ::coder::array<double, 1U> &in2,
-                 const ::coder::array<double, 1U> &in3)
+static void plus(coder::array<double, 1U> &in1,
+                 const coder::array<double, 1U> &in2,
+                 const coder::array<double, 1U> &in3)
 {
   int loop_ub;
   int stride_0_0;
@@ -179,56 +173,79 @@ static void plus(::coder::array<double, 1U> &in1,
 }
 
 //
-// Arguments    : void
-// Return Type  : ErrorDampedLevenbergMarquardt
+// Arguments    : char params_Name[18]
+//                double &params_MaxTime
+//                double &params_GradientTolerance
+//                double &params_SolutionTolerance
+//                boolean_T &params_ConstraintsOn
+//                boolean_T &params_RandomRestart
+//                double &params_StepTolerance
+//                double &params_ErrorChangeTolerance
+//                double &params_DampingBias
+//                boolean_T &params_UseErrorDamping
+// Return Type  : double
 //
 namespace coder {
 namespace robotics {
 namespace core {
 namespace internal {
-ErrorDampedLevenbergMarquardt::ErrorDampedLevenbergMarquardt() = default;
+double ErrorDampedLevenbergMarquardt::getSolverParams(
+    char params_Name[18], double &params_MaxTime,
+    double &params_GradientTolerance, double &params_SolutionTolerance,
+    boolean_T &params_ConstraintsOn, boolean_T &params_RandomRestart,
+    double &params_StepTolerance, double &params_ErrorChangeTolerance,
+    double &params_DampingBias, boolean_T &params_UseErrorDamping) const
+{
+  double params_MaxNumIteration;
+  for (int i{0}; i < 18; i++) {
+    params_Name[i] = Name[i];
+  }
+  params_MaxNumIteration = MaxNumIteration;
+  params_MaxTime = MaxTime;
+  params_GradientTolerance = GradientTolerance;
+  params_SolutionTolerance = SolutionTolerance;
+  params_ConstraintsOn = ConstraintsOn;
+  params_RandomRestart = RandomRestart;
+  params_StepTolerance = StepTolerance;
+  params_ErrorChangeTolerance = ErrorChangeTolerance;
+  params_DampingBias = DampingBias;
+  params_UseErrorDamping = UseErrorDamping;
+  return params_MaxNumIteration;
+}
 
 //
-// Arguments    : void
-// Return Type  : void
-//
-ErrorDampedLevenbergMarquardt::~ErrorDampedLevenbergMarquardt() = default;
-
-//
-// Arguments    : GIKSolver *aInstancePtr
-//                ::coder::array<double, 1U> &xSol
+// Arguments    : array<double, 1U> &xSol
 //                double &en
 //                double &iter
 // Return Type  : NLPSolverExitFlags
 //
 NLPSolverExitFlags
-ErrorDampedLevenbergMarquardt::solveInternal(GIKSolver *aInstancePtr,
-                                             ::coder::array<double, 1U> &xSol,
+ErrorDampedLevenbergMarquardt::solveInternal(array<double, 1U> &xSol,
                                              double &en, double &iter)
 {
   manip::internal::GIKProblem *problem;
-  ::coder::array<double, 2U> A;
-  ::coder::array<double, 2U> C;
-  ::coder::array<double, 2U> H0;
-  ::coder::array<double, 2U> Jac;
-  ::coder::array<double, 2U> W;
-  ::coder::array<double, 2U> b_W;
-  ::coder::array<double, 2U> b_problem;
-  ::coder::array<double, 2U> d_problem;
-  ::coder::array<double, 2U> e_problem;
-  ::coder::array<double, 2U> f_problem;
-  ::coder::array<double, 2U> r2;
-  ::coder::array<double, 2U> r3;
-  ::coder::array<double, 1U> a__1;
-  ::coder::array<double, 1U> c_problem;
-  ::coder::array<double, 1U> c_x;
-  ::coder::array<double, 1U> evprev;
-  ::coder::array<double, 1U> f;
-  ::coder::array<double, 1U> grad;
-  ::coder::array<double, 1U> step;
-  ::coder::array<double, 1U> x;
-  ::coder::array<double, 1U> xprev;
-  ::coder::array<boolean_T, 1U> b_x;
+  array<double, 2U> A;
+  array<double, 2U> C;
+  array<double, 2U> H0;
+  array<double, 2U> Jac;
+  array<double, 2U> W;
+  array<double, 2U> b_W;
+  array<double, 2U> b_problem;
+  array<double, 2U> d_problem;
+  array<double, 2U> e_problem;
+  array<double, 2U> f_problem;
+  array<double, 2U> r2;
+  array<double, 2U> r3;
+  array<double, 1U> a__1;
+  array<double, 1U> c_problem;
+  array<double, 1U> c_x;
+  array<double, 1U> evprev;
+  array<double, 1U> f;
+  array<double, 1U> grad;
+  array<double, 1U> step;
+  array<double, 1U> x;
+  array<double, 1U> xprev;
+  array<boolean_T, 1U> b_x;
   double newcost;
   int b_i;
   int i;
@@ -241,8 +258,7 @@ ErrorDampedLevenbergMarquardt::solveInternal(GIKSolver *aInstancePtr,
   for (i = 0; i < loop_ub; i++) {
     x[i] = SeedInternal[i];
   }
-  TimeObjInternal.StartTime.tv_sec =
-      tic(aInstancePtr, TimeObjInternal.StartTime.tv_nsec);
+  TimeObjInternal.StartTime.tv_sec = tic(TimeObjInternal.StartTime.tv_nsec);
   xSol.set_size(n);
   xprev.set_size(n);
   for (i = 0; i < n; i++) {
@@ -444,7 +460,7 @@ ErrorDampedLevenbergMarquardt::solveInternal(GIKSolver *aInstancePtr,
           }
         }
         if (guard1) {
-          newcost = toc(aInstancePtr, TimeObjInternal.StartTime.tv_sec,
+          newcost = toc(TimeObjInternal.StartTime.tv_sec,
                         TimeObjInternal.StartTime.tv_nsec);
           flag = (newcost > MaxTimeInternal);
           if (flag) {
@@ -717,7 +733,7 @@ ErrorDampedLevenbergMarquardt::solveInternal(GIKSolver *aInstancePtr,
                 for (i1 = 0; i1 < aoffset; i1++) {
                   f[i1] = r3[i1];
                 }
-                ::gik9dof::coder::internal::expand_max(f, x, a__1);
+                ::coder::internal::expand_max(f, x, a__1);
               }
               if (r2.size(0) == a__1.size(0)) {
                 x.set_size(loop_ub);
@@ -731,7 +747,7 @@ ErrorDampedLevenbergMarquardt::solveInternal(GIKSolver *aInstancePtr,
                 for (i1 = 0; i1 < loop_ub; i1++) {
                   f[i1] = r2[i1 + r2.size(0)];
                 }
-                ::gik9dof::coder::internal::expand_min(f, a__1, x);
+                ::coder::internal::expand_min(f, a__1, x);
               }
             }
             b_i++;
@@ -758,7 +774,6 @@ ErrorDampedLevenbergMarquardt::solveInternal(GIKSolver *aInstancePtr,
 } // namespace core
 } // namespace robotics
 } // namespace coder
-} // namespace gik9dof
 
 //
 // File trailer for ErrorDampedLevenbergMarquardt.cpp

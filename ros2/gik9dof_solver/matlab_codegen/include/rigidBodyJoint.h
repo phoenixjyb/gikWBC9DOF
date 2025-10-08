@@ -2,7 +2,7 @@
 // File: rigidBodyJoint.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 08-Oct-2025 12:14:03
 //
 
 #ifndef RIGIDBODYJOINT_H
@@ -16,9 +16,6 @@
 #include <cstdlib>
 
 // Type Declarations
-namespace gik9dof {
-class GIKSolver;
-
 namespace coder {
 namespace robotics {
 namespace manip {
@@ -29,10 +26,8 @@ class GIKProblem;
 } // namespace manip
 } // namespace robotics
 } // namespace coder
-} // namespace gik9dof
 
 // Type Definitions
-namespace gik9dof {
 namespace coder {
 class rigidBodyJoint {
 public:
@@ -52,36 +47,32 @@ public:
   void b_set_JointAxis();
   rigidBodyJoint *d_init();
   void c_set_JointAxis();
-  void set_PositionLimits(GIKSolver *aInstancePtr);
+  void b_set_PositionLimits();
   rigidBodyJoint *e_init();
   void b_setFixedTransform();
   rigidBodyJoint *f_init();
   void c_setFixedTransform();
-  void b_set_PositionLimits();
+  void c_set_PositionLimits();
   rigidBodyJoint *g_init();
   void d_setFixedTransform();
   void d_set_JointAxis();
-  void c_set_PositionLimits();
+  void d_set_PositionLimits();
   rigidBodyJoint *h_init();
   void e_setFixedTransform();
-  void d_set_PositionLimits();
+  void e_set_PositionLimits();
   rigidBodyJoint *i_init();
   void f_setFixedTransform();
   rigidBodyJoint *j_init();
   void g_setFixedTransform();
-  void e_set_PositionLimits();
+  void f_set_PositionLimits();
   rigidBodyJoint *k_init();
   void h_setFixedTransform();
   rigidBodyJoint *l_init();
   void i_setFixedTransform();
   void get_JointAxis(double ax[3]) const;
-  void transformBodyToParent(const ::coder::array<double, 1U> &q,
-                             double T[16]) const;
-  static void randomConfig(GIKSolver *aInstancePtr,
-                           robotics::manip::internal::GIKProblem *problem,
-                           ::coder::array<double, 1U> &rc);
-  rigidBodyJoint();
-  ~rigidBodyJoint();
+  void transformBodyToParent(const array<double, 1U> &q, double T[16]) const;
+  static void randomConfig(robotics::manip::internal::GIKProblem *problem,
+                           array<double, 1U> &rc);
   double VelocityNumber;
   double PositionNumber;
   boolean_T InTree;
@@ -96,7 +87,6 @@ public:
 };
 
 } // namespace coder
-} // namespace gik9dof
 
 #endif
 //

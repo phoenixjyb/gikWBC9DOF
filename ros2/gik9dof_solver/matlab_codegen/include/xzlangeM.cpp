@@ -2,20 +2,20 @@
 // File: xzlangeM.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 08-Oct-2025 12:14:03
 //
 
 // Include Files
 #include "xzlangeM.h"
 #include "rt_nonfinite.h"
 #include <cmath>
+#include <cstring>
 
 // Function Definitions
 //
 // Arguments    : const double x[9]
 // Return Type  : double
 //
-namespace gik9dof {
 namespace coder {
 namespace internal {
 namespace reflapack {
@@ -46,7 +46,6 @@ double xzlangeM(const double x[9])
 } // namespace reflapack
 } // namespace internal
 } // namespace coder
-} // namespace gik9dof
 
 //
 // File trailer for xzlangeM.cpp

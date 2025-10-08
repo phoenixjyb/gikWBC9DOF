@@ -2,7 +2,7 @@
 // File: RigidBody.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 08-Oct-2025 12:14:03
 //
 
 // Include Files
@@ -10,19 +10,19 @@
 #include "CharacterVector.h"
 #include "CollisionGeometry.h"
 #include "CollisionSet.h"
-#include "gik9dof_codegen_realtime_solveGIKStepWrapper_data.h"
+#include "gik9dof_codegen_inuse_solveGIKStepWrapper_data.h"
 #include "rigidBodyJoint.h"
 #include "rt_nonfinite.h"
 #include "coder_array.h"
 #include "collisioncodegen_api.hpp"
 #include <algorithm>
+#include <cstring>
 
 // Function Definitions
 //
 // Arguments    : void
 // Return Type  : RigidBody
 //
-namespace gik9dof {
 namespace coder {
 namespace robotics {
 namespace manip {
@@ -840,7 +840,6 @@ void b_RigidBody::matlabCodegenDestructor()
 } // namespace manip
 } // namespace robotics
 } // namespace coder
-} // namespace gik9dof
 
 //
 // File trailer for RigidBody.cpp

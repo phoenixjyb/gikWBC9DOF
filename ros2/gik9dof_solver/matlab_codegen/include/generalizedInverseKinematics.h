@@ -2,7 +2,7 @@
 // File: generalizedInverseKinematics.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 08-Oct-2025 12:14:03
 //
 
 #ifndef GENERALIZEDINVERSEKINEMATICS_H
@@ -20,9 +20,6 @@
 #include <cstdlib>
 
 // Type Declarations
-namespace gik9dof {
-class GIKSolver;
-
 namespace coder {
 class rigidBodyTree;
 
@@ -33,41 +30,49 @@ class constraintJointBounds;
 class constraintDistanceBounds;
 
 } // namespace coder
-struct struct1_T;
-
-} // namespace gik9dof
+struct struct0_T;
 
 // Type Definitions
-namespace gik9dof {
 namespace coder {
 class generalizedInverseKinematics {
 public:
-  generalizedInverseKinematics *init(GIKSolver *aInstancePtr,
-                                     rigidBodyTree &varargin_2);
-  double step(GIKSolver *aInstancePtr, const double varargin_1[9],
-              constraintPoseTarget &varargin_2,
-              constraintJointBounds &varargin_3,
-              constraintDistanceBounds &varargin_4, double varargout_1[9],
-              struct1_T varargout_2_ConstraintViolations[3],
-              char varargout_2_Status_data[], int varargout_2_Status_size[2],
-              double &varargout_2_NumRandomRestarts,
-              double &varargout_2_ExitFlag);
+  generalizedInverseKinematics *init(rigidBodyTree &varargin_2);
+  void set_SolverParameters(double solverparams_MaxIterations,
+                            double solverparams_MaxTime,
+                            double solverparams_GradientTolerance,
+                            double solverparams_SolutionTolerance,
+                            boolean_T solverparams_EnforceJointLimits,
+                            boolean_T solverparams_AllowRandomRestart,
+                            double solverparams_StepTolerance,
+                            double solverparams_ErrorChangeTolerance,
+                            double solverparams_DampingBias,
+                            boolean_T solverparams_UseErrorDamping);
+  void step(const double varargin_1[9], const constraintPoseTarget &varargin_2,
+            const constraintJointBounds &varargin_3,
+            const constraintDistanceBounds *varargin_4,
+            const constraintDistanceBounds *varargin_5,
+            const constraintDistanceBounds *varargin_6,
+            const constraintDistanceBounds *varargin_7,
+            const constraintDistanceBounds *varargin_8,
+            const constraintDistanceBounds *varargin_9,
+            const constraintDistanceBounds *varargin_10,
+            const constraintDistanceBounds *varargin_11,
+            const constraintDistanceBounds *varargin_12,
+            const constraintDistanceBounds *varargin_13,
+            const constraintDistanceBounds *varargin_14,
+            const constraintDistanceBounds *varargin_15,
+            const constraintDistanceBounds *varargin_16,
+            const constraintDistanceBounds *varargin_17,
+            const constraintDistanceBounds *varargin_18,
+            const constraintDistanceBounds *varargin_19,
+            const constraintDistanceBounds *varargin_20,
+            const constraintDistanceBounds *varargin_21,
+            const constraintDistanceBounds *varargin_22,
+            const constraintDistanceBounds *varargin_23, double varargout_1[9],
+            struct0_T *varargout_2);
   void matlabCodegenDestructor();
   ~generalizedInverseKinematics();
   generalizedInverseKinematics();
-
-protected:
-  double stepImpl(GIKSolver *aInstancePtr, double initialGuess[9],
-                  const constraintPoseTarget &varargin_1,
-                  const constraintJointBounds &varargin_2,
-                  const constraintDistanceBounds &varargin_3,
-                  struct1_T solutionInfo_ConstraintViolations[3],
-                  char solutionInfo_Status_data[],
-                  int solutionInfo_Status_size[2],
-                  double &solutionInfo_NumRandomRestarts,
-                  double &solutionInfo_ExitFlag);
-
-public:
   boolean_T matlabCodegenIsDeleted;
   robotics::core::internal::ErrorDampedLevenbergMarquardt *Solver;
   robotics::manip::internal::RigidBodyTree *Tree;
@@ -86,7 +91,6 @@ private:
 };
 
 } // namespace coder
-} // namespace gik9dof
 
 #endif
 //

@@ -2,34 +2,21 @@
 // File: constraintPoseTarget.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 08-Oct-2025 12:14:03
 //
 
 // Include Files
 #include "constraintPoseTarget.h"
-#include "gik9dof_codegen_realtime_solveGIKStepWrapper_data.h"
-#include "gik9dof_codegen_realtime_solveGIKStepWrapper_types.h"
+#include "gik9dof_codegen_inuse_solveGIKStepWrapper_data.h"
 #include "rt_nonfinite.h"
+#include <cstring>
 
 // Function Definitions
 //
 // Arguments    : void
-// Return Type  : constraintPoseTarget
-//
-namespace gik9dof {
-namespace coder {
-constraintPoseTarget::constraintPoseTarget() = default;
-
-//
-// Arguments    : void
-// Return Type  : void
-//
-constraintPoseTarget::~constraintPoseTarget() = default;
-
-//
-// Arguments    : void
 // Return Type  : constraintPoseTarget *
 //
+namespace coder {
 constraintPoseTarget *constraintPoseTarget::init()
 {
   constraintPoseTarget *obj;
@@ -65,7 +52,6 @@ constraintPoseTarget *constraintPoseTarget::init()
 }
 
 } // namespace coder
-} // namespace gik9dof
 
 //
 // File trailer for constraintPoseTarget.cpp

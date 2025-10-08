@@ -2,7 +2,7 @@
 // File: norm.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 08-Oct-2025 12:14:03
 //
 
 // Include Files
@@ -10,15 +10,15 @@
 #include "rt_nonfinite.h"
 #include "coder_array.h"
 #include <cmath>
+#include <cstring>
 
 // Function Definitions
 //
-// Arguments    : const ::coder::array<double, 1U> &x
+// Arguments    : const array<double, 1U> &x
 // Return Type  : double
 //
-namespace gik9dof {
 namespace coder {
-double b_norm(const ::coder::array<double, 1U> &x)
+double b_norm(const array<double, 1U> &x)
 {
   double y;
   if (x.size(0) == 0) {
@@ -53,7 +53,6 @@ double b_norm(const ::coder::array<double, 1U> &x)
 }
 
 } // namespace coder
-} // namespace gik9dof
 
 //
 // File trailer for norm.cpp

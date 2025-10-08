@@ -2,7 +2,7 @@
 // File: CollisionSet.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 08-Oct-2025 12:14:03
 //
 
 #ifndef COLLISIONSET_H
@@ -16,7 +16,6 @@
 #include <cstdlib>
 
 // Type Definitions
-namespace gik9dof {
 namespace coder {
 namespace robotics {
 namespace manip {
@@ -28,7 +27,7 @@ public:
   ~CollisionSet();
   CollisionSet();
   boolean_T matlabCodegenIsDeleted;
-  ::coder::array<CollisionGeometry, 2U> CollisionGeometries;
+  array<CollisionGeometry, 2U> CollisionGeometries;
   double MaxElements;
   double Size;
 };
@@ -37,7 +36,6 @@ public:
 } // namespace manip
 } // namespace robotics
 } // namespace coder
-} // namespace gik9dof
 
 #endif
 //

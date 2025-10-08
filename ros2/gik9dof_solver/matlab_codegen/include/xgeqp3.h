@@ -2,7 +2,7 @@
 // File: xgeqp3.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 08-Oct-2025 12:14:03
 //
 
 #ifndef XGEQP3_H
@@ -15,17 +15,14 @@
 #include <cstdlib>
 
 // Function Declarations
-namespace gik9dof {
 namespace coder {
 namespace internal {
 namespace lapack {
-void xgeqp3(::coder::array<double, 2U> &A, ::coder::array<double, 1U> &tau,
-            ::coder::array<int, 2U> &jpvt);
+void xgeqp3(array<double, 2U> &A, array<double, 1U> &tau, array<int, 2U> &jpvt);
 
 }
 } // namespace internal
 } // namespace coder
-} // namespace gik9dof
 
 #endif
 //

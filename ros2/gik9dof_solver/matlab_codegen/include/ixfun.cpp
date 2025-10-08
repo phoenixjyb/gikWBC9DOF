@@ -2,7 +2,7 @@
 // File: ixfun.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 08-Oct-2025 12:14:03
 //
 
 // Include Files
@@ -10,20 +10,19 @@
 #include "rt_nonfinite.h"
 #include "coder_array.h"
 #include <cmath>
+#include <cstring>
 
 // Function Definitions
 //
-// Arguments    : const ::coder::array<double, 1U> &a
-//                const ::coder::array<double, 1U> &b
-//                ::coder::array<double, 1U> &c
+// Arguments    : const array<double, 1U> &a
+//                const array<double, 1U> &b
+//                array<double, 1U> &c
 // Return Type  : void
 //
-namespace gik9dof {
 namespace coder {
 namespace internal {
-void expand_max(const ::coder::array<double, 1U> &a,
-                const ::coder::array<double, 1U> &b,
-                ::coder::array<double, 1U> &c)
+void expand_max(const array<double, 1U> &a, const array<double, 1U> &b,
+                array<double, 1U> &c)
 {
   int csz_idx_0;
   int u1;
@@ -52,14 +51,13 @@ void expand_max(const ::coder::array<double, 1U> &a,
 }
 
 //
-// Arguments    : const ::coder::array<double, 1U> &a
-//                const ::coder::array<double, 1U> &b
-//                ::coder::array<double, 1U> &c
+// Arguments    : const array<double, 1U> &a
+//                const array<double, 1U> &b
+//                array<double, 1U> &c
 // Return Type  : void
 //
-void expand_min(const ::coder::array<double, 1U> &a,
-                const ::coder::array<double, 1U> &b,
-                ::coder::array<double, 1U> &c)
+void expand_min(const array<double, 1U> &a, const array<double, 1U> &b,
+                array<double, 1U> &c)
 {
   int csz_idx_0;
   int u1;
@@ -89,7 +87,6 @@ void expand_min(const ::coder::array<double, 1U> &a,
 
 } // namespace internal
 } // namespace coder
-} // namespace gik9dof
 
 //
 // File trailer for ixfun.cpp

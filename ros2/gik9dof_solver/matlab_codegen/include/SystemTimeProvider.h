@@ -2,7 +2,7 @@
 // File: SystemTimeProvider.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 08-Oct-2025 12:14:03
 //
 
 #ifndef SYSTEMTIMEPROVIDER_H
@@ -15,15 +15,12 @@
 #include <cstdlib>
 
 // Type Definitions
-namespace gik9dof {
 namespace coder {
 namespace robotics {
 namespace core {
 namespace internal {
 class SystemTimeProvider {
 public:
-  SystemTimeProvider();
-  ~SystemTimeProvider();
   coderTimespec StartTime;
 };
 
@@ -31,7 +28,6 @@ public:
 } // namespace core
 } // namespace robotics
 } // namespace coder
-} // namespace gik9dof
 
 #endif
 //

@@ -2,14 +2,15 @@
 // File: validatestring.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 08-Oct-2025 12:14:03
 //
 
 // Include Files
 #include "validatestring.h"
-#include "gik9dof_codegen_realtime_solveGIKStepWrapper_data.h"
+#include "gik9dof_codegen_inuse_solveGIKStepWrapper_data.h"
 #include "rt_nonfinite.h"
 #include <algorithm>
+#include <cstring>
 
 // Function Definitions
 //
@@ -19,7 +20,6 @@
 //                int out_size[2]
 // Return Type  : void
 //
-namespace gik9dof {
 namespace coder {
 void validatestring(const char str_data[], const int str_size[2],
                     char out_data[], int out_size[2])
@@ -260,7 +260,6 @@ void validatestring(const char str_data[], const int str_size[2],
 }
 
 } // namespace coder
-} // namespace gik9dof
 
 //
 // File trailer for validatestring.cpp

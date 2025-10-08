@@ -2,7 +2,7 @@
 // File: norm.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 08-Oct-2025 12:14:03
 //
 
 #ifndef NORM_H
@@ -15,12 +15,10 @@
 #include <cstdlib>
 
 // Function Declarations
-namespace gik9dof {
 namespace coder {
-double b_norm(const ::coder::array<double, 1U> &x);
+double b_norm(const array<double, 1U> &x);
 
 }
-} // namespace gik9dof
 
 #endif
 //

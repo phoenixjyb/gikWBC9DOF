@@ -10,8 +10,8 @@
 
 #include "gik9dof_solver_node.h"
 
-// MATLAB Coder generated solver
-#include "GIKSolver.h"
+// MATLAB Coder generated solver (NEW: 20-constraint interface)
+#include "gik9dof_codegen_inuse_solveGIKStepWrapper.h"
 
 // MATLAB Coder generated velocity controllers
 #include "velocity_controller/holisticVelocityController.h"
@@ -34,8 +34,31 @@ GIK9DOFSolverNode::GIK9DOFSolverNode() : Node("gik9dof_solver_node")
         this->declare_parameter("control_rate", 10.0);  // Hz
         this->declare_parameter("max_solve_time", 0.05);  // 50ms
         this->declare_parameter("max_solver_iterations", 50);  // Max solver iterations
-        this->declare_parameter("distance_lower_bound", 0.1);  // meters
-        this->declare_parameter("distance_weight", 1.0);
+        
+        // Distance constraints (20 total) - NEW 7-parameter interface
+        // Default: 5 active constraints matching MATLAB validation tests
+        std::vector<int64_t> default_body_indices = {
+            9, 9, 9, 7, 6,  // Active: gripper, gripper, gripper, link5, link4
+            9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9  // Disabled placeholders
+        };
+        std::vector<int64_t> default_ref_body_indices = {
+            1, 0, 2, 1, 1,  // Active: chassis, base, arm_base, chassis, chassis
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0  // Disabled placeholders
+        };
+        std::vector<double> default_lower_bounds(20, 0.05);  // All 5cm minimum
+        std::vector<double> default_upper_bounds(20, 10.0);  // All 10m maximum (effectively infinite)
+        std::vector<double> default_weights = {
+            1.0, 1.0, 1.0, 1.0, 1.0,  // Active constraints
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 
+            0.0, 0.0, 0.0, 0.0, 0.0   // Disabled constraints
+        };
+        
+        this->declare_parameter("dist_body_indices", default_body_indices);
+        this->declare_parameter("dist_ref_body_indices", default_ref_body_indices);
+        this->declare_parameter("dist_lower_bounds", default_lower_bounds);
+        this->declare_parameter("dist_upper_bounds", default_upper_bounds);
+        this->declare_parameter("dist_weights", default_weights);
+        
         this->declare_parameter("publish_diagnostics", true);
         this->declare_parameter("use_warm_start", true);  // Use previous solution as initial guess
         
@@ -89,8 +112,23 @@ GIK9DOFSolverNode::GIK9DOFSolverNode() : Node("gik9dof_solver_node")
         control_rate_ = this->get_parameter("control_rate").as_double();
         max_solve_time_ = this->get_parameter("max_solve_time").as_double();
         max_solver_iterations_ = this->get_parameter("max_solver_iterations").as_int();
-        distance_lower_ = this->get_parameter("distance_lower_bound").as_double();
-        distance_weight_ = this->get_parameter("distance_weight").as_double();
+        
+        // Read distance constraint parameters and copy to member arrays
+        auto body_indices = this->get_parameter("dist_body_indices").as_integer_array();
+        auto ref_body_indices = this->get_parameter("dist_ref_body_indices").as_integer_array();
+        auto lower_bounds = this->get_parameter("dist_lower_bounds").as_double_array();
+        auto upper_bounds = this->get_parameter("dist_upper_bounds").as_double_array();
+        auto weights = this->get_parameter("dist_weights").as_double_array();
+        
+        // Copy to member arrays with type conversion
+        for (size_t i = 0; i < 20; i++) {
+            dist_body_indices_[i] = static_cast<int>(body_indices[i]);
+            dist_ref_body_indices_[i] = static_cast<int>(ref_body_indices[i]);
+            dist_lower_bounds_[i] = lower_bounds[i];
+            dist_upper_bounds_[i] = upper_bounds[i];
+            dist_weights_[i] = weights[i];
+        }
+        
         publish_diagnostics_ = this->get_parameter("publish_diagnostics").as_bool();
         use_warm_start_ = this->get_parameter("use_warm_start").as_bool();
         
@@ -225,14 +263,12 @@ GIK9DOFSolverNode::GIK9DOFSolverNode() : Node("gik9dof_solver_node")
             timer_period,
             std::bind(&GIK9DOFSolverNode::controlLoop, this));
         
-        // Initialize MATLAB solver
-        matlab_solver_ = std::make_unique<gik9dof::GIKSolver>();
-        
-        // Set max iterations (default 50, configurable via parameter)
-        matlab_solver_->setMaxIterations(max_solver_iterations_);
+        // NOTE: With new codegen_inuse interface, solver is a free function (no initialization needed)
+        // matlab_solver_ = std::make_unique<gik9dof::GIKSolver>();  // DEPRECATED
+        // matlab_solver_->setMaxIterations(max_solver_iterations_);  // DEPRECATED
         
         RCLCPP_INFO(this->get_logger(), "GIK9DOF Solver Node initialized");
-        RCLCPP_INFO(this->get_logger(), "MATLAB solver initialized");
+        RCLCPP_INFO(this->get_logger(), "MATLAB solver interface: codegen_inuse (20 constraints)");
         RCLCPP_INFO(this->get_logger(), "Control rate: %.1f Hz", control_rate_);
         RCLCPP_INFO(this->get_logger(), "Max solve time: %.0f ms", max_solve_time_ * 1000.0);
         RCLCPP_INFO(this->get_logger(), "Max solver iterations: %d", max_solver_iterations_);
@@ -681,15 +717,18 @@ bool GIK9DOFSolverNode::solveIK(const geometry_msgs::msg::Pose& target_pose)
         auto solve_start_time = std::chrono::steady_clock::now();
         rclcpp::Time solve_start_ros = this->now();
         
-        // Call MATLAB-generated solver
+        // Call MATLAB-generated solver (NEW 7-parameter interface for 20 constraints)
         // Note: The solver itself has MaxTime=50ms configured in MATLAB code
-        matlab_solver_->gik9dof_codegen_realtime_solveGIKStepWrapper(
-            q_current,
-            target_matrix,
-            distance_lower_,
-            distance_weight_,
-            q_next,
-            &solver_info
+        gik9dof::codegen_inuse::solveGIKStepWrapper(
+            q_current,                // Current joint configuration [9]
+            target_matrix,            // Target end-effector pose (4x4 homogeneous, column-major) [16]
+            dist_body_indices_,       // Body indices for distance constraints [20]
+            dist_ref_body_indices_,   // Reference body indices [20]
+            dist_lower_bounds_,       // Lower distance bounds (meters) [20]
+            dist_upper_bounds_,       // Upper distance bounds (meters) [20]
+            dist_weights_,            // Constraint weights (0.0=disabled, >0.0=enabled) [20]
+            q_next,                   // OUTPUT: Next joint configuration [9]
+            &solver_info              // OUTPUT: Solver diagnostics (struct0_T)
         );
         
         // Check solve time and warn if exceeded expected duration
@@ -717,6 +756,19 @@ bool GIK9DOFSolverNode::solveIK(const geometry_msgs::msg::Pose& target_pose)
         bool distance_constraint_met = true;
         std::vector<double> all_violations;
         
+        // Per-constraint distance violation tracking (20 constraints)
+        double dist_violations[20] = {0.0};
+        bool dist_constraint_met_array[20] = {false};
+        int num_active_constraints = 0;
+        int num_violated_constraints = 0;
+        
+        // Count active constraints (weight > 0)
+        for (int i = 0; i < 20; i++) {
+            if (dist_weights_[i] > 0.0) {
+                num_active_constraints++;
+            }
+        }
+        
         // Iterate through the 3 constraint violation structs
         for (int cv_idx = 0; cv_idx < 3; cv_idx++) {
             const auto& cv = solver_info.ConstraintViolations[cv_idx];
@@ -742,9 +794,24 @@ bool GIK9DOFSolverNode::solveIK(const geometry_msgs::msg::Pose& target_pose)
                         joint_limit_violation = true;
                     }
                 } else if (type_str.find("distance") != std::string::npos) {
-                    // Distance constraints
-                    if (std::abs(val) > 1e-3) {
-                        distance_constraint_met = false;
+                    // Distance constraints - extract per-constraint violations
+                    // Violation array contains violations for each of the 20 constraints
+                    if (i < 20) {
+                        dist_violations[i] = val;
+                        
+                        // Check if this constraint is active and violated
+                        if (dist_weights_[i] > 0.0) {  // Only check active constraints
+                            bool is_met = (std::abs(val) < 1e-3);  // Threshold for "met"
+                            dist_constraint_met_array[i] = is_met;
+                            
+                            if (!is_met) {
+                                num_violated_constraints++;
+                                distance_constraint_met = false;  // Global flag
+                            }
+                        } else {
+                            // Inactive constraints are considered "met"
+                            dist_constraint_met_array[i] = true;
+                        }
                     }
                 }
             }
@@ -767,6 +834,13 @@ bool GIK9DOFSolverNode::solveIK(const geometry_msgs::msg::Pose& target_pose)
             last_joint_limit_violation_ = joint_limit_violation;
             last_distance_constraint_met_ = distance_constraint_met;
             last_constraint_violations_ = all_violations;
+            
+            // Store per-constraint distance violations
+            std::copy(dist_violations, dist_violations + 20, last_dist_violations_);
+            std::copy(dist_constraint_met_array, dist_constraint_met_array + 20, last_dist_constraint_met_);
+            last_num_active_constraints_ = num_active_constraints;
+            last_num_violated_constraints_ = num_violated_constraints;
+            
             last_solve_start_ = solve_start_ros;
             last_solve_end_ = solve_end_ros;
         }
@@ -777,15 +851,18 @@ bool GIK9DOFSolverNode::solveIK(const geometry_msgs::msg::Pose& target_pose)
                        "Solver failed: status='%s', iterations=%d, exit_flag=%d, time=%ld ms",
                        status_str.c_str(), last_solver_iterations_, last_exit_flag_, solve_duration_ms);
             RCLCPP_WARN(this->get_logger(), 
-                       "  Violations: pose=%.4f (pos=%.4f, ori=%.4f), joint_limits=%s, dist_constraint=%s, restarts=%d",
+                       "  Violations: pose=%.4f (pos=%.4f, ori=%.4f), joint_limits=%s, dist_constraint=%s (%d/%d active violated), restarts=%d",
                        pose_violation, position_error, orientation_error,
                        joint_limit_violation ? "YES" : "no",
                        distance_constraint_met ? "yes" : "NO",
+                       num_violated_constraints, num_active_constraints,
                        last_random_restarts_);
         } else {
             RCLCPP_DEBUG(this->get_logger(), 
-                        "Solver success: iter=%d, time=%ld ms, pose_err=%.4f, restarts=%d",
-                        last_solver_iterations_, solve_duration_ms, pose_violation, last_random_restarts_);
+                        "Solver success: iter=%d, time=%ld ms, pose_err=%.4f, dist_constraints=%d/%d active OK, restarts=%d",
+                        last_solver_iterations_, solve_duration_ms, pose_violation, 
+                        num_active_constraints - num_violated_constraints, num_active_constraints,
+                        last_random_restarts_);
         }
         
         return (status_str == "success");
@@ -1107,6 +1184,28 @@ void GIK9DOFSolverNode::publishDiagnostics(double solve_time_ms, const geometry_
         msg.orientation_error = last_orientation_error_;
         msg.joint_limits_violated = last_joint_limit_violation_;
         msg.distance_constraint_met = last_distance_constraint_met_;
+        
+        // Distance constraints (20 total) - NEW detailed reporting
+        msg.dist_body_indices.resize(20);
+        msg.dist_ref_body_indices.resize(20);
+        msg.dist_lower_bounds.resize(20);
+        msg.dist_upper_bounds.resize(20);
+        msg.dist_weights.resize(20);
+        msg.dist_violations.resize(20);
+        msg.dist_constraint_met.resize(20);
+        
+        for (int i = 0; i < 20; i++) {
+            msg.dist_body_indices[i] = dist_body_indices_[i];
+            msg.dist_ref_body_indices[i] = dist_ref_body_indices_[i];
+            msg.dist_lower_bounds[i] = dist_lower_bounds_[i];
+            msg.dist_upper_bounds[i] = dist_upper_bounds_[i];
+            msg.dist_weights[i] = dist_weights_[i];
+            msg.dist_violations[i] = last_dist_violations_[i];
+            msg.dist_constraint_met[i] = last_dist_constraint_met_[i];
+        }
+        
+        msg.num_active_constraints = static_cast<uint8_t>(last_num_active_constraints_);
+        msg.num_violated_constraints = static_cast<uint8_t>(last_num_violated_constraints_);
         
         // Configuration
         msg.current_config = current_config_;

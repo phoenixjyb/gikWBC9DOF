@@ -2,7 +2,7 @@
 // File: xzlascl.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 08-Oct-2025 12:14:03
 //
 
 #ifndef XZLASCL_H
@@ -14,7 +14,6 @@
 #include <cstdlib>
 
 // Function Declarations
-namespace gik9dof {
 namespace coder {
 namespace internal {
 namespace reflapack {
@@ -25,7 +24,6 @@ void xzlascl(double cfrom, double cto, double A[9]);
 } // namespace reflapack
 } // namespace internal
 } // namespace coder
-} // namespace gik9dof
 
 #endif
 //

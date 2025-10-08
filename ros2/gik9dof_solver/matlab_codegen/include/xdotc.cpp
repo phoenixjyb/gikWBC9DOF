@@ -2,12 +2,13 @@
 // File: xdotc.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 08-Oct-2025 12:14:03
 //
 
 // Include Files
 #include "xdotc.h"
 #include "rt_nonfinite.h"
+#include <cstring>
 
 // Function Definitions
 //
@@ -18,7 +19,6 @@
 //                int iy0
 // Return Type  : double
 //
-namespace gik9dof {
 namespace coder {
 namespace internal {
 namespace blas {
@@ -37,7 +37,6 @@ double xdotc(int n, const double x[9], int ix0, const double y[9], int iy0)
 } // namespace blas
 } // namespace internal
 } // namespace coder
-} // namespace gik9dof
 
 //
 // File trailer for xdotc.cpp

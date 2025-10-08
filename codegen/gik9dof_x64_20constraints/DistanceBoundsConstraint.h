@@ -1,0 +1,62 @@
+//
+// File: DistanceBoundsConstraint.h
+//
+// MATLAB Coder version            : 24.2
+// C/C++ source code generated on  : 08-Oct-2025 13:54:35
+//
+
+#ifndef DISTANCEBOUNDSCONSTRAINT_H
+#define DISTANCEBOUNDSCONSTRAINT_H
+
+// Include Files
+#include "rtwtypes.h"
+#include "coder_array.h"
+#include <cstddef>
+#include <cstdlib>
+
+// Type Declarations
+namespace coder {
+namespace robotics {
+namespace manip {
+namespace internal {
+class RigidBodyTree;
+
+}
+} // namespace manip
+} // namespace robotics
+class constraintDistanceBounds;
+
+} // namespace coder
+
+// Type Definitions
+namespace coder {
+namespace robotics {
+namespace manip {
+namespace internal {
+class DistanceBoundsConstraint {
+public:
+  DistanceBoundsConstraint *init(RigidBodyTree *tree);
+  double evaluate(const array<double, 1U> &q, double J_data[], int J_size[2]);
+  void update(const constraintDistanceBounds *other);
+  void get_EndEffector(char value_data[], int value_size[2]);
+  void get_ReferenceBody(char value_data[], int value_size[2]);
+  boolean_T matlabCodegenIsDeleted;
+  double NumElements;
+  RigidBodyTree *Tree;
+  array<double, 2U> BoundsInternal;
+  array<double, 2U> Weights;
+  double ReferenceBodyIndex;
+  double EndEffectorIndex;
+};
+
+} // namespace internal
+} // namespace manip
+} // namespace robotics
+} // namespace coder
+
+#endif
+//
+// File trailer for DistanceBoundsConstraint.h
+//
+// [EOF]
+//

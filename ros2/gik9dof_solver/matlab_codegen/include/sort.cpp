@@ -2,7 +2,7 @@
 // File: sort.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 08-Oct-2025 12:14:03
 //
 
 // Include Files
@@ -19,12 +19,11 @@
 //                const int x_size[2]
 // Return Type  : void
 //
-namespace gik9dof {
 namespace coder {
 namespace internal {
 void b_sort(double x_data[], const int x_size[2])
 {
-  int idx_data[36];
+  int idx_data[264];
   int loop_ub;
   loop_ub = x_size[1];
   if (loop_ub - 1 >= 0) {
@@ -32,19 +31,20 @@ void b_sort(double x_data[], const int x_size[2])
                 static_cast<unsigned int>(loop_ub) * sizeof(int));
   }
   if (x_size[1] != 0) {
-    double xwork_data[36];
+    double xwork_data[264];
     double x4[4];
-    int iwork_data[36];
+    int iwork_data[264];
+    int bLen2;
     int i;
     int i1;
     int i2;
     int i3;
     int i4;
     int ib;
+    int idx_tmp;
     int nNaNs;
-    int quartetOffset;
     int wOffset_tmp;
-    signed char idx4[4];
+    short idx4[4];
     x4[0] = 0.0;
     idx4[0] = 0;
     x4[1] = 0.0;
@@ -58,23 +58,23 @@ void b_sort(double x_data[], const int x_size[2])
     for (int k{0}; k < loop_ub; k++) {
       iwork_data[k] = 0;
       if (std::isnan(x_data[k])) {
-        i4 = (loop_ub - nNaNs) - 1;
-        idx_data[i4] = k + 1;
-        xwork_data[i4] = x_data[k];
+        idx_tmp = (loop_ub - nNaNs) - 1;
+        idx_data[idx_tmp] = k + 1;
+        xwork_data[idx_tmp] = x_data[k];
         nNaNs++;
       } else {
         ib++;
-        idx4[ib - 1] = static_cast<signed char>(k + 1);
+        idx4[ib - 1] = static_cast<short>(k + 1);
         x4[ib - 1] = x_data[k];
         if (ib == 4) {
           double d;
           double d1;
-          quartetOffset = k - nNaNs;
+          ib = k - nNaNs;
           if (x4[0] <= x4[1]) {
-            ib = 1;
+            i1 = 1;
             i2 = 2;
           } else {
-            ib = 2;
+            i1 = 2;
             i2 = 1;
           }
           if (x4[2] <= x4[3]) {
@@ -84,51 +84,51 @@ void b_sort(double x_data[], const int x_size[2])
             i3 = 4;
             i4 = 3;
           }
-          d = x4[ib - 1];
+          d = x4[i1 - 1];
           d1 = x4[i3 - 1];
           if (d <= d1) {
             d = x4[i2 - 1];
             if (d <= d1) {
-              i = ib;
-              i1 = i2;
-              ib = i3;
+              i = i1;
+              bLen2 = i2;
+              i1 = i3;
               i2 = i4;
             } else if (d <= x4[i4 - 1]) {
-              i = ib;
-              i1 = i3;
-              ib = i2;
+              i = i1;
+              bLen2 = i3;
+              i1 = i2;
               i2 = i4;
             } else {
-              i = ib;
-              i1 = i3;
-              ib = i4;
+              i = i1;
+              bLen2 = i3;
+              i1 = i4;
             }
           } else {
             d1 = x4[i4 - 1];
             if (d <= d1) {
               if (x4[i2 - 1] <= d1) {
                 i = i3;
-                i1 = ib;
-                ib = i2;
+                bLen2 = i1;
+                i1 = i2;
                 i2 = i4;
               } else {
                 i = i3;
-                i1 = ib;
-                ib = i4;
+                bLen2 = i1;
+                i1 = i4;
               }
             } else {
               i = i3;
-              i1 = i4;
+              bLen2 = i4;
             }
           }
-          idx_data[quartetOffset - 3] = idx4[i - 1];
-          idx_data[quartetOffset - 2] = idx4[i1 - 1];
-          idx_data[quartetOffset - 1] = idx4[ib - 1];
-          idx_data[quartetOffset] = idx4[i2 - 1];
-          x_data[quartetOffset - 3] = x4[i - 1];
-          x_data[quartetOffset - 2] = x4[i1 - 1];
-          x_data[quartetOffset - 1] = x4[ib - 1];
-          x_data[quartetOffset] = x4[i2 - 1];
+          idx_data[ib - 3] = idx4[i - 1];
+          idx_data[ib - 2] = idx4[bLen2 - 1];
+          idx_data[ib - 1] = idx4[i1 - 1];
+          idx_data[ib] = idx4[i2 - 1];
+          x_data[ib - 3] = x4[i - 1];
+          x_data[ib - 2] = x4[bLen2 - 1];
+          x_data[ib - 1] = x4[i1 - 1];
+          x_data[ib] = x4[i2 - 1];
           ib = 0;
         }
       }
@@ -178,51 +178,84 @@ void b_sort(double x_data[], const int x_size[2])
       }
       i = static_cast<unsigned char>(ib);
       for (int k{0}; k < i; k++) {
-        i4 = (wOffset_tmp - ib) + k;
-        i1 = perm[k];
-        idx_data[i4] = idx4[i1 - 1];
-        x_data[i4] = x4[i1 - 1];
+        idx_tmp = (wOffset_tmp - ib) + k;
+        bLen2 = perm[k];
+        idx_data[idx_tmp] = idx4[bLen2 - 1];
+        x_data[idx_tmp] = x4[bLen2 - 1];
       }
     }
-    i2 = nNaNs >> 1;
-    for (int k{0}; k < i2; k++) {
-      quartetOffset = wOffset_tmp + k;
-      i3 = idx_data[quartetOffset];
-      i4 = (loop_ub - k) - 1;
-      idx_data[quartetOffset] = idx_data[i4];
-      idx_data[i4] = i3;
-      x_data[quartetOffset] = xwork_data[i4];
-      x_data[i4] = xwork_data[quartetOffset];
+    ib = nNaNs >> 1;
+    for (int k{0}; k < ib; k++) {
+      i1 = wOffset_tmp + k;
+      i2 = idx_data[i1];
+      idx_tmp = (loop_ub - k) - 1;
+      idx_data[i1] = idx_data[idx_tmp];
+      idx_data[idx_tmp] = i2;
+      x_data[i1] = xwork_data[idx_tmp];
+      x_data[idx_tmp] = xwork_data[i1];
     }
     if ((static_cast<unsigned int>(nNaNs) & 1U) != 0U) {
-      i = wOffset_tmp + i2;
+      i = wOffset_tmp + ib;
       x_data[i] = xwork_data[i];
     }
+    ib = 2;
     if (wOffset_tmp > 1) {
-      i3 = wOffset_tmp >> 2;
-      quartetOffset = 4;
-      while (i3 > 1) {
-        if ((static_cast<unsigned int>(i3) & 1U) != 0U) {
-          i3--;
-          ib = quartetOffset * i3;
-          i2 = wOffset_tmp - ib;
-          if (i2 > quartetOffset) {
-            b_merge(idx_data, x_data, ib, quartetOffset, i2 - quartetOffset,
-                    iwork_data, xwork_data);
+      if ((x_size[1] >= 256) && ((wOffset_tmp >> 8) > 0)) {
+        for (loop_ub = 0; loop_ub < 1; loop_ub++) {
+          double xwork[256];
+          short iwork[256];
+          for (nNaNs = 0; nNaNs < 6; nNaNs++) {
+            i4 = 1 << (nNaNs + 2);
+            bLen2 = i4 << 1;
+            i = 256 >> (nNaNs + 3);
+            for (int k{0}; k < i; k++) {
+              i2 = k * bLen2;
+              for (i1 = 0; i1 < bLen2; i1++) {
+                ib = i2 + i1;
+                iwork[i1] = static_cast<short>(idx_data[ib]);
+                xwork[i1] = x_data[ib];
+              }
+              i3 = 0;
+              i1 = i4;
+              ib = i2 - 1;
+              int exitg1;
+              do {
+                exitg1 = 0;
+                ib++;
+                if (xwork[i3] <= xwork[i1]) {
+                  idx_data[ib] = iwork[i3];
+                  x_data[ib] = xwork[i3];
+                  if (i3 + 1 < i4) {
+                    i3++;
+                  } else {
+                    exitg1 = 1;
+                  }
+                } else {
+                  idx_data[ib] = iwork[i1];
+                  x_data[ib] = xwork[i1];
+                  if (i1 + 1 < bLen2) {
+                    i1++;
+                  } else {
+                    ib -= i3;
+                    for (i1 = i3 + 1; i1 <= i4; i1++) {
+                      idx_tmp = ib + i1;
+                      idx_data[idx_tmp] = iwork[i1 - 1];
+                      x_data[idx_tmp] = xwork[i1 - 1];
+                    }
+                    exitg1 = 1;
+                  }
+                }
+              } while (exitg1 == 0);
+            }
           }
         }
-        ib = quartetOffset << 1;
-        i3 >>= 1;
-        for (int k{0}; k < i3; k++) {
-          b_merge(idx_data, x_data, k * ib, quartetOffset, quartetOffset,
-                  iwork_data, xwork_data);
+        if (wOffset_tmp - 256 > 0) {
+          merge_block(idx_data, x_data, 256, wOffset_tmp - 256, 2, iwork_data,
+                      xwork_data);
         }
-        quartetOffset = ib;
+        ib = 8;
       }
-      if (wOffset_tmp > quartetOffset) {
-        b_merge(idx_data, x_data, 0, quartetOffset, wOffset_tmp - quartetOffset,
-                iwork_data, xwork_data);
-      }
+      merge_block(idx_data, x_data, 0, wOffset_tmp, ib, iwork_data, xwork_data);
     }
   }
 }
@@ -424,15 +457,15 @@ void sort(double x[22], int idx[22])
 }
 
 //
-// Arguments    : ::coder::array<double, 1U> &x
+// Arguments    : array<double, 1U> &x
 // Return Type  : void
 //
-void sort(::coder::array<double, 1U> &x)
+void sort(array<double, 1U> &x)
 {
-  ::coder::array<double, 1U> vwork;
-  ::coder::array<double, 1U> xwork;
-  ::coder::array<int, 1U> iidx;
-  ::coder::array<int, 1U> iwork;
+  array<double, 1U> vwork;
+  array<double, 1U> xwork;
+  array<int, 1U> iidx;
+  array<int, 1U> iwork;
   int dim;
   int i;
   int i1;
@@ -701,7 +734,6 @@ void sort(::coder::array<double, 1U> &x)
 
 } // namespace internal
 } // namespace coder
-} // namespace gik9dof
 
 //
 // File trailer for sort.cpp

@@ -2,13 +2,14 @@
 // File: xzlascl.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 08-Oct-2025 12:14:03
 //
 
 // Include Files
 #include "xzlascl.h"
 #include "rt_nonfinite.h"
 #include <cmath>
+#include <cstring>
 #include <emmintrin.h>
 
 // Function Definitions
@@ -18,7 +19,6 @@
 //                double A[3]
 // Return Type  : void
 //
-namespace gik9dof {
 namespace coder {
 namespace internal {
 namespace reflapack {
@@ -96,7 +96,6 @@ void xzlascl(double cfrom, double cto, double A[9])
 } // namespace reflapack
 } // namespace internal
 } // namespace coder
-} // namespace gik9dof
 
 //
 // File trailer for xzlascl.cpp

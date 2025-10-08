@@ -2,39 +2,33 @@
 // File: rigidBody1.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 08-Oct-2025 12:14:03
 //
 
 // Include Files
 #include "rigidBody1.h"
 #include "CharacterVector.h"
 #include "CollisionSet.h"
-#include "GIKSolver.h"
 #include "RigidBody.h"
 #include "RigidBodyTree.h"
-#include "gik9dof_codegen_realtime_solveGIKStepWrapper_data.h"
+#include "gik9dof_codegen_inuse_solveGIKStepWrapper_data.h"
 #include "rigidBodyJoint.h"
 #include "rt_nonfinite.h"
+#include <cstring>
 
 // Variable Definitions
-namespace gik9dof {
 static const signed char iv1[9]{1, 0, 0, 0, 1, 0, 0, 0, 1};
-
-}
 
 // Function Definitions
 //
-// Arguments    : GIKSolver *aInstancePtr
-//                robotics::manip::internal::b_RigidBodyTree &iobj_0
+// Arguments    : robotics::manip::internal::b_RigidBodyTree &iobj_0
 //                robotics::manip::internal::CollisionSet &iobj_1
 //                rigidBodyJoint &iobj_2
 //                robotics::manip::internal::RigidBody &iobj_3
 // Return Type  : rigidBody *
 //
-namespace gik9dof {
 namespace coder {
-rigidBody *rigidBody::b_init(GIKSolver *aInstancePtr,
-                             robotics::manip::internal::b_RigidBodyTree &iobj_0,
+rigidBody *rigidBody::b_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
                              robotics::manip::internal::CollisionSet &iobj_1,
                              rigidBodyJoint &iobj_2,
                              robotics::manip::internal::RigidBody &iobj_3)
@@ -341,7 +335,7 @@ rigidBody *rigidBody::b_init(GIKSolver *aInstancePtr,
   }
   iobj_3.CollisionsInternal = iobj_1.init(static_cast<double>(0.0));
   iobj_3.matlabCodegenIsDeleted = false;
-  b_default = iobj_0.init(aInstancePtr);
+  b_default = iobj_0.init();
   obj->BodyInternal = &iobj_3;
   obj->TreeInternal = b_default;
   obj->matlabCodegenIsDeleted = false;
@@ -524,15 +518,13 @@ void rigidBody::b_set_Mass()
 }
 
 //
-// Arguments    : GIKSolver *aInstancePtr
-//                robotics::manip::internal::b_RigidBodyTree &iobj_0
+// Arguments    : robotics::manip::internal::b_RigidBodyTree &iobj_0
 //                robotics::manip::internal::CollisionSet &iobj_1
 //                rigidBodyJoint &iobj_2
 //                robotics::manip::internal::RigidBody &iobj_3
 // Return Type  : rigidBody *
 //
-rigidBody *rigidBody::c_init(GIKSolver *aInstancePtr,
-                             robotics::manip::internal::b_RigidBodyTree &iobj_0,
+rigidBody *rigidBody::c_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
                              robotics::manip::internal::CollisionSet &iobj_1,
                              rigidBodyJoint &iobj_2,
                              robotics::manip::internal::RigidBody &iobj_3)
@@ -840,7 +832,7 @@ rigidBody *rigidBody::c_init(GIKSolver *aInstancePtr,
   }
   iobj_3.CollisionsInternal = iobj_1.init(static_cast<double>(0.0));
   iobj_3.matlabCodegenIsDeleted = false;
-  b_default = iobj_0.init(aInstancePtr);
+  b_default = iobj_0.init();
   obj->BodyInternal = &iobj_3;
   obj->TreeInternal = b_default;
   obj->matlabCodegenIsDeleted = false;
@@ -1032,15 +1024,13 @@ rigidBody::rigidBody()
 }
 
 //
-// Arguments    : GIKSolver *aInstancePtr
-//                robotics::manip::internal::b_RigidBodyTree &iobj_0
+// Arguments    : robotics::manip::internal::b_RigidBodyTree &iobj_0
 //                robotics::manip::internal::CollisionSet &iobj_1
 //                rigidBodyJoint &iobj_2
 //                robotics::manip::internal::RigidBody &iobj_3
 // Return Type  : rigidBody *
 //
-rigidBody *rigidBody::d_init(GIKSolver *aInstancePtr,
-                             robotics::manip::internal::b_RigidBodyTree &iobj_0,
+rigidBody *rigidBody::d_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
                              robotics::manip::internal::CollisionSet &iobj_1,
                              rigidBodyJoint &iobj_2,
                              robotics::manip::internal::RigidBody &iobj_3)
@@ -1348,7 +1338,7 @@ rigidBody *rigidBody::d_init(GIKSolver *aInstancePtr,
   }
   iobj_3.CollisionsInternal = iobj_1.init(static_cast<double>(0.0));
   iobj_3.matlabCodegenIsDeleted = false;
-  b_default = iobj_0.init(aInstancePtr);
+  b_default = iobj_0.init();
   obj->BodyInternal = &iobj_3;
   obj->TreeInternal = b_default;
   obj->matlabCodegenIsDeleted = false;
@@ -1539,15 +1529,13 @@ rigidBody::~rigidBody()
 }
 
 //
-// Arguments    : GIKSolver *aInstancePtr
-//                robotics::manip::internal::b_RigidBodyTree &iobj_0
+// Arguments    : robotics::manip::internal::b_RigidBodyTree &iobj_0
 //                robotics::manip::internal::CollisionSet &iobj_1
 //                rigidBodyJoint &iobj_2
 //                robotics::manip::internal::RigidBody &iobj_3
 // Return Type  : rigidBody *
 //
-rigidBody *rigidBody::e_init(GIKSolver *aInstancePtr,
-                             robotics::manip::internal::b_RigidBodyTree &iobj_0,
+rigidBody *rigidBody::e_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
                              robotics::manip::internal::CollisionSet &iobj_1,
                              rigidBodyJoint &iobj_2,
                              robotics::manip::internal::RigidBody &iobj_3)
@@ -1854,7 +1842,7 @@ rigidBody *rigidBody::e_init(GIKSolver *aInstancePtr,
   }
   iobj_3.CollisionsInternal = iobj_1.init(static_cast<double>(0.0));
   iobj_3.matlabCodegenIsDeleted = false;
-  b_default = iobj_0.init(aInstancePtr);
+  b_default = iobj_0.init();
   obj->BodyInternal = &iobj_3;
   obj->TreeInternal = b_default;
   obj->matlabCodegenIsDeleted = false;
@@ -2037,15 +2025,13 @@ void rigidBody::e_set_Mass()
 }
 
 //
-// Arguments    : GIKSolver *aInstancePtr
-//                robotics::manip::internal::b_RigidBodyTree &iobj_0
+// Arguments    : robotics::manip::internal::b_RigidBodyTree &iobj_0
 //                robotics::manip::internal::CollisionSet &iobj_1
 //                rigidBodyJoint &iobj_2
 //                robotics::manip::internal::RigidBody &iobj_3
 // Return Type  : rigidBody *
 //
-rigidBody *rigidBody::f_init(GIKSolver *aInstancePtr,
-                             robotics::manip::internal::b_RigidBodyTree &iobj_0,
+rigidBody *rigidBody::f_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
                              robotics::manip::internal::CollisionSet &iobj_1,
                              rigidBodyJoint &iobj_2,
                              robotics::manip::internal::RigidBody &iobj_3)
@@ -2352,7 +2338,7 @@ rigidBody *rigidBody::f_init(GIKSolver *aInstancePtr,
   }
   iobj_3.CollisionsInternal = iobj_1.init(static_cast<double>(0.0));
   iobj_3.matlabCodegenIsDeleted = false;
-  b_default = iobj_0.init(aInstancePtr);
+  b_default = iobj_0.init();
   obj->BodyInternal = &iobj_3;
   obj->TreeInternal = b_default;
   obj->matlabCodegenIsDeleted = false;
@@ -2535,15 +2521,13 @@ void rigidBody::f_set_Mass()
 }
 
 //
-// Arguments    : GIKSolver *aInstancePtr
-//                robotics::manip::internal::b_RigidBodyTree &iobj_0
+// Arguments    : robotics::manip::internal::b_RigidBodyTree &iobj_0
 //                robotics::manip::internal::CollisionSet &iobj_1
 //                rigidBodyJoint &iobj_2
 //                robotics::manip::internal::RigidBody &iobj_3
 // Return Type  : rigidBody *
 //
-rigidBody *rigidBody::g_init(GIKSolver *aInstancePtr,
-                             robotics::manip::internal::b_RigidBodyTree &iobj_0,
+rigidBody *rigidBody::g_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
                              robotics::manip::internal::CollisionSet &iobj_1,
                              rigidBodyJoint &iobj_2,
                              robotics::manip::internal::RigidBody &iobj_3)
@@ -2850,7 +2834,7 @@ rigidBody *rigidBody::g_init(GIKSolver *aInstancePtr,
   }
   iobj_3.CollisionsInternal = iobj_1.init(static_cast<double>(0.0));
   iobj_3.matlabCodegenIsDeleted = false;
-  b_default = iobj_0.init(aInstancePtr);
+  b_default = iobj_0.init();
   obj->BodyInternal = &iobj_3;
   obj->TreeInternal = b_default;
   obj->matlabCodegenIsDeleted = false;
@@ -3033,15 +3017,13 @@ void rigidBody::g_set_Mass()
 }
 
 //
-// Arguments    : GIKSolver *aInstancePtr
-//                robotics::manip::internal::b_RigidBodyTree &iobj_0
+// Arguments    : robotics::manip::internal::b_RigidBodyTree &iobj_0
 //                robotics::manip::internal::CollisionSet &iobj_1
 //                rigidBodyJoint &iobj_2
 //                robotics::manip::internal::RigidBody &iobj_3
 // Return Type  : rigidBody *
 //
-rigidBody *rigidBody::h_init(GIKSolver *aInstancePtr,
-                             robotics::manip::internal::b_RigidBodyTree &iobj_0,
+rigidBody *rigidBody::h_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
                              robotics::manip::internal::CollisionSet &iobj_1,
                              rigidBodyJoint &iobj_2,
                              robotics::manip::internal::RigidBody &iobj_3)
@@ -3348,7 +3330,7 @@ rigidBody *rigidBody::h_init(GIKSolver *aInstancePtr,
   }
   iobj_3.CollisionsInternal = iobj_1.init(static_cast<double>(0.0));
   iobj_3.matlabCodegenIsDeleted = false;
-  b_default = iobj_0.init(aInstancePtr);
+  b_default = iobj_0.init();
   obj->BodyInternal = &iobj_3;
   obj->TreeInternal = b_default;
   obj->matlabCodegenIsDeleted = false;
@@ -3531,15 +3513,13 @@ void rigidBody::h_set_Mass()
 }
 
 //
-// Arguments    : GIKSolver *aInstancePtr
-//                robotics::manip::internal::b_RigidBodyTree &iobj_0
+// Arguments    : robotics::manip::internal::b_RigidBodyTree &iobj_0
 //                robotics::manip::internal::CollisionSet &iobj_1
 //                rigidBodyJoint &iobj_2
 //                robotics::manip::internal::RigidBody &iobj_3
 // Return Type  : rigidBody *
 //
-rigidBody *rigidBody::i_init(GIKSolver *aInstancePtr,
-                             robotics::manip::internal::b_RigidBodyTree &iobj_0,
+rigidBody *rigidBody::i_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
                              robotics::manip::internal::CollisionSet &iobj_1,
                              rigidBodyJoint &iobj_2,
                              robotics::manip::internal::RigidBody &iobj_3)
@@ -3846,7 +3826,7 @@ rigidBody *rigidBody::i_init(GIKSolver *aInstancePtr,
   }
   iobj_3.CollisionsInternal = iobj_1.init(static_cast<double>(0.0));
   iobj_3.matlabCodegenIsDeleted = false;
-  b_default = iobj_0.init(aInstancePtr);
+  b_default = iobj_0.init();
   obj->BodyInternal = &iobj_3;
   obj->TreeInternal = b_default;
   obj->matlabCodegenIsDeleted = false;
@@ -4029,15 +4009,13 @@ void rigidBody::i_set_Mass()
 }
 
 //
-// Arguments    : GIKSolver *aInstancePtr
-//                robotics::manip::internal::b_RigidBodyTree &iobj_0
+// Arguments    : robotics::manip::internal::b_RigidBodyTree &iobj_0
 //                robotics::manip::internal::CollisionSet &iobj_1
 //                rigidBodyJoint &iobj_2
 //                robotics::manip::internal::RigidBody &iobj_3
 // Return Type  : rigidBody *
 //
-rigidBody *rigidBody::init(GIKSolver *aInstancePtr,
-                           robotics::manip::internal::b_RigidBodyTree &iobj_0,
+rigidBody *rigidBody::init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
                            robotics::manip::internal::CollisionSet &iobj_1,
                            rigidBodyJoint &iobj_2,
                            robotics::manip::internal::RigidBody &iobj_3)
@@ -4344,7 +4322,7 @@ rigidBody *rigidBody::init(GIKSolver *aInstancePtr,
   }
   iobj_3.CollisionsInternal = iobj_1.init(static_cast<double>(0.0));
   iobj_3.matlabCodegenIsDeleted = false;
-  b_default = iobj_0.init(aInstancePtr);
+  b_default = iobj_0.init();
   obj->BodyInternal = &iobj_3;
   obj->TreeInternal = b_default;
   obj->matlabCodegenIsDeleted = false;
@@ -4352,15 +4330,13 @@ rigidBody *rigidBody::init(GIKSolver *aInstancePtr,
 }
 
 //
-// Arguments    : GIKSolver *aInstancePtr
-//                robotics::manip::internal::b_RigidBodyTree &iobj_0
+// Arguments    : robotics::manip::internal::b_RigidBodyTree &iobj_0
 //                robotics::manip::internal::CollisionSet &iobj_1
 //                rigidBodyJoint &iobj_2
 //                robotics::manip::internal::RigidBody &iobj_3
 // Return Type  : rigidBody *
 //
-rigidBody *rigidBody::j_init(GIKSolver *aInstancePtr,
-                             robotics::manip::internal::b_RigidBodyTree &iobj_0,
+rigidBody *rigidBody::j_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
                              robotics::manip::internal::CollisionSet &iobj_1,
                              rigidBodyJoint &iobj_2,
                              robotics::manip::internal::RigidBody &iobj_3)
@@ -4667,7 +4643,7 @@ rigidBody *rigidBody::j_init(GIKSolver *aInstancePtr,
   }
   iobj_3.CollisionsInternal = iobj_1.init(static_cast<double>(0.0));
   iobj_3.matlabCodegenIsDeleted = false;
-  b_default = iobj_0.init(aInstancePtr);
+  b_default = iobj_0.init();
   obj->BodyInternal = &iobj_3;
   obj->TreeInternal = b_default;
   obj->matlabCodegenIsDeleted = false;
@@ -4850,15 +4826,13 @@ void rigidBody::j_set_Mass()
 }
 
 //
-// Arguments    : GIKSolver *aInstancePtr
-//                robotics::manip::internal::b_RigidBodyTree &iobj_0
+// Arguments    : robotics::manip::internal::b_RigidBodyTree &iobj_0
 //                robotics::manip::internal::CollisionSet &iobj_1
 //                rigidBodyJoint &iobj_2
 //                robotics::manip::internal::RigidBody &iobj_3
 // Return Type  : rigidBody *
 //
-rigidBody *rigidBody::k_init(GIKSolver *aInstancePtr,
-                             robotics::manip::internal::b_RigidBodyTree &iobj_0,
+rigidBody *rigidBody::k_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
                              robotics::manip::internal::CollisionSet &iobj_1,
                              rigidBodyJoint &iobj_2,
                              robotics::manip::internal::RigidBody &iobj_3)
@@ -5166,7 +5140,7 @@ rigidBody *rigidBody::k_init(GIKSolver *aInstancePtr,
   }
   iobj_3.CollisionsInternal = iobj_1.init(static_cast<double>(0.0));
   iobj_3.matlabCodegenIsDeleted = false;
-  b_default = iobj_0.init(aInstancePtr);
+  b_default = iobj_0.init();
   obj->BodyInternal = &iobj_3;
   obj->TreeInternal = b_default;
   obj->matlabCodegenIsDeleted = false;
@@ -5357,7 +5331,6 @@ void rigidBody::set_Mass()
 }
 
 } // namespace coder
-} // namespace gik9dof
 
 //
 // File trailer for rigidBody1.cpp
