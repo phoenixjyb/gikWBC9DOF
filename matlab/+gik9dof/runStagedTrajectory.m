@@ -42,6 +42,22 @@ arguments
     options.StageBMode (1,1) string {mustBeMember(options.StageBMode, ["gikInLoop","pureHyb"])} = "gikInLoop"
     options.StageBDockingPositionTolerance (1,1) double {mustBeNonnegative} = 0.02
     options.StageBDockingYawTolerance (1,1) double {mustBeNonnegative} = 2*pi/180
+    options.ExecutionMode (1,1) string {mustBeMember(options.ExecutionMode, ["pureIk","ppForIk"])} = "ppForIk"
+    options.StageCLookaheadDistance (1,1) double {mustBePositive} = 0.4
+    options.StageCLookaheadVelGain (1,1) double {mustBeNonnegative} = 0.2
+    options.StageCLookaheadTimeGain (1,1) double {mustBeNonnegative} = 0.05
+    options.StageCDesiredLinearVelocity (1,1) double = 1.0
+    options.StageCMaxLinearSpeed (1,1) double {mustBePositive} = 1.5
+    options.StageCMinLinearSpeed (1,1) double = -1.0
+    options.StageCMaxAngularVelocity (1,1) double {mustBePositive} = 2.0
+    options.StageCTrackWidth (1,1) double {mustBePositive} = 0.674
+    options.StageCWheelBase (1,1) double {mustBePositive} = 0.36
+    options.StageCMaxWheelSpeed (1,1) double {mustBePositive} = 2.0
+    options.StageCWaypointSpacing (1,1) double {mustBePositive} = 0.15
+    options.StageCPathBufferSize (1,1) double {mustBePositive} = 30.0
+    options.StageCGoalTolerance (1,1) double {mustBePositive} = 0.05
+    options.StageCInterpSpacing (1,1) double {mustBePositive} = 0.05
+    options.StageCReverseEnabled (1,1) logical = true
     options.MaxIterations (1,1) double {mustBePositive} = 1500
 end
 
@@ -117,50 +133,19 @@ trajC = trajStruct;
 logC = struct();
 
 if ~isempty(trajC.Poses)
-    bundleC_ref = gik9dof.createGikSolver(robot, ...
-        'DistanceSpecs', options.DistanceSpecs, ...
-        'MaxIterations', options.MaxIterations);
-
-    logC_ref = gik9dof.runTrajectoryControl(bundleC_ref, trajC, ...
-        'InitialConfiguration', qB_end, ...
-        'RateHz', options.RateHz, ...
-        'CommandFcn', options.CommandFcn, ...
-        'Verbose', options.Verbose, ...
-        'VelocityLimits', velLimits);
-
-    baseReferenceTail = logC_ref.qTraj(baseIdx, 2:end).';
-    baseReference = [qB_end(baseIdx).'; baseReferenceTail];
-    followerParams = struct('LookaheadBase', 0.8, 'LookaheadVelGain', 0.3, ...
-        'LookaheadTimeGain', 0.1, 'VxNominal', 1.0, 'VxMax', 1.5, ...
-        'VxMin', -1.0, 'WzMax', 2.0, 'TrackWidth', 0.674, 'WheelBase', 0.36, ...
-        'MaxWheelSpeed', 2.0, 'WaypointSpacing', 0.15, 'PathBufferSize', 30.0, ...
-        'GoalTolerance', 0.2, 'InterpSpacing', 0.05, 'ReverseEnabled', true);
-
-    simRes = gik9dof.control.simulatePurePursuitExecution(baseReference, ...
-        'SampleTime', 1/options.RateHz, 'FollowerOptions', followerParams);
-
-    bundleC = gik9dof.createGikSolver(robot, ...
-        'DistanceSpecs', options.DistanceSpecs, ...
-        'MaxIterations', options.MaxIterations);
-
-    executedBase = simRes.poses(2:end, :); % drop initial state
-    fixedTrajectory = struct('Indices', baseIdx, 'Values', executedBase');
-    logC = gik9dof.runTrajectoryControl(bundleC, trajC, ...
-        'InitialConfiguration', qB_end, ...
-        'RateHz', options.RateHz, ...
-        'CommandFcn', options.CommandFcn, ...
-        'Verbose', options.Verbose, ...
-        'VelocityLimits', velLimits, ...
-        'FixedJointTrajectory', fixedTrajectory);
-
-    logC.purePursuit.referencePath = baseReference;
-    logC.purePursuit.simulation = simRes;
-    logC.purePursuit.executedPath = executedBase;
-    logC.purePursuit.sampleTime = 1/options.RateHz;
-    logC.referenceInitialIk = logC_ref;
+    switch options.ExecutionMode
+        case "ppForIk"
+            logC = executeStageCPurePursuit(robot, trajC, qB_end, baseIdx, armIdx, velLimits, options);
+        case "pureIk"
+            logC = executeStageCPureIk(robot, trajC, qB_end, baseIdx, velLimits, options);
+        otherwise
+            error('gik9dof:runStagedTrajectory:UnsupportedExecutionMode', ...
+                'Unknown execution mode "%s".', string(options.ExecutionMode));
+    end
 else
     % No remaining waypoints; synthesise empty log
     logC = emptyLog(robot, qB_end, options.RateHz);
+    logC.simulationMode = options.ExecutionMode;
 end
 
 %% Combine logs
@@ -172,6 +157,7 @@ pipeline.rateHz = options.RateHz;
 pipeline.referenceTrajectory = trajStruct;
 pipeline.environment = options.EnvironmentConfig;
 pipeline.stageBMode = stageBMode;
+pipeline.simulationMode = options.ExecutionMode;
 if isfield(stageBResult, 'goalBase')
     pipeline.stageBGoal = stageBResult.goalBase;
 end
@@ -188,6 +174,26 @@ function result = executeStageBGikInLoop(robot, eeName, qStart, baseIdx, armIdx,
 cmdLogPP = [];
 stageBStates = [];
 goalBase = [];
+simResStageB = [];
+plannerReference = [];
+dt = 1 / options.RateHz;
+followerParams = struct( ...
+    'SampleTime', dt, ...
+    'LookaheadBase', options.StageBLookaheadDistance, ...
+    'LookaheadVelGain', 0.0, ...
+    'LookaheadTimeGain', 0.0, ...
+    'VxNominal', options.StageBDesiredLinearVelocity, ...
+    'VxMax', options.StageBMaxLinearSpeed, ...
+    'VxMin', -options.StageBMaxLinearSpeed, ...
+    'WzMax', options.StageBMaxAngularVelocity, ...
+    'TrackWidth', 0.674, ...
+    'WheelBase', 0.36, ...
+    'MaxWheelSpeed', options.StageBMaxLinearSpeed + 0.5, ...
+    'WaypointSpacing', 0.15, ...
+    'PathBufferSize', 30.0, ...
+    'GoalTolerance', options.StageBDockingPositionTolerance + 0.05, ...
+    'InterpSpacing', 0.05, ...
+    'ReverseEnabled', false);
 
 if options.UseStageBHybridAStar
     try
@@ -205,16 +211,33 @@ if options.UseStageBHybridAStar
     end
 
     if ~isempty(plannerStates)
-        dt = 1 / options.RateHz;
-        [statesPP, cmdLogPP] = simulatePurePursuit(plannerStates, qStart(baseIdx), dt, options);
-        if isempty(statesPP)
+        plannerReference = plannerStates;
+        simResStageB = gik9dof.control.simulatePurePursuitExecution(plannerStates, ...
+            'SampleTime', dt, 'FollowerOptions', followerParams);
+        if ~isempty(simResStageB.commands)
+            timeCommand = (0:size(simResStageB.commands,1)-1)' * dt;
+            cmdLogPP = [timeCommand, simResStageB.commands];
+        else
+            cmdLogPP = zeros(0,3);
+        end
+
+        posesPP = simResStageB.poses;
+        if size(posesPP,1) >= 1
+            posesPP(1,:) = qStart(baseIdx).';
+        end
+        if size(posesPP,1) >= 2
+            stageBStates = posesPP(2:end, :);
+        else
+            stageBStates = zeros(0,3);
+        end
+
+        if isempty(stageBStates)
             warning('gik9dof:runStagedTrajectory:PurePursuitEmpty', ...
                 'Pure pursuit integration returned no states; reverting to interpolation trajectory.');
             stageBStates = [];
             cmdLogPP = [];
             stageBPoses = generateStagePoses(stageBStartPose, targetPose, nSamples, 'base');
         else
-            stageBStates = statesPP;
             stageBPoses = statesToEndEffectorPoses(robot, qStart, baseIdx, stageBStates, eeName);
         end
     else
@@ -265,6 +288,13 @@ else
         'VariableNames', {'time','Vx','Wz'});
 end
 
+if ~isempty(simResStageB) && ~isempty(plannerReference)
+    logB.purePursuit.referencePath = plannerReference;
+    logB.purePursuit.simulation = simResStageB;
+    logB.purePursuit.executedPath = simResStageB.poses;
+    logB.purePursuit.sampleTime = dt;
+end
+
 result = struct();
 result.log = logB;
 result.qFinal = qFinal;
@@ -272,6 +302,9 @@ result.pathStates = baseStates;
 result.goalBase = goalBase;
 result.achievedBase = achievedBase;
 result.mode = "gikInLoop";
+if isfield(logB, 'purePursuit')
+    result.purePursuit = logB.purePursuit;
+end
 end
 
 function result = executeStageBPureHyb(robot, eeName, qStart, baseIdx, ~, targetPose, nSamples, ~, options)
@@ -303,20 +336,46 @@ if isempty(plannerStates)
 end
 
 dt = 1 / options.RateHz;
-[statesPP, cmdLogPP] = simulatePurePursuit(plannerStates, qStart(baseIdx), dt, options);
+followerParams = struct( ...
+    'SampleTime', dt, ...
+    'LookaheadBase', options.StageBLookaheadDistance, ...
+    'LookaheadVelGain', 0.0, ...
+    'LookaheadTimeGain', 0.0, ...
+    'VxNominal', options.StageBDesiredLinearVelocity, ...
+    'VxMax', options.StageBMaxLinearSpeed, ...
+    'VxMin', -options.StageBMaxLinearSpeed, ...
+    'WzMax', options.StageBMaxAngularVelocity, ...
+    'TrackWidth', 0.674, ...
+    'WheelBase', 0.36, ...
+    'MaxWheelSpeed', options.StageBMaxLinearSpeed + 0.5, ...
+    'WaypointSpacing', 0.15, ...
+    'PathBufferSize', 30.0, ...
+    'GoalTolerance', options.StageBDockingPositionTolerance + 0.05, ...
+    'InterpSpacing', 0.05, ...
+    'ReverseEnabled', false);
 
-if isempty(statesPP)
-    if size(plannerStates,1) > 1
-        statesPP = plannerStates(2:end, :);
-        numSteps = size(statesPP,1);
-        cmdLogPP = [(0:numSteps-1)' * dt, zeros(numSteps,2)];
+simRes = gik9dof.control.simulatePurePursuitExecution(plannerStates, ...
+    'SampleTime', dt, 'FollowerOptions', followerParams);
+
+baseStates = simRes.poses;
+if isempty(baseStates)
+    if size(plannerStates,1) > 0
+        baseStates = plannerStates;
     else
-        statesPP = zeros(0, 3);
-        cmdLogPP = zeros(0, 3);
+        baseStates = qStart(baseIdx).';
     end
 end
+if size(baseStates,1) >= 1
+    baseStates(1,:) = qStart(baseIdx).';
+end
 
-baseStates = assembleBaseStateSequence(qStart(baseIdx).', statesPP);
+cmdLogPP = [];
+if isfield(simRes, 'commands') && ~isempty(simRes.commands)
+    timeCommand = (0:size(simRes.commands,1)-1)' * dt;
+    cmdLogPP = [timeCommand, simRes.commands];
+else
+    cmdLogPP = zeros(0,3);
+end
 
 qTraj = repmat(qStart, 1, size(baseStates,1));
 for k = 1:size(baseStates,1)
@@ -342,6 +401,11 @@ else
         'VariableNames', {'time','Vx','Wz'});
 end
 
+logB.purePursuit.referencePath = plannerStates;
+logB.purePursuit.simulation = simRes;
+logB.purePursuit.executedPath = executedStates;
+logB.purePursuit.sampleTime = dt;
+
 result = struct();
 result.log = logB;
 result.qFinal = qTraj(:, end);
@@ -350,6 +414,113 @@ result.goalBase = goalBase;
 result.achievedBase = baseStates(end, :);
 result.mode = "pureHyb";
 result.cmdLog = logB.cmdLog;
+result.purePursuit = logB.purePursuit;
+end
+
+function logC = executeStageCPurePursuit(robot, trajStruct, qStart, baseIdx, armIdx, velLimits, options)
+%EXECUTESTAGECPUREPURSUIT Track Stage C using pure pursuit driven chassis.
+eeName = trajStruct.EndEffectorName;
+dt = 1 / options.RateHz;
+
+% First pass: GIK reference used as pure pursuit path seed.
+bundleRef = gik9dof.createGikSolver(robot, ...
+    'DistanceSpecs', options.DistanceSpecs, ...
+    'MaxIterations', options.MaxIterations);
+
+logRef = gik9dof.runTrajectoryControl(bundleRef, trajStruct, ...
+    'InitialConfiguration', qStart, ...
+    'RateHz', options.RateHz, ...
+    'CommandFcn', options.CommandFcn, ...
+    'Verbose', options.Verbose, ...
+    'VelocityLimits', velLimits);
+
+baseReferenceTail = logRef.qTraj(baseIdx, 2:end).';
+baseReference = [qStart(baseIdx).'; baseReferenceTail];
+
+% Pure pursuit integration honouring chassis constraints.
+followerOptions = struct( ...
+    'SampleTime', dt, ...
+    'LookaheadBase', options.StageCLookaheadDistance, ...
+    'LookaheadVelGain', options.StageCLookaheadVelGain, ...
+    'LookaheadTimeGain', options.StageCLookaheadTimeGain, ...
+    'VxNominal', options.StageCDesiredLinearVelocity, ...
+    'VxMax', options.StageCMaxLinearSpeed, ...
+    'VxMin', options.StageCMinLinearSpeed, ...
+    'WzMax', options.StageCMaxAngularVelocity, ...
+    'TrackWidth', options.StageCTrackWidth, ...
+    'WheelBase', options.StageCWheelBase, ...
+    'MaxWheelSpeed', options.StageCMaxWheelSpeed, ...
+    'WaypointSpacing', options.StageCWaypointSpacing, ...
+    'PathBufferSize', options.StageCPathBufferSize, ...
+    'GoalTolerance', options.StageCGoalTolerance, ...
+    'InterpSpacing', options.StageCInterpSpacing, ...
+    'ReverseEnabled', options.StageCReverseEnabled);
+
+simRes = gik9dof.control.simulatePurePursuitExecution(baseReference, ...
+    'SampleTime', dt, 'FollowerOptions', followerOptions);
+
+posesPP = simRes.poses;
+if ~isempty(posesPP)
+    posesPP(1,:) = qStart(baseIdx).';
+end
+executedBase = posesPP(2:end, :);
+
+% Second pass: execute GIK with chassis locked to executed path.
+bundle = gik9dof.createGikSolver(robot, ...
+    'DistanceSpecs', options.DistanceSpecs, ...
+    'MaxIterations', options.MaxIterations);
+
+fixedTrajectory = struct('Indices', baseIdx, 'Values', executedBase');
+logC = gik9dof.runTrajectoryControl(bundle, trajStruct, ...
+    'InitialConfiguration', qStart, ...
+    'RateHz', options.RateHz, ...
+    'CommandFcn', options.CommandFcn, ...
+    'Verbose', options.Verbose, ...
+    'VelocityLimits', velLimits, ...
+    'FixedJointTrajectory', fixedTrajectory);
+
+% Attach pure pursuit artefacts and command logs.
+logC.purePursuit.referencePath = baseReference;
+logC.purePursuit.executedPath = executedBase;
+logC.purePursuit.sampleTime = dt;
+logC.purePursuit.commands = simRes.commands;
+logC.purePursuit.wheelSpeeds = simRes.wheelSpeeds;
+logC.purePursuit.status = simRes.status;
+logC.purePursuit.simulation = simRes;
+logC.referenceInitialIk = logRef;
+logC.referenceBaseStates = baseReference;
+logC.execBaseStates = posesPP;
+logC.simulationMode = "ppForIk";
+
+if ~isempty(simRes.commands)
+    timeCommand = (0:size(simRes.commands,1)-1)' * dt;
+    logC.cmdLog = table(timeCommand, simRes.commands(:,1), simRes.commands(:,2), ...
+        'VariableNames', {'time','Vx','Wz'});
+else
+    logC.cmdLog = table('Size', [0 3], 'VariableTypes', {'double','double','double'}, ...
+        'VariableNames', {'time','Vx','Wz'});
+end
+end
+
+function logC = executeStageCPureIk(robot, trajStruct, qStart, baseIdx, velLimits, options)
+%EXECUTESTAGECPUREIK Track Stage C using pure IK output only.
+bundle = gik9dof.createGikSolver(robot, ...
+    'DistanceSpecs', options.DistanceSpecs, ...
+    'MaxIterations', options.MaxIterations);
+
+logC = gik9dof.runTrajectoryControl(bundle, trajStruct, ...
+    'InitialConfiguration', qStart, ...
+    'RateHz', options.RateHz, ...
+    'CommandFcn', options.CommandFcn, ...
+    'Verbose', options.Verbose, ...
+    'VelocityLimits', velLimits);
+
+logC.simulationMode = "pureIk";
+baseStates = logC.qTraj(baseIdx, :).';
+logC.execBaseStates = baseStates;
+logC.referenceBaseStates = baseStates;
+logC.cmdLog = table('Size', [0 3], 'VariableTypes', {'double','double','double'}, ...
+    'VariableNames', {'time','Vx','Wz'});
 end
 
 function [goalBase, goalInfo] = computeStageBGoalBase(robot, qStart, baseIdx, targetPose, eeName, maxIterations)
@@ -838,53 +1009,4 @@ for k = 1:nStates
     q(baseIdx) = states(k, :).';
     poses(:,:,k) = getTransform(robot, q, eeName);
 end
-end
-
-function [statesOut, cmdLog] = simulatePurePursuit(pathStates, baseStart, dt, options)
-%SIMULATEPUREPURSUIT Follow planner states with pure pursuit integration.
-follower = gik9dof.control.purePursuitFollower(pathStates, ...
-    'SampleTime', dt, ...
-    'LookaheadBase', options.StageBLookaheadDistance, ...
-    'LookaheadVelGain', 0.0, ...
-    'LookaheadTimeGain', 0.0, ...
-    'VxNominal', options.StageBDesiredLinearVelocity, ...
-    'VxMax', options.StageBMaxLinearSpeed, ...
-    'VxMin', -options.StageBMaxLinearSpeed, ...
-    'WzMax', options.StageBMaxAngularVelocity, ...
-    'TrackWidth', 0.674, ...
-    'WheelBase', 0.36, ...
-    'MaxWheelSpeed', options.StageBMaxLinearSpeed + 0.5, ...
-    'WaypointSpacing', 0.15, ...
-    'PathBufferSize', 30.0, ...
-    'GoalTolerance', options.StageBDockingPositionTolerance + 0.05, ...
-    'InterpSpacing', 0.05, ...
-    'ReverseEnabled', false);
-
-pose = baseStart(:)';
-statesOut = pose;
-cmdLog = zeros(0,3);
-
-maxSteps = max(ceil(size(pathStates,1) * 2), 50);
-for step = 0:maxSteps
-    [v, w, status] = follower.step(pose, dt);
-    cmdLog(end+1, :) = [step*dt, v, w]; %#ok<AGROW>
-
-    pose = propagatePose(pose, v, w, dt);
-    statesOut(end+1, :) = pose; %#ok<AGROW>
-
-    if status.isFinished
-        break
-    end
-end
-
-% remove duplicated initial row
-statesOut = statesOut(2:end, :);
-cmdLog(:,1) = (0:size(cmdLog,1)-1).' * dt;
-end
-
-function poseNext = propagatePose(pose, vx, wz, dt)
-poseNext = pose;
-poseNext(1) = pose(1) + vx * cos(pose(3)) * dt;
-poseNext(2) = pose(2) + vx * sin(pose(3)) * dt;
-poseNext(3) = wrapToPi(pose(3) + wz * dt);
 end

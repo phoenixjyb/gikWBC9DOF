@@ -45,7 +45,13 @@ if ~isempty(opts.ExportVideo)
 end
 
 helperOptions = opts.HelperOptions;
-if isfield(logStaged, 'targetPositions') && ~isempty(logStaged.targetPositions)
+if isfield(logStaged, 'purePursuit') && isfield(logStaged.purePursuit, 'referencePath') && ...
+        ~isempty(logStaged.purePursuit.referencePath)
+    refPath = logStaged.purePursuit.referencePath;
+    if size(refPath,2) >= 2
+        helperOptions.TargetPath = refPath(:,1:3);
+    end
+elseif isfield(logStaged, 'targetPositions') && ~isempty(logStaged.targetPositions)
     helperOptions.TargetPath = logStaged.targetPositions.';
 end
 

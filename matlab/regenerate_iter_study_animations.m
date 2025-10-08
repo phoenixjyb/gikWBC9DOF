@@ -43,8 +43,6 @@ if isempty(logFiles)
 end
 
 robotColumn = gik9dof.createRobotModel();
-robotStruct = copy(robotColumn);
-robotStruct.DataFormat = 'struct';
 configTools = gik9dof.configurationTools(robotColumn);
 jointNames = string(configTools.templateJointNames());
 baseIdx = [find(jointNames == 'joint_x', 1), ...
@@ -59,8 +57,8 @@ armIdx = find(armMask);
 armJointNames = cellstr(jointNames(armIdx));
 
 outputs = repmat(struct('Mode', "", 'IterationCap', NaN, ...
-    'LogPath', "", 'VideoPath', "", 'PurePursuitVideoPath', "", ...
-    'PurePursuitCommands', ""), numel(logFiles), 1);
+    'LogPath', "", 'VideoPath', "", 'PurePursuitVideoPath', {strings(0,1)}, ...
+    'PurePursuitCommands', {strings(0,1)}), numel(logFiles), 1);
 
 for k = 1:numel(logFiles)
     logPath = fullfile(logFiles(k).folder, logFiles(k).name);
@@ -97,19 +95,6 @@ for k = 1:numel(logFiles)
 
     basePathFull = qTraj(baseIdx, :).';
     baseTimesFull = timeVec;
-    armTrajectory = qTraj(armIdx, :).';
-    armTimes = timeVec;
-    baseTrajectory = basePathFull;
-    baseTimes = baseTimesFull;
-
-    eeName = "left_gripper_link";
-    eePath = zeros(numSamples, 3);
-    for n = 1:numSamples
-        qFrame = configTools.column(qTraj(:, n));
-        T = getTransform(robotColumn, qFrame, eeName);
-        eePath(n, :) = tform2trvec(T);
-    end
-
     mode = extractBetween(string(logFiles(k).name), 'log_', '_iter');
     if isempty(mode)
         mode = "unknown";
@@ -152,19 +137,6 @@ for k = 1:numel(logFiles)
         end
     end
 
-    sampleIdx = 1:options.SampleStep:numSamples;
-    armTrajectory = armTrajectory(sampleIdx, :);
-    armTimes = armTimes(sampleIdx);
-    baseTrajectory = baseTrajectory(sampleIdx, :);
-    baseTimes = baseTimes(sampleIdx);
-    eePath = eePath(sampleIdx, :);
-    if ~isempty(stageBounds)
-        stageBounds = ceil(stageBounds / options.SampleStep);
-        stageBounds(stageBounds < 1) = 1;
-        stageBounds(stageBounds > size(armTrajectory,1)) = size(armTrajectory,1);
-        stageBounds = unique(stageBounds);
-    end
-
     videoName = sprintf('anim_wholebody_%s_iter%s.mp4', modeLabel, iterLabel);
     videoPath = fullfile(resultsDir, videoName);
 
@@ -181,19 +153,14 @@ for k = 1:numel(logFiles)
         end
     end
 
-    pureVideoPath = "";
-    pureCmdPath = "";
+    pureCmdPaths = strings(0,1);
+    pureVideoPaths = strings(0,1);
 
     try
-        gik9dof.viz.animate_whole_body(robotStruct, armJointNames, armTrajectory, armTimes, ...
-            baseTrajectory, baseTimes, eePath, ...
-            'VideoFile', videoPath, ...
-            'VideoFrameRate', options.VideoFrameRate, ...
-            'StageLabels', stageLabels, ...
-            'StageBoundaries', stageBounds, ...
-            'FigureScale', options.FigureScale, ...
-            'TargetPath', eePath, ...
-            'Obstacles', obstacles);
+        renderWholeBodyAnimation(log, robotColumn, armJointNames, armIdx, baseIdx, videoPath, ...
+            'StageLabels', stageLabels, 'StageBoundaries', stageBounds, ...
+            'SampleStep', options.SampleStep, 'VideoFrameRate', options.VideoFrameRate, ...
+            'FigureScale', options.FigureScale, 'Obstacles', obstacles);
     catch animErr
         warning('regenerate_iter_study_animations:RenderFailed', ...
             'Failed to render %s: %s', logFiles(k).name, animErr.message);
@@ -201,51 +168,85 @@ for k = 1:numel(logFiles)
     end
 
     if options.CreatePurePursuitVideo
-        followerOpts = struct('SampleTime', sampleTime, ...
-            'LookaheadBase', 0.8, ...
-            'LookaheadVelGain', 0.3, ...
-            'LookaheadTimeGain', 0.1, ...
-            'VxNominal', 1.0, ...
-            'VxMax', 1.5, ...
-            'VxMin', -1.0, ...
-            'WzMax', 2.0, ...
-            'TrackWidth', 0.674, ...
-            'WheelBase', 0.36, ...
-            'MaxWheelSpeed', 2.0, ...
-            'WaypointSpacing', 0.15, ...
-            'PathBufferSize', 30.0, ...
-            'GoalTolerance', 0.2, ...
-            'InterpSpacing', 0.05, ...
-            'ReverseEnabled', true);
+        ppJobs = struct('Label', {}, 'Log', {}, 'Pure', {}, 'StageLabels', {}, 'StageBoundaries', {});
 
-        simRes = gik9dof.control.simulatePurePursuitExecution(basePathFull, ...
-            'SampleTime', sampleTime, 'FollowerOptions', followerOpts);
-
-        pureVideoName = sprintf('anim_purepursuit_%s_iter%s.mp4', modeLabel, iterLabel);
-        pureVideoPath = fullfile(resultsDir, pureVideoName);
-        try
-            gik9dof.viz.animatePurePursuitSimulation(basePathFull, basePathFull, simRes, obstacles, ...
-                'VideoFile', pureVideoPath, 'FrameRate', options.VideoFrameRate, ...
-                'FigureScale', options.FigureScale);
-        catch simAnimErr
-            warning('regenerate_iter_study_animations:PurePursuitRenderFailed', ...
-                'Failed to render pure pursuit animation for %s: %s', logFiles(k).name, simAnimErr.message);
-            pureVideoPath = "";
+        if isfield(log, 'purePursuit') && ~isempty(log.purePursuit)
+            ppJobs(end+1) = struct('Label', modeLabel, 'Log', log, ...
+                'Pure', log.purePursuit, 'StageLabels', stageLabels, ...
+                'StageBoundaries', stageBounds); %#ok<AGROW>
         end
 
-        pureCmdName = sprintf('purepursuit_cmd_%s_iter%s.csv', modeLabel, iterLabel);
-        pureCmdPath = fullfile(resultsDir, pureCmdName);
-        timeCommand = (0:size(simRes.commands,1)-1)' * sampleTime;
-        cmdTable = [timeCommand, simRes.commands];
-        writematrix(cmdTable, pureCmdPath);
+        if isfield(log, 'stageLogs') && isstruct(log.stageLogs)
+            stageNames = fieldnames(log.stageLogs);
+            for si = 1:numel(stageNames)
+                stageLog = log.stageLogs.(stageNames{si});
+                if isfield(stageLog, 'purePursuit') && ~isempty(stageLog.purePursuit)
+                    stageLabel = string(stageNames{si});
+                    ppJobs(end+1) = struct('Label', stageLabel, ...
+                        'Log', stageLog, 'Pure', stageLog.purePursuit, ...
+                        'StageLabels', string(prettyStageLabel(stageLabel)), ...
+                        'StageBoundaries', []); %#ok<AGROW>
+                end
+            end
+        end
+
+        for jobIdx = 1:numel(ppJobs)
+            job = ppJobs(jobIdx);
+            ppData = job.Pure;
+
+            if ~isfield(ppData, 'simulation') || ~isfield(ppData.simulation, 'poses') || isempty(ppData.simulation.poses)
+                continue
+            end
+
+            sampleTimePP = getfieldwithdefault(ppData, 'sampleTime', []);
+            if isempty(sampleTimePP) || ~isfinite(sampleTimePP) || sampleTimePP <= 0
+                rateHzJob = getfieldwithdefault(job.Log, 'rateHz', getfieldwithdefault(log, 'rateHz', 25));
+                if ~isfinite(rateHzJob) || rateHzJob <= 0
+                    sampleTimePP = 0.1;
+                else
+                    sampleTimePP = 1 / rateHzJob;
+                end
+            end
+
+            executedPath = ppData.simulation.poses;
+            if isfield(ppData, 'referencePath') && ~isempty(ppData.referencePath)
+                executedPath(1,:) = ppData.referencePath(1,:);
+            end
+            baseTimesPP = (0:size(executedPath,1)-1)' * sampleTimePP;
+
+            stageSlug = makeStageSlug(job.Label);
+            videoNamePP = sprintf('anim_wholebody_%s_purepursuit_%s_iter%s.mp4', stageSlug, modeLabel, iterLabel);
+            videoPathPP = fullfile(resultsDir, videoNamePP);
+
+            try
+                renderWholeBodyAnimation(job.Log, robotColumn, armJointNames, armIdx, baseIdx, videoPathPP, ...
+                    'StageLabels', job.StageLabels, 'StageBoundaries', job.StageBoundaries, ...
+                    'SampleStep', options.SampleStep, 'VideoFrameRate', options.VideoFrameRate, ...
+                    'FigureScale', options.FigureScale, 'BaseOverride', executedPath, ...
+                    'BaseTimesOverride', baseTimesPP, 'Obstacles', obstacles);
+                pureVideoPaths(end+1,1) = videoPathPP;
+            catch simAnimErr
+                warning('regenerate_iter_study_animations:PurePursuitRenderFailed', ...
+                    'Failed to render pure pursuit animation for %s (%s): %s', ...
+                    logFiles(k).name, stageSlug, simAnimErr.message);
+            end
+
+            if isfield(ppData.simulation, 'commands') && ~isempty(ppData.simulation.commands)
+                cmdNamePP = sprintf('purepursuit_cmd_%s_%s_iter%s.csv', stageSlug, modeLabel, iterLabel);
+                cmdPathPP = fullfile(resultsDir, cmdNamePP);
+                cmdTablePP = [baseTimesPP, ppData.simulation.commands];
+                writematrix(cmdTablePP, cmdPathPP);
+                pureCmdPaths(end+1,1) = cmdPathPP;
+            end
+        end
     end
 
     outputs(k).Mode = modeLabel;
     outputs(k).IterationCap = iterVal;
     outputs(k).LogPath = logPath;
     outputs(k).VideoPath = videoPath;
-    outputs(k).PurePursuitVideoPath = pureVideoPath;
-    outputs(k).PurePursuitCommands = pureCmdPath;
+    outputs(k).PurePursuitVideoPath = pureVideoPaths;
+    outputs(k).PurePursuitCommands = pureCmdPaths;
 end
 
 if nargout == 0
@@ -258,5 +259,63 @@ if isstruct(s) && isfield(s, fieldName)
     val = s.(fieldName);
 else
     val = defaultValue;
+end
+end
+
+function label = prettyStageLabel(stageName)
+stageStr = string(stageName);
+if strlength(stageStr) == 0
+    label = "Stage";
+    return
+end
+
+stageStr = strtrim(stageStr);
+lowerStage = lower(stageStr);
+if startsWith(lowerStage, "stage")
+    suffix = extractAfter(stageStr, strlength("stage"));
+    if strlength(suffix) == 0
+        label = "Stage";
+    else
+        suffixText = regexprep(char(suffix), '([A-Z])', ' $1');
+        suffixText = regexprep(suffixText, '_', ' ');
+        suffixText = strtrim(suffixText);
+        if isempty(suffixText)
+            suffixText = char(suffix);
+        end
+        if ~isempty(suffixText)
+            suffixText(1) = upper(suffixText(1));
+            if numel(suffixText) > 1
+                suffixText(2:end) = lower(suffixText(2:end));
+            end
+        end
+        label = "Stage " + string(suffixText);
+    end
+else
+    text = regexprep(char(stageStr), '([A-Z])', ' $1');
+    text = regexprep(text, '_', ' ');
+    text = regexprep(text, '\s+', ' ');
+    text = strtrim(text);
+    if isempty(text)
+        text = char(stageStr);
+    end
+    if ~isempty(text)
+        text(1) = upper(text(1));
+        if numel(text) > 1
+            text(2:end) = lower(text(2:end));
+        end
+    end
+    label = string(text);
+end
+end
+
+function slug = makeStageSlug(stageName)
+labelStr = char(string(stageName));
+labelStr = lower(strtrim(labelStr));
+labelStr = regexprep(labelStr, '\s+', '_');
+labelStr = regexprep(labelStr, '[^a-z0-9_]', '');
+if isempty(labelStr)
+    slug = "full";
+else
+    slug = string(labelStr);
 end
 end
