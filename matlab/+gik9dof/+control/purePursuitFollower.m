@@ -35,9 +35,9 @@ classdef purePursuitFollower < handle
 
     properties
         SampleTime (1,1) double {mustBePositive} = 0.1
-        LookaheadBase (1,1) double {mustBePositive} = 0.8
-        LookaheadVelGain (1,1) double {mustBeNonnegative} = 0.3
-        LookaheadTimeGain (1,1) double {mustBeNonnegative} = 0.1
+        LookaheadBase (1,1) double {mustBePositive} = 0.4
+        LookaheadVelGain (1,1) double {mustBeNonnegative} = 0.2
+        LookaheadTimeGain (1,1) double {mustBeNonnegative} = 0.05
         VxNominal (1,1) double = 1.0
         VxMax (1,1) double {mustBePositive} = 1.5
         VxMin (1,1) double = -1.0
@@ -47,7 +47,7 @@ classdef purePursuitFollower < handle
         MaxWheelSpeed (1,1) double {mustBePositive} = 2.0
         WaypointSpacing (1,1) double {mustBePositive} = 0.15
         PathBufferSize (1,1) double {mustBePositive} = 30.0
-        GoalTolerance (1,1) double {mustBePositive} = 0.2
+        GoalTolerance (1,1) double {mustBePositive} = 0.05
         InterpSpacing (1,1) double {mustBePositive} = 0.05
         ReverseEnabled (1,1) logical = true
     end

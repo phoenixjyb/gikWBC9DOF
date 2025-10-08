@@ -1,0 +1,36 @@
+%RUN_ENVIRONMENT_COMPARE Entry point for holistic vs staged regression runs.
+%   Adjust the configuration block below as needed. The script adds the
+%   MATLAB utilities to the path, invokes gik9dof.runEnvironmentCompare, and
+%   stores the returned summary alongside the generated artifacts.
+
+runLabel = "compare";            % appended to the timestamped results folder
+sampleStep = 4;                  % subsampling for animations
+frameRate = 20;                  % animation frame rate (Hz)
+figureScale = 0.5;               % visualization scale factor
+rateHz = 50;                     % control loop rate used for both runs
+holisticMode = "ppForIk";        % holistic execution mode: "ppForIk" or "pureIk"
+stagedMode = "ppForIk";          % staged execution mode: "ppForIk" or "pureIk"
+useStageBHybridAStar = true;     % toggle Stage B hybrid A* for staged run
+stageBMode = "pureHyb";          % staged pipeline base-alignment mode
+maxIterations = 1500;            % solver iteration cap for both runs
+
+scriptDir = fileparts(mfilename("fullpath"));
+addpath(genpath(fullfile(scriptDir, "matlab")));
+
+summary = gik9dof.runEnvironmentCompare( ...
+    "RunLabel", runLabel, ...
+    "SampleStep", sampleStep, ...
+    "FrameRate", frameRate, ...
+    "FigureScale", figureScale, ...
+    "RateHz", rateHz, ...
+    "MaxIterations", maxIterations, ...
+    "HolisticExecutionMode", holisticMode, ...
+    "StagedExecutionMode", stagedMode, ...
+    "UseStageBHybridAStar", useStageBHybridAStar, ...
+    "StageBMode", stageBMode);
+
+summaryPath = fullfile(summary.resultsDir, "summary.mat");
+save(summaryPath, "summary");
+
+fprintf("\nAll artifacts saved in %s\n", summary.resultsDir);
+fprintf("Summary stored at %s\n", summaryPath);
