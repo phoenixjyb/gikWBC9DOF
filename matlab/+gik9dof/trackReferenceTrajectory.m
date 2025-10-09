@@ -20,6 +20,10 @@ function log = trackReferenceTrajectory(options)
 %                             @(q, info, idx).
 %       EnableAiming        - Logical flag, when true reuses the reference
 %                             positions as aim targets (default false).
+%       StageBReedsSheppParams - Struct overrides for Stage B RS smoothing
+%                                (see gik9dof.control.defaultReedsSheppParams).
+%       StageBHybridResolution / MotionPrimitiveLength default to 0.05 m /
+%       0.20 m for dense Hybrid A* primitive sampling.
 %
 %   Example:
 %       log = gik9dof.trackReferenceTrajectory();
@@ -45,12 +49,14 @@ arguments
     options.RampMaxYawRate (1,1) double = 3.0
     options.RampMaxJointSpeed (1,1) double = 1.0
     options.UseStageBHybridAStar (1,1) logical = false
-    options.StageBHybridResolution (1,1) double = 0.1
+    options.StageBHybridResolution (1,1) double = 0.05
     options.StageBHybridSafetyMargin (1,1) double = 0.15
     options.StageBHybridMinTurningRadius (1,1) double = 0.5
-    options.StageBHybridMotionPrimitiveLength (1,1) double = 0.5
+    options.StageBHybridMotionPrimitiveLength (1,1) double = 0.2
     options.StageBUseReedsShepp (1,1) logical = false
-    options.StageBReedsSheppNumSamples (1,1) double {mustBePositive} = 50
+    options.StageBReedsSheppParams struct = gik9dof.control.defaultReedsSheppParams()
+    options.StageBUseClothoid (1,1) logical = false
+    options.StageBClothoidParams struct = struct()
     options.StageBLookaheadDistance (1,1) double {mustBePositive} = 0.6
     options.StageBDesiredLinearVelocity (1,1) double = 0.6
     options.StageBMaxAngularVelocity (1,1) double {mustBePositive} = 2.5
@@ -377,7 +383,9 @@ switch options.Mode
             'StageBHybridMinTurningRadius', stageTurningRadius, ...
             'StageBHybridMotionPrimitiveLength', options.StageBHybridMotionPrimitiveLength, ...
             'StageBUseReedsShepp', options.StageBUseReedsShepp, ...
-            'StageBReedsSheppNumSamples', options.StageBReedsSheppNumSamples, ...
+            'StageBReedsSheppParams', options.StageBReedsSheppParams, ...
+            'StageBUseClothoid', options.StageBUseClothoid, ...
+            'StageBClothoidParams', options.StageBClothoidParams, ...
             'StageBMaxLinearSpeed', options.RampMaxLinearSpeed, ...
             'StageBMaxYawRate', options.RampMaxYawRate, ...
             'StageBMaxJointSpeed', options.RampMaxJointSpeed, ...

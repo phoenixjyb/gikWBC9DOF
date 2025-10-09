@@ -16,6 +16,10 @@ function result = runStagedReference(options)
 %       StageBLookaheadDistance        - Override Stage B lookahead (default 0.6 m).
 %       StageBDesiredLinearVelocity    - Stage B nominal linear velocity (default 0.5 m/s).
 %       StageBMaxAngularVelocity       - Stage B max yaw rate (default 2.0 rad/s).
+%       StageBReedsSheppParams         - Struct of RS shortcut params (see
+%                                        gik9dof.control.defaultReedsSheppParams).
+%       StageBHybridResolution / MotionPrimitiveLength default to 0.05 m /
+%       0.20 m for denser Hybrid A* primitives.
 %       SaveLog          - Save MAT file (default true).
 %
 arguments
@@ -32,12 +36,14 @@ arguments
     options.StageBLookaheadDistance (1,1) double {mustBePositive} = 0.6
     options.StageBDesiredLinearVelocity (1,1) double = 0.5
     options.StageBMaxAngularVelocity (1,1) double {mustBePositive} = 2.0
-    options.StageBHybridResolution (1,1) double = 0.1
+    options.StageBHybridResolution (1,1) double = 0.05
     options.StageBHybridSafetyMargin (1,1) double = 0.15
     options.StageBHybridMinTurningRadius (1,1) double = 0.5
-    options.StageBHybridMotionPrimitiveLength (1,1) double = 0.5
+    options.StageBHybridMotionPrimitiveLength (1,1) double = 0.2
     options.StageBUseReedsShepp (1,1) logical = false
-    options.StageBReedsSheppNumSamples (1,1) double {mustBePositive} = 50
+    options.StageBReedsSheppParams struct = gik9dof.control.defaultReedsSheppParams()
+    options.StageBUseClothoid (1,1) logical = false
+    options.StageBClothoidParams struct = struct()
     options.ChassisProfile (1,1) string = "wide_track"
     options.ChassisOverrides struct = struct()
     options.SaveLog (1,1) logical = true
@@ -75,7 +81,9 @@ log = gik9dof.trackReferenceTrajectory( ...
     'StageBHybridMinTurningRadius', options.StageBHybridMinTurningRadius, ...
     'StageBHybridMotionPrimitiveLength', options.StageBHybridMotionPrimitiveLength, ...
     'StageBUseReedsShepp', options.StageBUseReedsShepp, ...
-    'StageBReedsSheppNumSamples', options.StageBReedsSheppNumSamples, ...
+    'StageBReedsSheppParams', options.StageBReedsSheppParams, ...
+    'StageBUseClothoid', options.StageBUseClothoid, ...
+    'StageBClothoidParams', options.StageBClothoidParams, ...
     'StageBDockingPositionTolerance', env.StageBDockingPositionTolerance, ...
     'StageBDockingYawTolerance', env.StageBDockingYawTolerance, ...
     'DistanceMargin', env.DistanceMargin, ...

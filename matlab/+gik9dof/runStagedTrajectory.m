@@ -15,6 +15,10 @@ function pipeline = runStagedTrajectory(robot, trajStruct, options)
 %       RateHz              - Control loop rate (default 100).
 %       Verbose             - Verbosity flag (default false).
 %       DistanceWeight      - Weight used when DistanceSpecs empty (default 0.5).
+%       StageBReedsSheppParams - Struct controlling Stage B RS shortcutting
+%                                (see gik9dof.control.defaultReedsSheppParams).
+%       StageBHybridResolution/StageBHybridMotionPrimitiveLength default to
+%       0.05 m and 0.2 m respectively to provide dense Hybrid A* primitives.
 %
 arguments
     robot (1,1) rigidBodyTree
@@ -28,12 +32,14 @@ arguments
     options.CommandFcn = []
     options.FloorDiscs struct = struct([])
     options.UseStageBHybridAStar (1,1) logical = false
-    options.StageBHybridResolution (1,1) double = 0.1
+    options.StageBHybridResolution (1,1) double = 0.05
     options.StageBHybridSafetyMargin (1,1) double = 0.15
     options.StageBHybridMinTurningRadius (1,1) double = 0.5
-    options.StageBHybridMotionPrimitiveLength (1,1) double = 0.5
+    options.StageBHybridMotionPrimitiveLength (1,1) double = 0.2
     options.StageBUseReedsShepp (1,1) logical = false
-    options.StageBReedsSheppNumSamples (1,1) double {mustBePositive} = 50
+    options.StageBReedsSheppParams struct = gik9dof.control.defaultReedsSheppParams()
+    options.StageBUseClothoid (1,1) logical = false
+    options.StageBClothoidParams struct = struct()
     options.StageBMaxLinearSpeed (1,1) double = 1.5
     options.StageBMaxYawRate (1,1) double = 3.0
     options.StageBMaxJointSpeed (1,1) double = 1.0
@@ -184,6 +190,9 @@ pipeline.preStageCAlignment = alignmentInfo;
 if isfield(stageBResult, 'goalBase')
     pipeline.stageBGoal = stageBResult.goalBase;
 end
+if isfield(stageBResult, 'planner')
+    pipeline.stageBPlanner = stageBResult.planner;
+end
 end
 
 function lockJointBounds(jointConstraint, indices, values)
@@ -199,6 +208,7 @@ stageBStates = [];
 goalBase = [];
 simResStageB = [];
 plannerReference = [];
+plannerInfo = struct();
 dt = 1 / options.RateHz;
 
 chassisStageB = chassisParams;
@@ -220,7 +230,7 @@ followerOptions = struct( ...
 
 if options.UseStageBHybridAStar
     try
-        [plannerStates, plannerGoalBase] = planStageBHybridAStarPath(qStart, baseIdx, targetPose, options, robot, eeName, options.FloorDiscs);
+        [plannerStates, plannerGoalBase, plannerInfo] = planStageBHybridAStarPath(qStart, baseIdx, targetPose, options, robot, eeName, options.FloorDiscs);
         goalBase = plannerGoalBase;
     catch plannerErr
         if ~isempty(plannerErr.stack)
@@ -231,6 +241,7 @@ if options.UseStageBHybridAStar
         warning('gik9dof:runStagedTrajectory:HybridAStarFailed', ...
             'Stage B hybrid A* failed (%s at %s); falling back to interpolation.', plannerErr.message, origin);
         plannerStates = [];
+        plannerInfo = struct();
     end
 
     if ~isempty(plannerStates)
@@ -324,6 +335,7 @@ if ~isempty(simResStageB) && ~isempty(plannerReference)
     logB.purePursuit.sampleTime = dt;
     logB.purePursuit.chassisParams = chassisStageB;
 end
+logB.planner = plannerInfo;
 
 result = struct();
 result.log = logB;
@@ -335,6 +347,7 @@ result.mode = "gikInLoop";
 if isfield(logB, 'purePursuit')
     result.purePursuit = logB.purePursuit;
 end
+result.planner = plannerInfo;
 end
 
 function result = executeStageBPureHyb(robot, eeName, qStart, baseIdx, ~, targetPose, nSamples, ~, chassisParams, options)
@@ -343,9 +356,10 @@ function result = executeStageBPureHyb(robot, eeName, qStart, baseIdx, ~, target
 [goalBase, ~] = computeStageBGoalBase(robot, qStart, baseIdx, targetPose, eeName, options.MaxIterations);
 
 plannerStates = [];
+plannerInfo = struct();
 if options.UseStageBHybridAStar
     try
-    [plannerStates, plannerGoalBase] = planStageBHybridAStarPath(qStart, baseIdx, targetPose, options, robot, eeName, options.FloorDiscs);
+    [plannerStates, plannerGoalBase, plannerInfo] = planStageBHybridAStarPath(qStart, baseIdx, targetPose, options, robot, eeName, options.FloorDiscs);
         if ~isempty(plannerGoalBase)
             goalBase = plannerGoalBase;
         end
@@ -358,6 +372,7 @@ if options.UseStageBHybridAStar
         warning('gik9dof:runStagedTrajectory:HybridAStarFailed', ...
             'Stage B hybrid A* failed (%s at %s); falling back to interpolation.', plannerErr.message, origin);
         plannerStates = [];
+        plannerInfo = struct();
     end
 end
 
@@ -447,6 +462,7 @@ logB.purePursuit.simulation = simRes;
 logB.purePursuit.executedPath = executedStates;
 logB.purePursuit.sampleTime = dt;
 logB.purePursuit.chassisParams = chassisStageB;
+logB.planner = plannerInfo;
 
 result = struct();
 result.log = logB;
@@ -457,6 +473,7 @@ result.achievedBase = baseStates(end, :);
 result.mode = "pureHyb";
 result.cmdLog = logB.cmdLog;
 result.purePursuit = logB.purePursuit;
+result.planner = plannerInfo;
 end
 
 function logC = executeStageCPurePursuit(robot, trajStruct, qStart, baseIdx, armIdx, velLimits, chassisParams, alignmentInfo, options)
@@ -990,10 +1007,23 @@ combined.orientationErrorAngle = orientationErrorAngle;
 combined.time = time;
 end
 
-function [states, goalBase] = planStageBHybridAStarPath(qStart, baseIdx, targetPose, options, robot, eeName, floorDiscs)
+function [states, goalBase, plannerInfo] = planStageBHybridAStarPath(qStart, baseIdx, targetPose, options, robot, eeName, floorDiscs)
 %PLANSTAGEBHYBRIDASTARPATH Plan a base trajectory using Hybrid A*.
 startBase = reshape(qStart(baseIdx), 1, []);
 [goalBase, ~] = computeStageBGoalBase(robot, qStart, baseIdx, targetPose, eeName, options.MaxIterations);
+
+plannerInfo = struct( ...
+    'statesRaw', [], ...
+    'statesDensified', [], ...
+    'statesRefined', [], ...
+    'statesClothoid', [], ...
+    'rsMetrics', struct(), ...
+    'rsSmoothing', struct(), ...
+    'rsParamsBase', struct(), ...
+    'rsParamsApplied', struct(), ...
+    'rsParamsFinal', struct(), ...
+    'hcSmoothing', struct(), ...
+    'hcParamsApplied', struct());
 
 resolution = options.StageBHybridResolution;
 safetyMargin = options.StageBHybridSafetyMargin;
@@ -1041,6 +1071,7 @@ if isempty(statesRaw)
     error("gik9dof:runStagedTrajectory:HybridAStarEmpty", ...
         "Hybrid A* returned an empty path.");
 end
+plannerInfo.statesRaw = statesRaw;
 
 rateHz = options.RateHz;
 if isempty(rateHz) || ~isscalar(rateHz) || rateHz <= 0
@@ -1049,12 +1080,116 @@ end
 maxLinearStep = options.StageBMaxLinearSpeed / rateHz;
 maxYawStep = options.StageBMaxYawRate / rateHz;
 
-states = densifyHybridStates(statesRaw, maxLinearStep, maxYawStep);
+statesDensified = densifyHybridStates(statesRaw, maxLinearStep, maxYawStep);
+plannerInfo.statesDensified = statesDensified;
 
-if isfield(options, "StageBUseReedsShepp") && options.StageBUseReedsShepp
-    states = smoothStageBWithReedsShepp(states, options.StageBHybridMinTurningRadius, options.StageBReedsSheppNumSamples);
-    states = densifyHybridStates(states, maxLinearStep, maxYawStep);
+rsInfo = struct();
+statesRefined = statesDensified;
+
+rsDefaultsCommon = gik9dof.control.defaultReedsSheppParams();
+rsParamsBase = mergeStructs(rsDefaultsCommon, struct( ...
+    'Rmin', options.StageBHybridMinTurningRadius, ...
+    'inflationRadius', options.StageBHybridSafetyMargin));
+if isfield(options, "StageBReedsSheppParams") && ~isempty(options.StageBReedsSheppParams)
+    rsParamsBase = mergeStructs(rsParamsBase, options.StageBReedsSheppParams);
 end
+
+rsBaseLambdaCusp = getStructFieldOrDefault(rsParamsBase, 'lambdaCusp', 1.0);
+plannerInfo.rsParamsBase = rsParamsBase;
+plannerInfo.rsParamsApplied = struct();
+plannerInfo.rsParamsFinal = rsParamsBase;
+
+useReedsShepp = isfield(options, "StageBUseReedsShepp") && options.StageBUseReedsShepp;
+
+if useReedsShepp
+    rsParams = rsParamsBase;
+    if rsParams.Rmin <= 0
+        rsParams.Rmin = options.StageBHybridMinTurningRadius;
+    end
+    if rsParams.inflationRadius < 0
+        rsParams.inflationRadius = options.StageBHybridSafetyMargin;
+    end
+
+    mapData = occupancyMatrix(occMap);
+    [statesRS, rsInfo] = gik9dof.control.rsRefinePath(mapData, occMap.Resolution, statesDensified, rsParams);
+    statesRefined = densifyHybridStates(statesRS, maxLinearStep, maxYawStep);
+    plannerInfo.rsParamsApplied = rsParams;
+    plannerInfo.rsParamsFinal = struct( ...
+        'Rmin', rsParams.Rmin, ...
+        'reverseCost', getStructFieldOrDefault(rsParams, 'reverseCost', getStructFieldOrDefault(rsParamsBase, 'reverseCost', 2.0)), ...
+        'lambdaCusp', getStructFieldOrDefault(rsParams, 'lambdaCusp', rsBaseLambdaCusp));
+
+    if isfield(options, "Verbose") && options.Verbose
+        improvements = getStructFieldOrDefault(rsInfo, 'improvements', int32(0));
+        executed = getStructFieldOrDefault(rsInfo, 'iterationsExecuted', int32(0));
+        fprintf("[Stage B][RS] shortcuts accepted %d/%d (requested %d)\n", ...
+            double(improvements), double(executed), double(getStructFieldOrDefault(rsInfo, 'iterationsPlanned', int32(0))));
+    end
+else
+    plannerInfo.rsParamsApplied = struct();
+    plannerInfo.rsParamsFinal = rsParamsBase;
+end
+
+connMetrics = reedsSheppConnection('MinTurningRadius', max(plannerInfo.rsParamsFinal.Rmin, eps));
+connMetrics.ReverseCost = plannerInfo.rsParamsFinal.reverseCost;
+
+metricsRaw = computeReedsSheppMetrics(connMetrics, statesRaw, plannerInfo.rsParamsFinal.lambdaCusp);
+metricsDensified = computeReedsSheppMetrics(connMetrics, statesDensified, plannerInfo.rsParamsFinal.lambdaCusp);
+metricsRefined = computeReedsSheppMetrics(connMetrics, statesRefined, plannerInfo.rsParamsFinal.lambdaCusp);
+
+statesClothoid = statesRefined;
+pathLengthRefinedEuclid = sum(vecnorm(diff(statesRefined(:,1:2).'), 2, 1));
+hcInfo = struct( ...
+    'applied', false, ...
+    'segmentCount', int32(0), ...
+    'fittedSegments', int32(0), ...
+    'gearChanges', int32(0), ...
+    'pathLengthOriginal', pathLengthRefinedEuclid, ...
+    'pathLengthSmoothed', pathLengthRefinedEuclid, ...
+    'maxCurvature', 0.0, ...
+    'discretizationDistance', 0.0, ...
+    'segmentBounds', zeros(0,2), ...
+    'params', struct());
+plannerInfo.hcParamsApplied = struct();
+
+useClothoid = isfield(options, "StageBUseClothoid") && options.StageBUseClothoid;
+if useClothoid
+    hcDefaults = struct( ...
+        'discretizationDistance', 0.05, ...
+        'maxNumWaypoints', int32(0));
+    hcParamsUser = struct();
+    if isfield(options, "StageBClothoidParams") && ~isempty(options.StageBClothoidParams)
+        hcParamsUser = options.StageBClothoidParams;
+    end
+    hcParams = mergeStructs(hcDefaults, hcParamsUser);
+    [statesHC, hcInfo] = gik9dof.control.rsClothoidRefine(statesRefined, hcParams);
+    if ~isempty(statesHC)
+        statesClothoid = densifyHybridStates(statesHC, maxLinearStep, maxYawStep);
+    end
+    plannerInfo.hcParamsApplied = hcParams;
+end
+
+metricsClothoid = computeReedsSheppMetrics(connMetrics, statesClothoid, plannerInfo.rsParamsFinal.lambdaCusp);
+
+plannerInfo.rsMetrics = struct('raw', metricsRaw, 'densified', metricsDensified, 'refined', metricsRefined, 'clothoid', metricsClothoid);
+plannerInfo.statesRefined = statesRefined;
+plannerInfo.statesClothoid = statesClothoid;
+plannerInfo.rsSmoothing = rsInfo;
+plannerInfo.hcSmoothing = hcInfo;
+
+if useReedsShepp && isfield(options, "Verbose") && options.Verbose
+    deltaLength = metricsRefined.length - metricsDensified.length;
+    fprintf("[Stage B][RS] length %.2fm -> %.2fm (Δ%.2fm), cusps %d -> %d\n", ...
+        metricsDensified.length, metricsRefined.length, deltaLength, ...
+        metricsDensified.cusps, metricsRefined.cusps);
+end
+if useClothoid && isfield(options, "Verbose") && options.Verbose
+    deltaLengthHC = metricsClothoid.length - metricsRefined.length;
+    fprintf("[Stage B][HC] length %.2fm -> %.2fm (Δ%.2fm)\n", ...
+        metricsRefined.length, metricsClothoid.length, deltaLengthHC);
+end
+
+states = statesClothoid;
 end
 
 function statesOut = smoothStageBWithReedsShepp(statesIn, minTurningRadius, numSamples)
@@ -1337,5 +1472,104 @@ q = qTemplate;
 for k = 1:nStates
     q(baseIdx) = states(k, :).';
     poses(:,:,k) = getTransform(robot, q, eeName);
+end
+end
+
+function metrics = computeReedsSheppMetrics(conn, pathStates, lambdaCusp)
+%COMPUTEREEDSSHEPPMETRICS Evaluate length and cusp cost for a pose sequence.
+if nargin < 3 || isempty(lambdaCusp)
+    lambdaCusp = 0.0;
+end
+
+metrics = struct('length', 0.0, 'cusps', 0, 'cost', 0.0, 'segments', int32(0));
+
+if isempty(pathStates) || size(pathStates,1) < 2
+    return
+end
+
+lengthSum = 0.0;
+cuspSum = 0;
+segmentCount = int32(0);
+
+for idx = 1:(size(pathStates,1)-1)
+    seg = bestReedsSheppConnection(conn, pathStates(idx,:), pathStates(idx+1,:));
+    if isempty(seg)
+        delta = pathStates(idx+1,1:2) - pathStates(idx,1:2);
+        lengthSum = lengthSum + hypot(delta(1), delta(2));
+        continue
+    end
+    lengthSum = lengthSum + seg.Length;
+    cuspSum = cuspSum + countReedsSheppCusps(seg);
+    segmentCount = segmentCount + 1;
+end
+
+metrics.length = lengthSum;
+metrics.cusps = cuspSum;
+metrics.cost = lengthSum + lambdaCusp * double(cuspSum);
+metrics.segments = segmentCount;
+end
+
+function seg = bestReedsSheppConnection(conn, poseA, poseB)
+%BESTREEDSSHEPPCONNECTION Safely select the shortest RS connection.
+seg = [];
+try
+    [segments, costs] = connect(conn, poseA, poseB);
+catch
+    segments = {};
+    costs = [];
+end
+if isempty(segments)
+    return
+end
+[~, idx] = min(costs);
+seg = segments{idx};
+end
+
+function c = countReedsSheppCusps(seg)
+%COUNTREEDSSHEPPCUSPS Count gear changes in an RS segment.
+dirs = seg.MotionDirections(:).';
+types = seg.MotionTypes;
+validCount = 0;
+for t = 1:numel(types)
+    if types{t} ~= "N"
+        validCount = validCount + 1;
+    end
+end
+dirs = dirs(1:max(1, validCount));
+if numel(dirs) < 2
+    c = 0;
+else
+    c = sum(abs(diff(sign(dirs))) > 0);
+end
+end
+
+function value = getStructFieldOrDefault(s, fieldName, defaultValue)
+%GETSTRUCTFIELDORDEFAULT Return struct field value or default when missing.
+if isempty(s) || ~isstruct(s) || ~isfield(s, fieldName)
+    value = defaultValue;
+    return
+end
+fieldValue = s.(fieldName);
+if isempty(fieldValue)
+    value = defaultValue;
+else
+    value = fieldValue;
+end
+end
+
+function out = mergeStructs(a, b)
+%MERGESTRUCTS Simple shallow merge where fields in b override fields in a.
+if nargin < 1 || isempty(a)
+    a = struct();
+end
+if nargin < 2 || isempty(b)
+    out = a;
+    return
+end
+out = a;
+fieldsB = fieldnames(b);
+for idx = 1:numel(fieldsB)
+    key = fieldsB{idx};
+    out.(key) = b.(key);
 end
 end
