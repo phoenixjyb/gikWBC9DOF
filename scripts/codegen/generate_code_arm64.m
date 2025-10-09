@@ -1,9 +1,10 @@
 %% generate_code_arm64.m
 % Wrapper script for ARM64 code generation
-% This is at project root to avoid package namespace issues
+% This is in scripts/codegen/ directory
 
 %% Configuration
-projectRoot = fileparts(mfilename('fullpath'));
+scriptDir = fileparts(mfilename('fullpath'));
+projectRoot = fileparts(fileparts(scriptDir));  % Go up two levels: scripts/codegen -> scripts -> root
 addpath(genpath(fullfile(projectRoot, 'matlab')));
 
 CODEGEN_OUTPUT = fullfile(projectRoot, 'codegen', 'arm64_realtime');

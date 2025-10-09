@@ -33,8 +33,8 @@ if isempty(solver)
         'ConstraintInputs', constraintInputs, ...
         'SolverAlgorithm', 'LevenbergMarquardt');
     
-    % Configure solver parameters for validation testing
-    solver.SolverParameters.MaxTime = 10.0;  % 10 seconds - generous for validation
+    % Configure solver parameters for real-time Orin deployment
+    solver.SolverParameters.MaxTime = 0.05;  % 50ms - real-time constraint for Jetson Orin
     solver.SolverParameters.MaxIterations = 1000;  % Increased from 50 for better convergence
     solver.SolverParameters.AllowRandomRestart = false;
     solver.SolverParameters.SolutionTolerance = 1e-6;
