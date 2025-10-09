@@ -42,7 +42,7 @@ arguments
     options.StageBReedsSheppParams struct = gik9dof.control.defaultReedsSheppParams()
     options.StageBUseClothoid (1,1) logical = false
     options.StageBClothoidParams struct = struct()
-    options.StageBChassisControllerMode (1,1) double {mustBeMember(options.StageBChassisControllerMode, [0 1 2])} = 2
+    options.StageBChassisControllerMode (1,1) double {mustBeMember(options.StageBChassisControllerMode, [-1 0 1 2])} = -1
     options.StageBMaxLinearSpeed (1,1) double = 1.5
     options.StageBMaxYawRate (1,1) double = 3.0
     options.StageBMaxJointSpeed (1,1) double = 1.0
@@ -71,7 +71,7 @@ arguments
     options.StageCGoalTolerance (1,1) double {mustBePositive} = 0.05
     options.StageCInterpSpacing (1,1) double {mustBePositive} = 0.05
     options.StageCReverseEnabled (1,1) logical = true
-    options.StageCChassisControllerMode (1,1) double {mustBeMember(options.StageCChassisControllerMode, [0 1 2])} = 2
+    options.StageCChassisControllerMode (1,1) double {mustBeMember(options.StageCChassisControllerMode, [-1 0 1 2])} = -1
     options.StageCUseBaseRefinement (1,1) logical = true
     options.MaxIterations (1,1) double {mustBePositive} = 1500
 end
@@ -97,6 +97,11 @@ velLimits = struct('BaseIndices', baseIdx, ...
 chassisParams = gik9dof.control.loadChassisProfile(options.ChassisProfile, ...
     "Overrides", options.ChassisOverrides);
 chassisParams.reverse_enabled = chassisParams.reverse_enabled | strcmpi(options.StageBMode, "purehyb");
+
+options.StageBChassisControllerMode = resolveChassisControllerMode( ...
+    options.StageBChassisControllerMode, chassisParams, "stageB_controller_mode");
+options.StageCChassisControllerMode = resolveChassisControllerMode( ...
+    options.StageCChassisControllerMode, chassisParams, "stageC_controller_mode");
 
 % Extract first desired pose
 TrefAll = trajStruct.Poses;
@@ -1756,6 +1761,34 @@ poses(:,1) = interp1(arc, pathStates(:,1), sSamples, 'linear');
 poses(:,2) = interp1(arc, pathStates(:,2), sSamples, 'linear');
 yaw = unwrap(pathStates(:,3));
 poses(:,3) = wrapToPi(interp1(arc, yaw, sSamples, 'linear'));
+end
+
+function modeOut = resolveChassisControllerMode(modeIn, chassisParams, fieldName)
+%RESOLVECHASSISCONTROLLERMODE Resolve sentinel controller mode using profile.
+if nargin < 3 || isempty(fieldName)
+    fieldName = "";
+end
+
+if isempty(modeIn) || modeIn == -1
+    profileMode = 2;
+    if ~isempty(fieldName) && isfield(chassisParams, fieldName)
+        profileMode = double(chassisParams.(fieldName));
+    elseif isfield(chassisParams, 'controller_mode')
+        profileMode = double(chassisParams.controller_mode);
+    end
+    modeOut = clampControllerMode(profileMode);
+else
+    modeOut = clampControllerMode(modeIn);
+end
+end
+
+function mode = clampControllerMode(val)
+validModes = [0 1 2];
+if any(val == validModes)
+    mode = val;
+else
+    mode = 2;
+end
 end
 
 function out = mergeStructs(a, b)

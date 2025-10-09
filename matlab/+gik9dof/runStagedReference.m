@@ -22,8 +22,10 @@ function result = runStagedReference(options)
 %       0.20 m for denser Hybrid A* primitives.
 %       StageCUseBaseRefinement - Run RS/clothoid smoothing on Stage C base
 %                                 ribbon prior to pure pursuit (default true).
-%       StageBChassisControllerMode - 0 legacy diff, 1 heading, 2 pure pursuit.
-%       StageCChassisControllerMode - 0 legacy diff, 1 heading, 2 pure pursuit.
+%       StageBChassisControllerMode - 0 legacy diff, 1 heading, 2 pure pursuit,
+%                                     -1 = take from chassis profile.
+%       StageCChassisControllerMode - 0 legacy diff, 1 heading, 2 pure pursuit,
+%                                     -1 = take from chassis profile.
 %       SaveLog          - Save MAT file (default true).
 %
 arguments
@@ -49,8 +51,8 @@ arguments
     options.StageBUseClothoid (1,1) logical = false
     options.StageBClothoidParams struct = struct()
     options.StageCUseBaseRefinement (1,1) logical = true
-    options.StageBChassisControllerMode (1,1) double {mustBeMember(options.StageBChassisControllerMode, [0 1 2])} = 2
-    options.StageCChassisControllerMode (1,1) double {mustBeMember(options.StageCChassisControllerMode, [0 1 2])} = 2
+    options.StageBChassisControllerMode (1,1) double {mustBeMember(options.StageBChassisControllerMode, [-1 0 1 2])} = -1
+    options.StageCChassisControllerMode (1,1) double {mustBeMember(options.StageCChassisControllerMode, [-1 0 1 2])} = -1
     options.ChassisProfile (1,1) string = "wide_track"
     options.ChassisOverrides struct = struct()
     options.SaveLog (1,1) logical = true

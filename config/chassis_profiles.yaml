@@ -1,7 +1,7 @@
 # Chassis parameter presets for pure pursuit and unified control.
 profiles:
   wide_track:
-    track: 0.573                # m
+    track: 0.576                # m (measured track width)
     wheel_base: 0.36            # m
     wheel_speed_max: 3.3        # m/s per wheel (firmware clip 3.5)
     vx_max: 1.5                 # m/s forward cap
@@ -22,32 +22,8 @@ profiles:
     interp_spacing_min: 0.05    # m
     interp_spacing_max: 0.20    # m
     discontinuity_threshold: 0.35 # m
+    stageB_controller_mode: 2
+    stageC_controller_mode: 2
     curvature_slowdown:
       kappa_threshold: 0.9      # 1/m
       vx_reduction: 0.6         # scale applied when curvature high
-
-  compact_track:
-    track: 0.329
-    wheel_base: 0.36
-    wheel_speed_max: 3.3
-    vx_max: 1.0
-    vx_min: -0.3
-    wz_max: 2.8
-    accel_limit: 1.0
-    decel_limit: 1.4
-    jerk_limit: 4.0
-    lookahead_base: 0.45
-    lookahead_vel_gain: 0.25
-    lookahead_time_gain: 0.05
-    heading_kp: 1.4
-    heading_ki: 0.0
-    heading_kd: 0.12
-    feedforward_gain: 0.85
-    goal_tolerance: 0.08
-    reverse_enabled: false
-    interp_spacing_min: 0.04
-    interp_spacing_max: 0.15
-    discontinuity_threshold: 0.30
-    curvature_slowdown:
-      kappa_threshold: 1.1
-      vx_reduction: 0.55

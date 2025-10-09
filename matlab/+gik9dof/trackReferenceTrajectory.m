@@ -27,7 +27,8 @@ function log = trackReferenceTrajectory(options)
 %       StageCUseBaseRefinement - Smooth Stage C base ribbon with RS + clothoid
 %                                before executing pure pursuit (default true).
 %       StageBChassisControllerMode/StageCChassisControllerMode select the
-%       velocity controller (0 legacy diff, 1 heading, 2 pure pursuit).
+%       velocity controller (0 legacy diff, 1 heading, 2 pure pursuit, -1 use
+%       chassis profile defaults).
 %
 %   Example:
 %       log = gik9dof.trackReferenceTrajectory();
@@ -61,9 +62,9 @@ arguments
     options.StageBReedsSheppParams struct = gik9dof.control.defaultReedsSheppParams()
     options.StageBUseClothoid (1,1) logical = false
     options.StageBClothoidParams struct = struct()
-    options.StageBChassisControllerMode (1,1) double {mustBeMember(options.StageBChassisControllerMode, [0 1 2])} = 2
     options.StageCUseBaseRefinement (1,1) logical = true
-    options.StageCChassisControllerMode (1,1) double {mustBeMember(options.StageCChassisControllerMode, [0 1 2])} = 2
+    options.StageBChassisControllerMode (1,1) double {mustBeMember(options.StageBChassisControllerMode, [-1 0 1 2])} = -1
+    options.StageCChassisControllerMode (1,1) double {mustBeMember(options.StageCChassisControllerMode, [-1 0 1 2])} = -1
     options.StageBLookaheadDistance (1,1) double {mustBePositive} = 0.6
     options.StageBDesiredLinearVelocity (1,1) double = 0.6
     options.StageBMaxAngularVelocity (1,1) double {mustBePositive} = 2.5
@@ -133,6 +134,11 @@ armIdx = setdiff(1:numel(q0), baseIdx);
 
 chassisParams = gik9dof.control.loadChassisProfile(options.ChassisProfile, ...
     "Overrides", options.ChassisOverrides);
+
+stageBControllerMode = resolveControllerModeOption(options.StageBChassisControllerMode, chassisParams, "stageB_controller_mode");
+stageCControllerMode = resolveControllerModeOption(options.StageCChassisControllerMode, chassisParams, "stageC_controller_mode");
+options.StageBChassisControllerMode = stageBControllerMode;
+options.StageCChassisControllerMode = stageCControllerMode;
 
 if options.DistanceMargin < 0
     error("gik9dof:trackReferenceTrajectory:InvalidDistanceMargin", ...
@@ -315,7 +321,7 @@ switch options.Mode
 
                 simRes = gik9dof.control.simulateChassisController(baseReference, ...
                     'SampleTime', 1/options.RateHz, 'FollowerOptions', followerOptions, ...
-                    'ControllerMode', options.StageCChassisControllerMode);
+                    'ControllerMode', stageCControllerMode);
 
                 bundleFinal = gik9dof.createGikSolver(robot, ...
                     "EnableAiming", options.EnableAiming, ...
@@ -540,5 +546,32 @@ if isfield(s, name) && ~isempty(s.(name))
     val = s.(name);
 else
     val = defaultValue;
+end
+end
+
+function modeOut = resolveControllerModeOption(modeIn, chassisParams, fieldName)
+if nargin < 3 || isempty(fieldName)
+    fieldName = "";
+end
+
+if isempty(modeIn) || modeIn == -1
+    profileMode = 2;
+    if ~isempty(fieldName) && isfield(chassisParams, fieldName)
+        profileMode = double(chassisParams.(fieldName));
+    elseif isfield(chassisParams, 'controller_mode')
+        profileMode = double(chassisParams.controller_mode);
+    end
+    modeOut = clampControllerMode(profileMode);
+else
+    modeOut = clampControllerMode(modeIn);
+end
+end
+
+function mode = clampControllerMode(val)
+validModes = [0 1 2];
+if any(val == validModes)
+    mode = val;
+else
+    mode = 2;
 end
 end
