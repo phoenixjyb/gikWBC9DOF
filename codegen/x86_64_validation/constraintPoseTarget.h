@@ -2,14 +2,14 @@
 // File: constraintPoseTarget.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 08:17:44
+// C/C++ source code generated on  : 08-Oct-2025 18:33:39
 //
 
 #ifndef CONSTRAINTPOSETARGET_H
 #define CONSTRAINTPOSETARGET_H
 
 // Include Files
-#include "gik9dof_codegen_inuse_solveGIKStepWrapper_types.h"
+#include "gik9dof_codegen_inuse_solveGIKStepWrapper_types1.h"
 #include "rtwtypes.h"
 #include <cstddef>
 #include <cstdlib>
@@ -29,7 +29,7 @@ public:
   double Weights[2];
 
 protected:
-  cell_51 ConstructorPropertyDefaultValues;
+  cell_10 ConstructorPropertyDefaultValues;
 };
 
 } // namespace coder

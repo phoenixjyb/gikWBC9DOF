@@ -2,7 +2,7 @@
 // File: rigidBodyJoint.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 08:17:44
+// C/C++ source code generated on  : 08-Oct-2025 18:33:39
 //
 
 // Include Files
@@ -405,17 +405,17 @@ rigidBodyJoint *rigidBodyJoint::b_init()
   int exitg1;
   int homepos_size_idx_1;
   int i;
-  int i1;
   int ibmat;
   int poslim_size_idx_0;
   signed char homepos_data[7];
+  signed char b_tmp;
   bool result;
   obj = this;
   obj->InTree = false;
   for (i = 0; i < 16; i++) {
-    i1 = iv[i];
-    obj->JointToParentTransform[i] = i1;
-    obj->ChildToJointTransform[i] = i1;
+    b_tmp = iv[i];
+    obj->JointToParentTransform[i] = b_tmp;
+    obj->ChildToJointTransform[i] = b_tmp;
   }
   for (i = 0; i < 14; i++) {
     obj->PositionLimitsInternal[i] = 0.0;
@@ -445,7 +445,7 @@ rigidBodyJoint *rigidBodyJoint::b_init()
   s = obj->TypeInternal;
   s.Length = 9.0;
   for (i = 0; i < 9; i++) {
-    s.Vector[i] = cv1[i];
+    s.Vector[i] = cv3[i];
   }
   obj->TypeInternal = s;
   s = obj->TypeInternal;
@@ -480,7 +480,7 @@ rigidBodyJoint *rigidBodyJoint::b_init()
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -563,7 +563,6 @@ rigidBodyJoint *rigidBodyJoint::b_init()
     }
     poslim_size_idx_0 = 7;
     for (homepos_size_idx_1 = 0; homepos_size_idx_1 < 2; homepos_size_idx_1++) {
-      signed char b_tmp;
       ibmat = homepos_size_idx_1 * 3;
       b_tmp = static_cast<signed char>(10 * homepos_size_idx_1 - 5);
       b[ibmat] = b_tmp;
@@ -638,7 +637,7 @@ rigidBodyJoint *rigidBodyJoint::b_init()
       ibmat = static_cast<int>(d);
     }
     for (i = 0; i < 2; i++) {
-      for (i1 = 0; i1 < ibmat; i1++) {
+      for (int i1{0}; i1 < ibmat; i1++) {
         obj->PositionLimitsInternal[i1 + 7 * i] =
             poslim_data[i1 + poslim_size_idx_0 * i];
       }
@@ -836,17 +835,17 @@ rigidBodyJoint *rigidBodyJoint::c_init()
   int exitg1;
   int homepos_size_idx_1;
   int i;
-  int i1;
   int ibmat;
   int poslim_size_idx_0;
   signed char homepos_data[7];
+  signed char b_tmp;
   bool result;
   obj = this;
   obj->InTree = false;
   for (i = 0; i < 16; i++) {
-    i1 = iv[i];
-    obj->JointToParentTransform[i] = i1;
-    obj->ChildToJointTransform[i] = i1;
+    b_tmp = iv[i];
+    obj->JointToParentTransform[i] = b_tmp;
+    obj->ChildToJointTransform[i] = b_tmp;
   }
   for (i = 0; i < 14; i++) {
     obj->PositionLimitsInternal[i] = 0.0;
@@ -876,7 +875,7 @@ rigidBodyJoint *rigidBodyJoint::c_init()
   s = obj->TypeInternal;
   s.Length = 9.0;
   for (i = 0; i < 9; i++) {
-    s.Vector[i] = cv1[i];
+    s.Vector[i] = cv3[i];
   }
   obj->TypeInternal = s;
   s = obj->TypeInternal;
@@ -911,7 +910,7 @@ rigidBodyJoint *rigidBodyJoint::c_init()
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -994,7 +993,6 @@ rigidBodyJoint *rigidBodyJoint::c_init()
     }
     poslim_size_idx_0 = 7;
     for (homepos_size_idx_1 = 0; homepos_size_idx_1 < 2; homepos_size_idx_1++) {
-      signed char b_tmp;
       ibmat = homepos_size_idx_1 * 3;
       b_tmp = static_cast<signed char>(10 * homepos_size_idx_1 - 5);
       b[ibmat] = b_tmp;
@@ -1069,7 +1067,7 @@ rigidBodyJoint *rigidBodyJoint::c_init()
       ibmat = static_cast<int>(d);
     }
     for (i = 0; i < 2; i++) {
-      for (i1 = 0; i1 < ibmat; i1++) {
+      for (int i1{0}; i1 < ibmat; i1++) {
         obj->PositionLimitsInternal[i1 + 7 * i] =
             poslim_data[i1 + poslim_size_idx_0 * i];
       }
@@ -1242,30 +1240,31 @@ rigidBodyJoint *rigidBodyJoint::copy(rigidBodyJoint &iobj_0) const
 {
   static const char b_cv[8]{'r', 'e', 'v', 'o', 'l', 'u', 't', 'e'};
   static const char b_cv1[8]{'f', 'l', 'o', 'a', 't', 'i', 'n', 'g'};
-  static const signed char iv2[7]{1, 0, 0, 0, 0, 0, 0};
-  static const signed char b_iv[6]{0, 0, 1, 0, 0, 0};
-  static const signed char b_iv1[6]{0, 0, 0, 0, 0, 1};
+  static const signed char iv3[7]{1, 0, 0, 0, 0, 0, 0};
+  static const signed char b_iv1[6]{0, 0, 1, 0, 0, 0};
+  static const signed char iv2[6]{0, 0, 0, 0, 0, 1};
   static const char b_cv2[5]{'f', 'i', 'x', 'e', 'd'};
   rigidBodyJoint *newjoint;
   robotics::manip::internal::CharacterVector b_obj;
   robotics::manip::internal::CharacterVector obj;
   robotics::manip::internal::CharacterVector s;
+  ::coder::array<char, 2U> vec;
   double msubspace_data[36];
   double d_obj[16];
   double poslim_data[14];
   double c_obj[7];
   double obj_idx_0;
+  int b_iv[2];
   int obj_size[2];
-  int vec_size[2];
   int exitg1;
   int homepos_size_idx_1;
   int i;
   int i1;
   int ibmat;
   int poslim_size_idx_0;
-  char vec_data[204];
   char obj_data[200];
   signed char homepos_data[7];
+  signed char b_tmp;
   bool result;
   obj = TypeInternal;
   if (obj.Length < 1.0) {
@@ -1280,29 +1279,29 @@ rigidBodyJoint *rigidBodyJoint::copy(rigidBodyJoint &iobj_0) const
     i1 = static_cast<int>(b_obj.Length);
   }
   iobj_0.InTree = false;
-  for (int i2{0}; i2 < 16; i2++) {
-    ibmat = iv[i2];
-    iobj_0.JointToParentTransform[i2] = ibmat;
-    iobj_0.ChildToJointTransform[i2] = ibmat;
+  for (ibmat = 0; ibmat < 16; ibmat++) {
+    b_tmp = iv[ibmat];
+    iobj_0.JointToParentTransform[ibmat] = b_tmp;
+    iobj_0.ChildToJointTransform[ibmat] = b_tmp;
   }
-  for (int i2{0}; i2 < 14; i2++) {
-    iobj_0.PositionLimitsInternal[i2] = 0.0;
+  for (ibmat = 0; ibmat < 14; ibmat++) {
+    iobj_0.PositionLimitsInternal[ibmat] = 0.0;
   }
-  for (int i2{0}; i2 < 7; i2++) {
-    iobj_0.HomePositionInternal[i2] = 0.0;
+  for (ibmat = 0; ibmat < 7; ibmat++) {
+    iobj_0.HomePositionInternal[ibmat] = 0.0;
   }
-  for (int i2{0}; i2 < 36; i2++) {
-    iobj_0.MotionSubspaceInternal[i2] = 0.0;
+  for (ibmat = 0; ibmat < 36; ibmat++) {
+    iobj_0.MotionSubspaceInternal[ibmat] = 0.0;
   }
   newjoint = &iobj_0;
   s.Length = 200.0;
-  for (int i2{0}; i2 < 200; i2++) {
-    s.Vector[i2] = ' ';
+  for (ibmat = 0; ibmat < 200; ibmat++) {
+    s.Vector[ibmat] = ' ';
   }
   iobj_0.NameInternal = s;
   s.Length = 200.0;
-  for (int i2{0}; i2 < 200; i2++) {
-    s.Vector[i2] = ' ';
+  for (ibmat = 0; ibmat < 200; ibmat++) {
+    s.Vector[ibmat] = ' ';
   }
   iobj_0.TypeInternal = s;
   s = iobj_0.NameInternal;
@@ -1322,11 +1321,15 @@ rigidBodyJoint *rigidBodyJoint::copy(rigidBodyJoint &iobj_0) const
   if (i - 1 >= 0) {
     ::std::copy(&obj.Vector[0], &obj.Vector[i], &obj_data[0]);
   }
-  validatestring(obj_data, obj_size, vec_data, vec_size);
-  b_obj.Length = vec_size[1];
-  i = vec_size[1];
-  if (i - 1 >= 0) {
-    ::std::copy(&vec_data[0], &vec_data[i], &b_obj.Vector[0]);
+  vec.reserve(9);
+  validatestring(obj_data, obj_size, (char *)vec.data(), b_iv);
+  (*(int(*)[2])vec.size())[0] = b_iv[0];
+  (*(int(*)[2])vec.size())[1] = b_iv[1];
+  vec.set_size(vec.size(0), vec.size(1));
+  b_obj.Length = vec.size(1);
+  i = vec.size(1);
+  for (i1 = 0; i1 < i; i1++) {
+    b_obj.Vector[i1] = vec[i1];
   }
   iobj_0.TypeInternal = b_obj;
   obj = iobj_0.TypeInternal;
@@ -1361,7 +1364,7 @@ rigidBodyJoint *rigidBodyJoint::copy(rigidBodyJoint &iobj_0) const
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != obj.Vector[ibmat]) {
+          if (cv3[ibmat] != obj.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -1402,7 +1405,7 @@ rigidBodyJoint *rigidBodyJoint::copy(rigidBodyJoint &iobj_0) const
   switch (ibmat) {
   case 0:
     for (i1 = 0; i1 < 6; i1++) {
-      msubspace_data[i1] = b_iv[i1];
+      msubspace_data[i1] = b_iv1[i1];
     }
     poslim_size_idx_0 = 1;
     poslim_data[0] = -3.1415926535897931;
@@ -1417,7 +1420,7 @@ rigidBodyJoint *rigidBodyJoint::copy(rigidBodyJoint &iobj_0) const
     break;
   case 1:
     for (i1 = 0; i1 < 6; i1++) {
-      msubspace_data[i1] = b_iv1[i1];
+      msubspace_data[i1] = iv2[i1];
     }
     poslim_size_idx_0 = 1;
     poslim_data[0] = -0.5;
@@ -1443,17 +1446,16 @@ rigidBodyJoint *rigidBodyJoint::copy(rigidBodyJoint &iobj_0) const
       msubspace_data[i1] = b_I[i1];
     }
     poslim_size_idx_0 = 7;
-    for (homepos_size_idx_1 = 0; homepos_size_idx_1 < 2; homepos_size_idx_1++) {
-      signed char b_tmp;
-      ibmat = homepos_size_idx_1 * 3;
-      b_tmp = static_cast<signed char>(10 * homepos_size_idx_1 - 5);
+    for (i = 0; i < 2; i++) {
+      ibmat = i * 3;
+      b_tmp = static_cast<signed char>(10 * i - 5);
       b[ibmat] = b_tmp;
       b[ibmat + 1] = b_tmp;
       b[ibmat + 2] = b_tmp;
-      poslim_data[7 * homepos_size_idx_1] = rtNaN;
-      poslim_data[7 * homepos_size_idx_1 + 1] = rtNaN;
-      poslim_data[7 * homepos_size_idx_1 + 2] = rtNaN;
-      poslim_data[7 * homepos_size_idx_1 + 3] = rtNaN;
+      poslim_data[7 * i] = rtNaN;
+      poslim_data[7 * i + 1] = rtNaN;
+      poslim_data[7 * i + 2] = rtNaN;
+      poslim_data[7 * i + 3] = rtNaN;
     }
     for (i1 = 0; i1 < 2; i1++) {
       poslim_data[7 * i1 + 4] = b[3 * i1];
@@ -1462,7 +1464,7 @@ rigidBodyJoint *rigidBodyJoint::copy(rigidBodyJoint &iobj_0) const
     }
     homepos_size_idx_1 = 7;
     for (i1 = 0; i1 < 7; i1++) {
-      homepos_data[i1] = iv2[i1];
+      homepos_data[i1] = iv3[i1];
     }
     iobj_0.VelocityNumber = 6.0;
     iobj_0.PositionNumber = 7.0;
@@ -1518,9 +1520,9 @@ rigidBodyJoint *rigidBodyJoint::copy(rigidBodyJoint &iobj_0) const
       i = static_cast<int>(obj_idx_0);
     }
     for (i1 = 0; i1 < 2; i1++) {
-      for (int i2{0}; i2 < i; i2++) {
-        iobj_0.PositionLimitsInternal[i2 + 7 * i1] =
-            poslim_data[i2 + poslim_size_idx_0 * i1];
+      for (ibmat = 0; ibmat < i; ibmat++) {
+        iobj_0.PositionLimitsInternal[ibmat + 7 * i1] =
+            poslim_data[ibmat + poslim_size_idx_0 * i1];
       }
     }
     for (i1 = 0; i1 < homepos_size_idx_1; i1++) {
@@ -1617,17 +1619,17 @@ rigidBodyJoint *rigidBodyJoint::d_init()
   int exitg1;
   int homepos_size_idx_1;
   int i;
-  int i1;
   int ibmat;
   int poslim_size_idx_0;
   signed char homepos_data[7];
+  signed char b_tmp;
   bool result;
   obj = this;
   obj->InTree = false;
   for (i = 0; i < 16; i++) {
-    i1 = iv[i];
-    obj->JointToParentTransform[i] = i1;
-    obj->ChildToJointTransform[i] = i1;
+    b_tmp = iv[i];
+    obj->JointToParentTransform[i] = b_tmp;
+    obj->ChildToJointTransform[i] = b_tmp;
   }
   for (i = 0; i < 14; i++) {
     obj->PositionLimitsInternal[i] = 0.0;
@@ -1692,7 +1694,7 @@ rigidBodyJoint *rigidBodyJoint::d_init()
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -1775,7 +1777,6 @@ rigidBodyJoint *rigidBodyJoint::d_init()
     }
     poslim_size_idx_0 = 7;
     for (homepos_size_idx_1 = 0; homepos_size_idx_1 < 2; homepos_size_idx_1++) {
-      signed char b_tmp;
       ibmat = homepos_size_idx_1 * 3;
       b_tmp = static_cast<signed char>(10 * homepos_size_idx_1 - 5);
       b[ibmat] = b_tmp;
@@ -1850,7 +1851,7 @@ rigidBodyJoint *rigidBodyJoint::d_init()
       ibmat = static_cast<int>(d);
     }
     for (i = 0; i < 2; i++) {
-      for (i1 = 0; i1 < ibmat; i1++) {
+      for (int i1{0}; i1 < ibmat; i1++) {
         obj->PositionLimitsInternal[i1 + 7 * i] =
             poslim_data[i1 + poslim_size_idx_0 * i];
       }
@@ -2036,17 +2037,17 @@ rigidBodyJoint *rigidBodyJoint::e_init()
   int exitg1;
   int homepos_size_idx_1;
   int i;
-  int i1;
   int ibmat;
   int poslim_size_idx_0;
   signed char homepos_data[7];
+  signed char b_tmp;
   bool result;
   obj = this;
   obj->InTree = false;
   for (i = 0; i < 16; i++) {
-    i1 = iv[i];
-    obj->JointToParentTransform[i] = i1;
-    obj->ChildToJointTransform[i] = i1;
+    b_tmp = iv[i];
+    obj->JointToParentTransform[i] = b_tmp;
+    obj->ChildToJointTransform[i] = b_tmp;
   }
   for (i = 0; i < 14; i++) {
     obj->PositionLimitsInternal[i] = 0.0;
@@ -2111,7 +2112,7 @@ rigidBodyJoint *rigidBodyJoint::e_init()
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -2194,7 +2195,6 @@ rigidBodyJoint *rigidBodyJoint::e_init()
     }
     poslim_size_idx_0 = 7;
     for (homepos_size_idx_1 = 0; homepos_size_idx_1 < 2; homepos_size_idx_1++) {
-      signed char b_tmp;
       ibmat = homepos_size_idx_1 * 3;
       b_tmp = static_cast<signed char>(10 * homepos_size_idx_1 - 5);
       b[ibmat] = b_tmp;
@@ -2269,7 +2269,7 @@ rigidBodyJoint *rigidBodyJoint::e_init()
       ibmat = static_cast<int>(d);
     }
     for (i = 0; i < 2; i++) {
-      for (i1 = 0; i1 < ibmat; i1++) {
+      for (int i1{0}; i1 < ibmat; i1++) {
         obj->PositionLimitsInternal[i1 + 7 * i] =
             poslim_data[i1 + poslim_size_idx_0 * i];
       }
@@ -2407,17 +2407,17 @@ rigidBodyJoint *rigidBodyJoint::f_init()
   int exitg1;
   int homepos_size_idx_1;
   int i;
-  int i1;
   int ibmat;
   int poslim_size_idx_0;
   signed char homepos_data[7];
+  signed char b_tmp;
   bool result;
   obj = this;
   obj->InTree = false;
   for (i = 0; i < 16; i++) {
-    i1 = iv[i];
-    obj->JointToParentTransform[i] = i1;
-    obj->ChildToJointTransform[i] = i1;
+    b_tmp = iv[i];
+    obj->JointToParentTransform[i] = b_tmp;
+    obj->ChildToJointTransform[i] = b_tmp;
   }
   for (i = 0; i < 14; i++) {
     obj->PositionLimitsInternal[i] = 0.0;
@@ -2482,7 +2482,7 @@ rigidBodyJoint *rigidBodyJoint::f_init()
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -2565,7 +2565,6 @@ rigidBodyJoint *rigidBodyJoint::f_init()
     }
     poslim_size_idx_0 = 7;
     for (homepos_size_idx_1 = 0; homepos_size_idx_1 < 2; homepos_size_idx_1++) {
-      signed char b_tmp;
       ibmat = homepos_size_idx_1 * 3;
       b_tmp = static_cast<signed char>(10 * homepos_size_idx_1 - 5);
       b[ibmat] = b_tmp;
@@ -2640,7 +2639,7 @@ rigidBodyJoint *rigidBodyJoint::f_init()
       ibmat = static_cast<int>(d);
     }
     for (i = 0; i < 2; i++) {
-      for (i1 = 0; i1 < ibmat; i1++) {
+      for (int i1{0}; i1 < ibmat; i1++) {
         obj->PositionLimitsInternal[i1 + 7 * i] =
             poslim_data[i1 + poslim_size_idx_0 * i];
       }
@@ -2697,17 +2696,17 @@ rigidBodyJoint *rigidBodyJoint::g_init()
   int exitg1;
   int homepos_size_idx_1;
   int i;
-  int i1;
   int ibmat;
   int poslim_size_idx_0;
   signed char homepos_data[7];
+  signed char b_tmp;
   bool result;
   obj = this;
   obj->InTree = false;
   for (i = 0; i < 16; i++) {
-    i1 = iv[i];
-    obj->JointToParentTransform[i] = i1;
-    obj->ChildToJointTransform[i] = i1;
+    b_tmp = iv[i];
+    obj->JointToParentTransform[i] = b_tmp;
+    obj->ChildToJointTransform[i] = b_tmp;
   }
   for (i = 0; i < 14; i++) {
     obj->PositionLimitsInternal[i] = 0.0;
@@ -2772,7 +2771,7 @@ rigidBodyJoint *rigidBodyJoint::g_init()
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -2855,7 +2854,6 @@ rigidBodyJoint *rigidBodyJoint::g_init()
     }
     poslim_size_idx_0 = 7;
     for (homepos_size_idx_1 = 0; homepos_size_idx_1 < 2; homepos_size_idx_1++) {
-      signed char b_tmp;
       ibmat = homepos_size_idx_1 * 3;
       b_tmp = static_cast<signed char>(10 * homepos_size_idx_1 - 5);
       b[ibmat] = b_tmp;
@@ -2930,7 +2928,7 @@ rigidBodyJoint *rigidBodyJoint::g_init()
       ibmat = static_cast<int>(d);
     }
     for (i = 0; i < 2; i++) {
-      for (i1 = 0; i1 < ibmat; i1++) {
+      for (int i1{0}; i1 < ibmat; i1++) {
         obj->PositionLimitsInternal[i1 + 7 * i] =
             poslim_data[i1 + poslim_size_idx_0 * i];
       }
@@ -3009,7 +3007,7 @@ void rigidBodyJoint::get_JointAxis(double ax[3]) const
       do {
         exitg1 = 0;
         if (kstr < 9) {
-          if (TypeInternal.Vector[kstr] != cv1[kstr]) {
+          if (TypeInternal.Vector[kstr] != cv3[kstr]) {
             exitg1 = 1;
           } else {
             kstr++;
@@ -3119,17 +3117,17 @@ rigidBodyJoint *rigidBodyJoint::h_init()
   int exitg1;
   int homepos_size_idx_1;
   int i;
-  int i1;
   int ibmat;
   int poslim_size_idx_0;
   signed char homepos_data[7];
+  signed char b_tmp;
   bool result;
   obj = this;
   obj->InTree = false;
   for (i = 0; i < 16; i++) {
-    i1 = iv[i];
-    obj->JointToParentTransform[i] = i1;
-    obj->ChildToJointTransform[i] = i1;
+    b_tmp = iv[i];
+    obj->JointToParentTransform[i] = b_tmp;
+    obj->ChildToJointTransform[i] = b_tmp;
   }
   for (i = 0; i < 14; i++) {
     obj->PositionLimitsInternal[i] = 0.0;
@@ -3194,7 +3192,7 @@ rigidBodyJoint *rigidBodyJoint::h_init()
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -3277,7 +3275,6 @@ rigidBodyJoint *rigidBodyJoint::h_init()
     }
     poslim_size_idx_0 = 7;
     for (homepos_size_idx_1 = 0; homepos_size_idx_1 < 2; homepos_size_idx_1++) {
-      signed char b_tmp;
       ibmat = homepos_size_idx_1 * 3;
       b_tmp = static_cast<signed char>(10 * homepos_size_idx_1 - 5);
       b[ibmat] = b_tmp;
@@ -3352,7 +3349,7 @@ rigidBodyJoint *rigidBodyJoint::h_init()
       ibmat = static_cast<int>(d);
     }
     for (i = 0; i < 2; i++) {
-      for (i1 = 0; i1 < ibmat; i1++) {
+      for (int i1{0}; i1 < ibmat; i1++) {
         obj->PositionLimitsInternal[i1 + 7 * i] =
             poslim_data[i1 + poslim_size_idx_0 * i];
       }
@@ -3409,17 +3406,17 @@ rigidBodyJoint *rigidBodyJoint::i_init()
   int exitg1;
   int homepos_size_idx_1;
   int i;
-  int i1;
   int ibmat;
   int poslim_size_idx_0;
   signed char homepos_data[7];
+  signed char b_tmp;
   bool result;
   obj = this;
   obj->InTree = false;
   for (i = 0; i < 16; i++) {
-    i1 = iv[i];
-    obj->JointToParentTransform[i] = i1;
-    obj->ChildToJointTransform[i] = i1;
+    b_tmp = iv[i];
+    obj->JointToParentTransform[i] = b_tmp;
+    obj->ChildToJointTransform[i] = b_tmp;
   }
   for (i = 0; i < 14; i++) {
     obj->PositionLimitsInternal[i] = 0.0;
@@ -3484,7 +3481,7 @@ rigidBodyJoint *rigidBodyJoint::i_init()
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -3567,7 +3564,6 @@ rigidBodyJoint *rigidBodyJoint::i_init()
     }
     poslim_size_idx_0 = 7;
     for (homepos_size_idx_1 = 0; homepos_size_idx_1 < 2; homepos_size_idx_1++) {
-      signed char b_tmp;
       ibmat = homepos_size_idx_1 * 3;
       b_tmp = static_cast<signed char>(10 * homepos_size_idx_1 - 5);
       b[ibmat] = b_tmp;
@@ -3642,7 +3638,7 @@ rigidBodyJoint *rigidBodyJoint::i_init()
       ibmat = static_cast<int>(d);
     }
     for (i = 0; i < 2; i++) {
-      for (i1 = 0; i1 < ibmat; i1++) {
+      for (int i1{0}; i1 < ibmat; i1++) {
         obj->PositionLimitsInternal[i1 + 7 * i] =
             poslim_data[i1 + poslim_size_idx_0 * i];
       }
@@ -3677,6 +3673,275 @@ void rigidBodyJoint::i_setFixedTransform()
 }
 
 //
+// Arguments    : void
+// Return Type  : rigidBodyJoint *
+//
+rigidBodyJoint *rigidBodyJoint::init()
+{
+  static const char b_cv[8]{'b', 'a', 's', 'e', '_', 'j', 'n', 't'};
+  static const char b_cv2[8]{'r', 'e', 'v', 'o', 'l', 'u', 't', 'e'};
+  static const char b_cv3[8]{'f', 'l', 'o', 'a', 't', 'i', 'n', 'g'};
+  static const signed char iv2[7]{1, 0, 0, 0, 0, 0, 0};
+  static const signed char b_iv[6]{0, 0, 1, 0, 0, 0};
+  static const signed char b_iv1[6]{0, 0, 0, 0, 0, 1};
+  static const char b_cv1[5]{'f', 'i', 'x', 'e', 'd'};
+  static const char b_cv4[5]{'f', 'i', 'x', 'e', 'd'};
+  rigidBodyJoint *obj;
+  robotics::manip::internal::CharacterVector s;
+  double msubspace_data[36];
+  double poslim_data[14];
+  int exitg1;
+  int homepos_size_idx_1;
+  int i;
+  int ibmat;
+  int poslim_size_idx_0;
+  signed char homepos_data[7];
+  signed char b_tmp;
+  bool result;
+  obj = this;
+  obj->InTree = false;
+  for (i = 0; i < 16; i++) {
+    b_tmp = iv[i];
+    obj->JointToParentTransform[i] = b_tmp;
+    obj->ChildToJointTransform[i] = b_tmp;
+  }
+  for (i = 0; i < 14; i++) {
+    obj->PositionLimitsInternal[i] = 0.0;
+  }
+  for (i = 0; i < 7; i++) {
+    obj->HomePositionInternal[i] = 0.0;
+  }
+  for (i = 0; i < 36; i++) {
+    obj->MotionSubspaceInternal[i] = 0.0;
+  }
+  s.Length = 200.0;
+  for (i = 0; i < 200; i++) {
+    s.Vector[i] = ' ';
+  }
+  obj->NameInternal = s;
+  s.Length = 200.0;
+  for (i = 0; i < 200; i++) {
+    s.Vector[i] = ' ';
+  }
+  obj->TypeInternal = s;
+  s = obj->NameInternal;
+  s.Length = 8.0;
+  for (i = 0; i < 8; i++) {
+    s.Vector[i] = b_cv[i];
+  }
+  obj->NameInternal = s;
+  s = obj->TypeInternal;
+  s.Length = 5.0;
+  for (i = 0; i < 5; i++) {
+    s.Vector[i] = b_cv1[i];
+  }
+  obj->TypeInternal = s;
+  s = obj->TypeInternal;
+  if (s.Length < 1.0) {
+    i = 0;
+  } else {
+    i = static_cast<int>(s.Length);
+  }
+  result = false;
+  if (i == 8) {
+    ibmat = 0;
+    do {
+      exitg1 = 0;
+      if (ibmat < 8) {
+        if (b_cv2[ibmat] != s.Vector[ibmat]) {
+          exitg1 = 1;
+        } else {
+          ibmat++;
+        }
+      } else {
+        result = true;
+        exitg1 = 1;
+      }
+    } while (exitg1 == 0);
+  }
+  if (result) {
+    ibmat = 0;
+  } else {
+    result = false;
+    if (i == 9) {
+      ibmat = 0;
+      do {
+        exitg1 = 0;
+        if (ibmat < 9) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
+            exitg1 = 1;
+          } else {
+            ibmat++;
+          }
+        } else {
+          result = true;
+          exitg1 = 1;
+        }
+      } while (exitg1 == 0);
+    }
+    if (result) {
+      ibmat = 1;
+    } else {
+      result = false;
+      if (i == 8) {
+        ibmat = 0;
+        do {
+          exitg1 = 0;
+          if (ibmat < 8) {
+            if (b_cv3[ibmat] != s.Vector[ibmat]) {
+              exitg1 = 1;
+            } else {
+              ibmat++;
+            }
+          } else {
+            result = true;
+            exitg1 = 1;
+          }
+        } while (exitg1 == 0);
+      }
+      if (result) {
+        ibmat = 2;
+      } else {
+        ibmat = -1;
+      }
+    }
+  }
+  switch (ibmat) {
+  case 0:
+    for (i = 0; i < 6; i++) {
+      msubspace_data[i] = b_iv[i];
+    }
+    poslim_size_idx_0 = 1;
+    poslim_data[0] = -3.1415926535897931;
+    poslim_data[1] = 3.1415926535897931;
+    homepos_size_idx_1 = 1;
+    homepos_data[0] = 0;
+    obj->VelocityNumber = 1.0;
+    obj->PositionNumber = 1.0;
+    obj->JointAxisInternal[0] = 0.0;
+    obj->JointAxisInternal[1] = 0.0;
+    obj->JointAxisInternal[2] = 1.0;
+    break;
+  case 1:
+    for (i = 0; i < 6; i++) {
+      msubspace_data[i] = b_iv1[i];
+    }
+    poslim_size_idx_0 = 1;
+    poslim_data[0] = -0.5;
+    poslim_data[1] = 0.5;
+    homepos_size_idx_1 = 1;
+    homepos_data[0] = 0;
+    obj->VelocityNumber = 1.0;
+    obj->PositionNumber = 1.0;
+    obj->JointAxisInternal[0] = 0.0;
+    obj->JointAxisInternal[1] = 0.0;
+    obj->JointAxisInternal[2] = 1.0;
+    break;
+  case 2: {
+    signed char b_I[36];
+    signed char b[6];
+    for (i = 0; i < 36; i++) {
+      b_I[i] = 0;
+    }
+    for (ibmat = 0; ibmat < 6; ibmat++) {
+      b_I[ibmat + 6 * ibmat] = 1;
+    }
+    for (i = 0; i < 36; i++) {
+      msubspace_data[i] = b_I[i];
+    }
+    poslim_size_idx_0 = 7;
+    for (homepos_size_idx_1 = 0; homepos_size_idx_1 < 2; homepos_size_idx_1++) {
+      ibmat = homepos_size_idx_1 * 3;
+      b_tmp = static_cast<signed char>(10 * homepos_size_idx_1 - 5);
+      b[ibmat] = b_tmp;
+      b[ibmat + 1] = b_tmp;
+      b[ibmat + 2] = b_tmp;
+      poslim_data[7 * homepos_size_idx_1] = rtNaN;
+      poslim_data[7 * homepos_size_idx_1 + 1] = rtNaN;
+      poslim_data[7 * homepos_size_idx_1 + 2] = rtNaN;
+      poslim_data[7 * homepos_size_idx_1 + 3] = rtNaN;
+    }
+    for (i = 0; i < 2; i++) {
+      poslim_data[7 * i + 4] = b[3 * i];
+      poslim_data[7 * i + 5] = b[3 * i + 1];
+      poslim_data[7 * i + 6] = b[3 * i + 2];
+    }
+    homepos_size_idx_1 = 7;
+    for (i = 0; i < 7; i++) {
+      homepos_data[i] = iv2[i];
+    }
+    obj->VelocityNumber = 6.0;
+    obj->PositionNumber = 7.0;
+    obj->JointAxisInternal[0] = rtNaN;
+    obj->JointAxisInternal[1] = rtNaN;
+    obj->JointAxisInternal[2] = rtNaN;
+  } break;
+  default:
+    for (i = 0; i < 6; i++) {
+      msubspace_data[i] = 0.0;
+    }
+    poslim_size_idx_0 = 1;
+    poslim_data[0] = 0.0;
+    poslim_data[1] = 0.0;
+    homepos_size_idx_1 = 1;
+    homepos_data[0] = 0;
+    obj->VelocityNumber = 0.0;
+    obj->PositionNumber = 0.0;
+    obj->JointAxisInternal[0] = 0.0;
+    obj->JointAxisInternal[1] = 0.0;
+    obj->JointAxisInternal[2] = 0.0;
+    break;
+  }
+  obj->set_MotionSubspace(msubspace_data);
+  s = obj->TypeInternal;
+  if (s.Length < 1.0) {
+    i = 0;
+  } else {
+    i = static_cast<int>(s.Length);
+  }
+  result = false;
+  if (i == 5) {
+    ibmat = 0;
+    do {
+      exitg1 = 0;
+      if (ibmat < 5) {
+        if (s.Vector[ibmat] != b_cv4[ibmat]) {
+          exitg1 = 1;
+        } else {
+          ibmat++;
+        }
+      } else {
+        result = true;
+        exitg1 = 1;
+      }
+    } while (exitg1 == 0);
+  }
+  if (!result) {
+    double d;
+    d = obj->PositionNumber;
+    if (d < 1.0) {
+      ibmat = 0;
+    } else {
+      ibmat = static_cast<int>(d);
+    }
+    for (i = 0; i < 2; i++) {
+      for (int i1{0}; i1 < ibmat; i1++) {
+        obj->PositionLimitsInternal[i1 + 7 * i] =
+            poslim_data[i1 + poslim_size_idx_0 * i];
+      }
+    }
+    for (i = 0; i < homepos_size_idx_1; i++) {
+      obj->HomePositionInternal[i] = homepos_data[i];
+    }
+  } else {
+    obj->PositionLimitsInternal[0] = poslim_data[0];
+    obj->PositionLimitsInternal[7] = poslim_data[1];
+    obj->HomePositionInternal[0] = homepos_data[0];
+  }
+  return obj;
+}
+
+//
 // Arguments    : const char jname[14]
 // Return Type  : rigidBodyJoint *
 //
@@ -3696,17 +3961,17 @@ rigidBodyJoint *rigidBodyJoint::init(const char jname[14])
   int exitg1;
   int homepos_size_idx_1;
   int i;
-  int i1;
   int ibmat;
   int poslim_size_idx_0;
   signed char homepos_data[7];
+  signed char b_tmp;
   bool result;
   obj = this;
   obj->InTree = false;
   for (i = 0; i < 16; i++) {
-    i1 = iv[i];
-    obj->JointToParentTransform[i] = i1;
-    obj->ChildToJointTransform[i] = i1;
+    b_tmp = iv[i];
+    obj->JointToParentTransform[i] = b_tmp;
+    obj->ChildToJointTransform[i] = b_tmp;
   }
   for (i = 0; i < 14; i++) {
     obj->PositionLimitsInternal[i] = 0.0;
@@ -3771,7 +4036,7 @@ rigidBodyJoint *rigidBodyJoint::init(const char jname[14])
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -3854,7 +4119,6 @@ rigidBodyJoint *rigidBodyJoint::init(const char jname[14])
     }
     poslim_size_idx_0 = 7;
     for (homepos_size_idx_1 = 0; homepos_size_idx_1 < 2; homepos_size_idx_1++) {
-      signed char b_tmp;
       ibmat = homepos_size_idx_1 * 3;
       b_tmp = static_cast<signed char>(10 * homepos_size_idx_1 - 5);
       b[ibmat] = b_tmp;
@@ -3929,277 +4193,7 @@ rigidBodyJoint *rigidBodyJoint::init(const char jname[14])
       ibmat = static_cast<int>(d);
     }
     for (i = 0; i < 2; i++) {
-      for (i1 = 0; i1 < ibmat; i1++) {
-        obj->PositionLimitsInternal[i1 + 7 * i] =
-            poslim_data[i1 + poslim_size_idx_0 * i];
-      }
-    }
-    for (i = 0; i < homepos_size_idx_1; i++) {
-      obj->HomePositionInternal[i] = homepos_data[i];
-    }
-  } else {
-    obj->PositionLimitsInternal[0] = poslim_data[0];
-    obj->PositionLimitsInternal[7] = poslim_data[1];
-    obj->HomePositionInternal[0] = homepos_data[0];
-  }
-  return obj;
-}
-
-//
-// Arguments    : void
-// Return Type  : rigidBodyJoint *
-//
-rigidBodyJoint *rigidBodyJoint::init()
-{
-  static const char b_cv[8]{'b', 'a', 's', 'e', '_', 'j', 'n', 't'};
-  static const char b_cv2[8]{'r', 'e', 'v', 'o', 'l', 'u', 't', 'e'};
-  static const char b_cv3[8]{'f', 'l', 'o', 'a', 't', 'i', 'n', 'g'};
-  static const signed char iv2[7]{1, 0, 0, 0, 0, 0, 0};
-  static const signed char b_iv[6]{0, 0, 1, 0, 0, 0};
-  static const signed char b_iv1[6]{0, 0, 0, 0, 0, 1};
-  static const char b_cv1[5]{'f', 'i', 'x', 'e', 'd'};
-  static const char b_cv4[5]{'f', 'i', 'x', 'e', 'd'};
-  rigidBodyJoint *obj;
-  robotics::manip::internal::CharacterVector s;
-  double msubspace_data[36];
-  double poslim_data[14];
-  int exitg1;
-  int homepos_size_idx_1;
-  int i;
-  int i1;
-  int ibmat;
-  int poslim_size_idx_0;
-  signed char homepos_data[7];
-  bool result;
-  obj = this;
-  obj->InTree = false;
-  for (i = 0; i < 16; i++) {
-    i1 = iv[i];
-    obj->JointToParentTransform[i] = i1;
-    obj->ChildToJointTransform[i] = i1;
-  }
-  for (i = 0; i < 14; i++) {
-    obj->PositionLimitsInternal[i] = 0.0;
-  }
-  for (i = 0; i < 7; i++) {
-    obj->HomePositionInternal[i] = 0.0;
-  }
-  for (i = 0; i < 36; i++) {
-    obj->MotionSubspaceInternal[i] = 0.0;
-  }
-  s.Length = 200.0;
-  for (i = 0; i < 200; i++) {
-    s.Vector[i] = ' ';
-  }
-  obj->NameInternal = s;
-  s.Length = 200.0;
-  for (i = 0; i < 200; i++) {
-    s.Vector[i] = ' ';
-  }
-  obj->TypeInternal = s;
-  s = obj->NameInternal;
-  s.Length = 8.0;
-  for (i = 0; i < 8; i++) {
-    s.Vector[i] = b_cv[i];
-  }
-  obj->NameInternal = s;
-  s = obj->TypeInternal;
-  s.Length = 5.0;
-  for (i = 0; i < 5; i++) {
-    s.Vector[i] = b_cv1[i];
-  }
-  obj->TypeInternal = s;
-  s = obj->TypeInternal;
-  if (s.Length < 1.0) {
-    i = 0;
-  } else {
-    i = static_cast<int>(s.Length);
-  }
-  result = false;
-  if (i == 8) {
-    ibmat = 0;
-    do {
-      exitg1 = 0;
-      if (ibmat < 8) {
-        if (b_cv2[ibmat] != s.Vector[ibmat]) {
-          exitg1 = 1;
-        } else {
-          ibmat++;
-        }
-      } else {
-        result = true;
-        exitg1 = 1;
-      }
-    } while (exitg1 == 0);
-  }
-  if (result) {
-    ibmat = 0;
-  } else {
-    result = false;
-    if (i == 9) {
-      ibmat = 0;
-      do {
-        exitg1 = 0;
-        if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
-            exitg1 = 1;
-          } else {
-            ibmat++;
-          }
-        } else {
-          result = true;
-          exitg1 = 1;
-        }
-      } while (exitg1 == 0);
-    }
-    if (result) {
-      ibmat = 1;
-    } else {
-      result = false;
-      if (i == 8) {
-        ibmat = 0;
-        do {
-          exitg1 = 0;
-          if (ibmat < 8) {
-            if (b_cv3[ibmat] != s.Vector[ibmat]) {
-              exitg1 = 1;
-            } else {
-              ibmat++;
-            }
-          } else {
-            result = true;
-            exitg1 = 1;
-          }
-        } while (exitg1 == 0);
-      }
-      if (result) {
-        ibmat = 2;
-      } else {
-        ibmat = -1;
-      }
-    }
-  }
-  switch (ibmat) {
-  case 0:
-    for (i = 0; i < 6; i++) {
-      msubspace_data[i] = b_iv[i];
-    }
-    poslim_size_idx_0 = 1;
-    poslim_data[0] = -3.1415926535897931;
-    poslim_data[1] = 3.1415926535897931;
-    homepos_size_idx_1 = 1;
-    homepos_data[0] = 0;
-    obj->VelocityNumber = 1.0;
-    obj->PositionNumber = 1.0;
-    obj->JointAxisInternal[0] = 0.0;
-    obj->JointAxisInternal[1] = 0.0;
-    obj->JointAxisInternal[2] = 1.0;
-    break;
-  case 1:
-    for (i = 0; i < 6; i++) {
-      msubspace_data[i] = b_iv1[i];
-    }
-    poslim_size_idx_0 = 1;
-    poslim_data[0] = -0.5;
-    poslim_data[1] = 0.5;
-    homepos_size_idx_1 = 1;
-    homepos_data[0] = 0;
-    obj->VelocityNumber = 1.0;
-    obj->PositionNumber = 1.0;
-    obj->JointAxisInternal[0] = 0.0;
-    obj->JointAxisInternal[1] = 0.0;
-    obj->JointAxisInternal[2] = 1.0;
-    break;
-  case 2: {
-    signed char b_I[36];
-    signed char b[6];
-    for (i = 0; i < 36; i++) {
-      b_I[i] = 0;
-    }
-    for (ibmat = 0; ibmat < 6; ibmat++) {
-      b_I[ibmat + 6 * ibmat] = 1;
-    }
-    for (i = 0; i < 36; i++) {
-      msubspace_data[i] = b_I[i];
-    }
-    poslim_size_idx_0 = 7;
-    for (homepos_size_idx_1 = 0; homepos_size_idx_1 < 2; homepos_size_idx_1++) {
-      signed char b_tmp;
-      ibmat = homepos_size_idx_1 * 3;
-      b_tmp = static_cast<signed char>(10 * homepos_size_idx_1 - 5);
-      b[ibmat] = b_tmp;
-      b[ibmat + 1] = b_tmp;
-      b[ibmat + 2] = b_tmp;
-      poslim_data[7 * homepos_size_idx_1] = rtNaN;
-      poslim_data[7 * homepos_size_idx_1 + 1] = rtNaN;
-      poslim_data[7 * homepos_size_idx_1 + 2] = rtNaN;
-      poslim_data[7 * homepos_size_idx_1 + 3] = rtNaN;
-    }
-    for (i = 0; i < 2; i++) {
-      poslim_data[7 * i + 4] = b[3 * i];
-      poslim_data[7 * i + 5] = b[3 * i + 1];
-      poslim_data[7 * i + 6] = b[3 * i + 2];
-    }
-    homepos_size_idx_1 = 7;
-    for (i = 0; i < 7; i++) {
-      homepos_data[i] = iv2[i];
-    }
-    obj->VelocityNumber = 6.0;
-    obj->PositionNumber = 7.0;
-    obj->JointAxisInternal[0] = rtNaN;
-    obj->JointAxisInternal[1] = rtNaN;
-    obj->JointAxisInternal[2] = rtNaN;
-  } break;
-  default:
-    for (i = 0; i < 6; i++) {
-      msubspace_data[i] = 0.0;
-    }
-    poslim_size_idx_0 = 1;
-    poslim_data[0] = 0.0;
-    poslim_data[1] = 0.0;
-    homepos_size_idx_1 = 1;
-    homepos_data[0] = 0;
-    obj->VelocityNumber = 0.0;
-    obj->PositionNumber = 0.0;
-    obj->JointAxisInternal[0] = 0.0;
-    obj->JointAxisInternal[1] = 0.0;
-    obj->JointAxisInternal[2] = 0.0;
-    break;
-  }
-  obj->set_MotionSubspace(msubspace_data);
-  s = obj->TypeInternal;
-  if (s.Length < 1.0) {
-    i = 0;
-  } else {
-    i = static_cast<int>(s.Length);
-  }
-  result = false;
-  if (i == 5) {
-    ibmat = 0;
-    do {
-      exitg1 = 0;
-      if (ibmat < 5) {
-        if (s.Vector[ibmat] != b_cv4[ibmat]) {
-          exitg1 = 1;
-        } else {
-          ibmat++;
-        }
-      } else {
-        result = true;
-        exitg1 = 1;
-      }
-    } while (exitg1 == 0);
-  }
-  if (!result) {
-    double d;
-    d = obj->PositionNumber;
-    if (d < 1.0) {
-      ibmat = 0;
-    } else {
-      ibmat = static_cast<int>(d);
-    }
-    for (i = 0; i < 2; i++) {
-      for (i1 = 0; i1 < ibmat; i1++) {
+      for (int i1{0}; i1 < ibmat; i1++) {
         obj->PositionLimitsInternal[i1 + 7 * i] =
             poslim_data[i1 + poslim_size_idx_0 * i];
       }
@@ -4237,17 +4231,17 @@ rigidBodyJoint *rigidBodyJoint::j_init()
   int exitg1;
   int homepos_size_idx_1;
   int i;
-  int i1;
   int ibmat;
   int poslim_size_idx_0;
   signed char homepos_data[7];
+  signed char b_tmp;
   bool result;
   obj = this;
   obj->InTree = false;
   for (i = 0; i < 16; i++) {
-    i1 = iv[i];
-    obj->JointToParentTransform[i] = i1;
-    obj->ChildToJointTransform[i] = i1;
+    b_tmp = iv[i];
+    obj->JointToParentTransform[i] = b_tmp;
+    obj->ChildToJointTransform[i] = b_tmp;
   }
   for (i = 0; i < 14; i++) {
     obj->PositionLimitsInternal[i] = 0.0;
@@ -4312,7 +4306,7 @@ rigidBodyJoint *rigidBodyJoint::j_init()
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -4395,7 +4389,6 @@ rigidBodyJoint *rigidBodyJoint::j_init()
     }
     poslim_size_idx_0 = 7;
     for (homepos_size_idx_1 = 0; homepos_size_idx_1 < 2; homepos_size_idx_1++) {
-      signed char b_tmp;
       ibmat = homepos_size_idx_1 * 3;
       b_tmp = static_cast<signed char>(10 * homepos_size_idx_1 - 5);
       b[ibmat] = b_tmp;
@@ -4470,7 +4463,7 @@ rigidBodyJoint *rigidBodyJoint::j_init()
       ibmat = static_cast<int>(d);
     }
     for (i = 0; i < 2; i++) {
-      for (i1 = 0; i1 < ibmat; i1++) {
+      for (int i1{0}; i1 < ibmat; i1++) {
         obj->PositionLimitsInternal[i1 + 7 * i] =
             poslim_data[i1 + poslim_size_idx_0 * i];
       }
@@ -4508,17 +4501,17 @@ rigidBodyJoint *rigidBodyJoint::k_init()
   int exitg1;
   int homepos_size_idx_1;
   int i;
-  int i1;
   int ibmat;
   int poslim_size_idx_0;
   signed char homepos_data[7];
+  signed char b_tmp;
   bool result;
   obj = this;
   obj->InTree = false;
   for (i = 0; i < 16; i++) {
-    i1 = iv[i];
-    obj->JointToParentTransform[i] = i1;
-    obj->ChildToJointTransform[i] = i1;
+    b_tmp = iv[i];
+    obj->JointToParentTransform[i] = b_tmp;
+    obj->ChildToJointTransform[i] = b_tmp;
   }
   for (i = 0; i < 14; i++) {
     obj->PositionLimitsInternal[i] = 0.0;
@@ -4583,7 +4576,7 @@ rigidBodyJoint *rigidBodyJoint::k_init()
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -4666,7 +4659,6 @@ rigidBodyJoint *rigidBodyJoint::k_init()
     }
     poslim_size_idx_0 = 7;
     for (homepos_size_idx_1 = 0; homepos_size_idx_1 < 2; homepos_size_idx_1++) {
-      signed char b_tmp;
       ibmat = homepos_size_idx_1 * 3;
       b_tmp = static_cast<signed char>(10 * homepos_size_idx_1 - 5);
       b[ibmat] = b_tmp;
@@ -4741,7 +4733,7 @@ rigidBodyJoint *rigidBodyJoint::k_init()
       ibmat = static_cast<int>(d);
     }
     for (i = 0; i < 2; i++) {
-      for (i1 = 0; i1 < ibmat; i1++) {
+      for (int i1{0}; i1 < ibmat; i1++) {
         obj->PositionLimitsInternal[i1 + 7 * i] =
             poslim_data[i1 + poslim_size_idx_0 * i];
       }
@@ -4779,17 +4771,17 @@ rigidBodyJoint *rigidBodyJoint::l_init()
   int exitg1;
   int homepos_size_idx_1;
   int i;
-  int i1;
   int ibmat;
   int poslim_size_idx_0;
   signed char homepos_data[7];
+  signed char b_tmp;
   bool result;
   obj = this;
   obj->InTree = false;
   for (i = 0; i < 16; i++) {
-    i1 = iv[i];
-    obj->JointToParentTransform[i] = i1;
-    obj->ChildToJointTransform[i] = i1;
+    b_tmp = iv[i];
+    obj->JointToParentTransform[i] = b_tmp;
+    obj->ChildToJointTransform[i] = b_tmp;
   }
   for (i = 0; i < 14; i++) {
     obj->PositionLimitsInternal[i] = 0.0;
@@ -4854,7 +4846,7 @@ rigidBodyJoint *rigidBodyJoint::l_init()
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -4937,7 +4929,6 @@ rigidBodyJoint *rigidBodyJoint::l_init()
     }
     poslim_size_idx_0 = 7;
     for (homepos_size_idx_1 = 0; homepos_size_idx_1 < 2; homepos_size_idx_1++) {
-      signed char b_tmp;
       ibmat = homepos_size_idx_1 * 3;
       b_tmp = static_cast<signed char>(10 * homepos_size_idx_1 - 5);
       b[ibmat] = b_tmp;
@@ -5012,7 +5003,7 @@ rigidBodyJoint *rigidBodyJoint::l_init()
       ibmat = static_cast<int>(d);
     }
     for (i = 0; i < 2; i++) {
-      for (i1 = 0; i1 < ibmat; i1++) {
+      for (int i1{0}; i1 < ibmat; i1++) {
         obj->PositionLimitsInternal[i1 + 7 * i] =
             poslim_data[i1 + poslim_size_idx_0 * i];
       }
@@ -5040,7 +5031,7 @@ void rigidBodyJoint::randomConfig(
 {
   static const char b_cv[5]{'f', 'i', 'x', 'e', 'd'};
   rigidBodyJoint *b_obj;
-  robotics::manip::internal::RigidBodyTree *obj;
+  robotics::manip::internal::b_RigidBodyTree *obj;
   ::coder::array<double, 2U> r;
   ::coder::array<double, 1U> r1;
   ::coder::array<double, 1U> x;
@@ -5921,7 +5912,7 @@ void rigidBodyJoint::transformBodyToParent(const ::coder::array<double, 1U> &q,
       do {
         exitg1 = 0;
         if (kstr < 9) {
-          if (cv1[kstr] != TypeInternal.Vector[kstr]) {
+          if (cv3[kstr] != TypeInternal.Vector[kstr]) {
             exitg1 = 1;
           } else {
             kstr++;

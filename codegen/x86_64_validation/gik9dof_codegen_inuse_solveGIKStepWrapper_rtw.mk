@@ -2,7 +2,7 @@
 ## Makefile generated for component 'gik9dof_codegen_inuse_solveGIKStepWrapper'. 
 ## 
 ## Makefile     : gik9dof_codegen_inuse_solveGIKStepWrapper_rtw.mk
-## Generated on : Tue Oct 07 08:19:47 2025
+## Generated on : Wed Oct 08 18:38:51 2025
 ## Final product: .\gik9dof_codegen_inuse_solveGIKStepWrapper.lib
 ## Product type : static-library
 ## 
@@ -183,7 +183,7 @@ DEFINES = $(DEFINES_) $(DEFINES_CUSTOM) $(DEFINES_STANDARD)
 ## SOURCE FILES
 ###########################################################################
 
-SRCS = $(MATLAB_ROOT)\toolbox\shared\robotics\externalDependency\libccd\src\ccd_ccd.c $(MATLAB_ROOT)\toolbox\shared\robotics\externalDependency\libccd\src\ccd_mpr.c $(MATLAB_ROOT)\toolbox\shared\robotics\externalDependency\libccd\src\ccd_polytope.c $(MATLAB_ROOT)\toolbox\shared\robotics\externalDependency\libccd\src\ccd_vec3.c $(MATLAB_ROOT)\toolbox\shared\robotics\robotcore\builtins\libsrc\collisioncodegen\collisioncodegen_CollisionGeometry.cpp $(MATLAB_ROOT)\toolbox\shared\robotics\robotcore\builtins\libsrc\collisioncodegen\collisioncodegen_api.cpp $(MATLAB_ROOT)\toolbox\shared\robotics\robotcore\builtins\libsrc\collisioncodegen\collisioncodegen_ccdExtensions.cpp $(MATLAB_ROOT)\toolbox\shared\robotics\robotcore\builtins\libsrc\collisioncodegen\collisioncodegen_checkCollision.cpp $(START_DIR)\coder_posix_time.c $(START_DIR)\gik9dof_codegen_inuse_solveGIKStepWrapper_data.cpp $(START_DIR)\rt_nonfinite.cpp $(START_DIR)\rtGetNaN.cpp $(START_DIR)\rtGetInf.cpp $(START_DIR)\rand.cpp $(START_DIR)\eml_rand_mt19937ar.cpp $(START_DIR)\xzlangeM.cpp $(START_DIR)\xnrm2.cpp $(START_DIR)\xdotc.cpp $(START_DIR)\validatestring.cpp $(START_DIR)\solveGIKStepRealtime.cpp $(START_DIR)\svd.cpp $(START_DIR)\find.cpp $(START_DIR)\ixfun.cpp $(START_DIR)\tic.cpp $(START_DIR)\norm.cpp $(START_DIR)\toc.cpp $(START_DIR)\randn.cpp $(START_DIR)\ismember.cpp $(START_DIR)\GIKSolver.cpp $(START_DIR)\eml_rand_mt19937ar_stateful.cpp $(START_DIR)\strcmp.cpp $(START_DIR)\xaxpy.cpp $(START_DIR)\xrotg.cpp $(START_DIR)\sqrt.cpp $(START_DIR)\xrot.cpp $(START_DIR)\xswap.cpp $(START_DIR)\mldivide.cpp $(START_DIR)\xgeqp3.cpp $(START_DIR)\sort.cpp $(START_DIR)\sortIdx.cpp $(START_DIR)\xzlascl.cpp $(START_DIR)\GIKProblem.cpp $(START_DIR)\ErrorDampedLevenbergMarquardt.cpp $(START_DIR)\rigidBodyJoint.cpp $(START_DIR)\structConstructorHelper.cpp $(START_DIR)\KinematicConstraint.cpp $(START_DIR)\RigidBodyTree.cpp $(START_DIR)\CharacterVector.cpp $(START_DIR)\CollisionGeometry.cpp $(START_DIR)\CollisionSet.cpp $(START_DIR)\RigidBody.cpp $(START_DIR)\FastVisualizationHelper.cpp $(START_DIR)\SystemTimeProvider.cpp $(START_DIR)\constraintPoseTarget.cpp $(START_DIR)\constraintJointBounds.cpp $(START_DIR)\constraintDistanceBounds.cpp $(START_DIR)\rigidBodyTree1.cpp $(START_DIR)\rigidBody1.cpp $(START_DIR)\generalizedInverseKinematics.cpp $(START_DIR)\PoseTarget.cpp $(START_DIR)\DistanceBoundsConstraint.cpp $(START_DIR)\JointPositionBounds.cpp $(START_DIR)\CoderTimeAPI.cpp
+SRCS = $(MATLAB_ROOT)\toolbox\shared\robotics\externalDependency\libccd\src\ccd_ccd.c $(MATLAB_ROOT)\toolbox\shared\robotics\externalDependency\libccd\src\ccd_mpr.c $(MATLAB_ROOT)\toolbox\shared\robotics\externalDependency\libccd\src\ccd_polytope.c $(MATLAB_ROOT)\toolbox\shared\robotics\externalDependency\libccd\src\ccd_vec3.c $(MATLAB_ROOT)\toolbox\shared\robotics\robotcore\builtins\libsrc\collisioncodegen\collisioncodegen_CollisionGeometry.cpp $(MATLAB_ROOT)\toolbox\shared\robotics\robotcore\builtins\libsrc\collisioncodegen\collisioncodegen_api.cpp $(MATLAB_ROOT)\toolbox\shared\robotics\robotcore\builtins\libsrc\collisioncodegen\collisioncodegen_ccdExtensions.cpp $(MATLAB_ROOT)\toolbox\shared\robotics\robotcore\builtins\libsrc\collisioncodegen\collisioncodegen_checkCollision.cpp $(START_DIR)\coder_posix_time.c $(START_DIR)\gik9dof_codegen_inuse_solveGIKStepWrapper_data.cpp $(START_DIR)\rt_nonfinite.cpp $(START_DIR)\rtGetNaN.cpp $(START_DIR)\rtGetInf.cpp $(START_DIR)\buildRobotForCodegen.cpp $(START_DIR)\rand.cpp $(START_DIR)\eml_rand_mt19937ar.cpp $(START_DIR)\xzlangeM.cpp $(START_DIR)\xnrm2.cpp $(START_DIR)\xdotc.cpp $(START_DIR)\validatestring.cpp $(START_DIR)\diff.cpp $(START_DIR)\svd.cpp $(START_DIR)\eye.cpp $(START_DIR)\find.cpp $(START_DIR)\ixfun.cpp $(START_DIR)\tic.cpp $(START_DIR)\norm.cpp $(START_DIR)\toc.cpp $(START_DIR)\randn.cpp $(START_DIR)\ismember.cpp $(START_DIR)\GIKSolver.cpp $(START_DIR)\eml_rand_mt19937ar_stateful.cpp $(START_DIR)\strcmp.cpp $(START_DIR)\xaxpy.cpp $(START_DIR)\xrotg.cpp $(START_DIR)\sqrt.cpp $(START_DIR)\xrot.cpp $(START_DIR)\xswap.cpp $(START_DIR)\mldivide.cpp $(START_DIR)\xgeqp3.cpp $(START_DIR)\sort.cpp $(START_DIR)\sortIdx.cpp $(START_DIR)\xzlascl.cpp $(START_DIR)\GIKProblem.cpp $(START_DIR)\ErrorDampedLevenbergMarquardt.cpp $(START_DIR)\rigidBodyJoint.cpp $(START_DIR)\structConstructorHelper.cpp $(START_DIR)\KinematicConstraint.cpp $(START_DIR)\RigidBodyTree.cpp $(START_DIR)\CharacterVector.cpp $(START_DIR)\CollisionGeometry.cpp $(START_DIR)\CollisionSet.cpp $(START_DIR)\RigidBody.cpp $(START_DIR)\constraintDistanceBounds.cpp $(START_DIR)\FastVisualizationHelper.cpp $(START_DIR)\SystemTimeProvider.cpp $(START_DIR)\constraintPoseTarget.cpp $(START_DIR)\constraintJointBounds.cpp $(START_DIR)\rigidBodyTree1.cpp $(START_DIR)\rigidBody1.cpp $(START_DIR)\generalizedInverseKinematics.cpp $(START_DIR)\PoseTarget.cpp $(START_DIR)\JointPositionBounds.cpp $(START_DIR)\DistanceBoundsConstraint.cpp $(START_DIR)\CoderTimeAPI.cpp
 
 ALL_SRCS = $(SRCS)
 
@@ -191,7 +191,7 @@ ALL_SRCS = $(SRCS)
 ## OBJECTS
 ###########################################################################
 
-OBJS = ccd_ccd.obj ccd_mpr.obj ccd_polytope.obj ccd_vec3.obj collisioncodegen_CollisionGeometry.obj collisioncodegen_api.obj collisioncodegen_ccdExtensions.obj collisioncodegen_checkCollision.obj coder_posix_time.obj gik9dof_codegen_inuse_solveGIKStepWrapper_data.obj rt_nonfinite.obj rtGetNaN.obj rtGetInf.obj rand.obj eml_rand_mt19937ar.obj xzlangeM.obj xnrm2.obj xdotc.obj validatestring.obj solveGIKStepRealtime.obj svd.obj find.obj ixfun.obj tic.obj norm.obj toc.obj randn.obj ismember.obj GIKSolver.obj eml_rand_mt19937ar_stateful.obj strcmp.obj xaxpy.obj xrotg.obj sqrt.obj xrot.obj xswap.obj mldivide.obj xgeqp3.obj sort.obj sortIdx.obj xzlascl.obj GIKProblem.obj ErrorDampedLevenbergMarquardt.obj rigidBodyJoint.obj structConstructorHelper.obj KinematicConstraint.obj RigidBodyTree.obj CharacterVector.obj CollisionGeometry.obj CollisionSet.obj RigidBody.obj FastVisualizationHelper.obj SystemTimeProvider.obj constraintPoseTarget.obj constraintJointBounds.obj constraintDistanceBounds.obj rigidBodyTree1.obj rigidBody1.obj generalizedInverseKinematics.obj PoseTarget.obj DistanceBoundsConstraint.obj JointPositionBounds.obj CoderTimeAPI.obj
+OBJS = ccd_ccd.obj ccd_mpr.obj ccd_polytope.obj ccd_vec3.obj collisioncodegen_CollisionGeometry.obj collisioncodegen_api.obj collisioncodegen_ccdExtensions.obj collisioncodegen_checkCollision.obj coder_posix_time.obj gik9dof_codegen_inuse_solveGIKStepWrapper_data.obj rt_nonfinite.obj rtGetNaN.obj rtGetInf.obj buildRobotForCodegen.obj rand.obj eml_rand_mt19937ar.obj xzlangeM.obj xnrm2.obj xdotc.obj validatestring.obj diff.obj svd.obj eye.obj find.obj ixfun.obj tic.obj norm.obj toc.obj randn.obj ismember.obj GIKSolver.obj eml_rand_mt19937ar_stateful.obj strcmp.obj xaxpy.obj xrotg.obj sqrt.obj xrot.obj xswap.obj mldivide.obj xgeqp3.obj sort.obj sortIdx.obj xzlascl.obj GIKProblem.obj ErrorDampedLevenbergMarquardt.obj rigidBodyJoint.obj structConstructorHelper.obj KinematicConstraint.obj RigidBodyTree.obj CharacterVector.obj CollisionGeometry.obj CollisionSet.obj RigidBody.obj constraintDistanceBounds.obj FastVisualizationHelper.obj SystemTimeProvider.obj constraintPoseTarget.obj constraintJointBounds.obj rigidBodyTree1.obj rigidBody1.obj generalizedInverseKinematics.obj PoseTarget.obj JointPositionBounds.obj DistanceBoundsConstraint.obj CoderTimeAPI.obj
 
 ALL_OBJS = $(OBJS)
 
@@ -475,6 +475,10 @@ rtGetInf.obj : "$(START_DIR)\rtGetInf.cpp"
 	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\rtGetInf.cpp"
 
 
+buildRobotForCodegen.obj : "$(START_DIR)\buildRobotForCodegen.cpp"
+	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\buildRobotForCodegen.cpp"
+
+
 rand.obj : "$(START_DIR)\rand.cpp"
 	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\rand.cpp"
 
@@ -499,12 +503,16 @@ validatestring.obj : "$(START_DIR)\validatestring.cpp"
 	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\validatestring.cpp"
 
 
-solveGIKStepRealtime.obj : "$(START_DIR)\solveGIKStepRealtime.cpp"
-	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\solveGIKStepRealtime.cpp"
+diff.obj : "$(START_DIR)\diff.cpp"
+	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\diff.cpp"
 
 
 svd.obj : "$(START_DIR)\svd.cpp"
 	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\svd.cpp"
+
+
+eye.obj : "$(START_DIR)\eye.cpp"
+	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\eye.cpp"
 
 
 find.obj : "$(START_DIR)\find.cpp"
@@ -627,6 +635,10 @@ RigidBody.obj : "$(START_DIR)\RigidBody.cpp"
 	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\RigidBody.cpp"
 
 
+constraintDistanceBounds.obj : "$(START_DIR)\constraintDistanceBounds.cpp"
+	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\constraintDistanceBounds.cpp"
+
+
 FastVisualizationHelper.obj : "$(START_DIR)\FastVisualizationHelper.cpp"
 	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\FastVisualizationHelper.cpp"
 
@@ -641,10 +653,6 @@ constraintPoseTarget.obj : "$(START_DIR)\constraintPoseTarget.cpp"
 
 constraintJointBounds.obj : "$(START_DIR)\constraintJointBounds.cpp"
 	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\constraintJointBounds.cpp"
-
-
-constraintDistanceBounds.obj : "$(START_DIR)\constraintDistanceBounds.cpp"
-	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\constraintDistanceBounds.cpp"
 
 
 rigidBodyTree1.obj : "$(START_DIR)\rigidBodyTree1.cpp"
@@ -663,12 +671,12 @@ PoseTarget.obj : "$(START_DIR)\PoseTarget.cpp"
 	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\PoseTarget.cpp"
 
 
-DistanceBoundsConstraint.obj : "$(START_DIR)\DistanceBoundsConstraint.cpp"
-	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\DistanceBoundsConstraint.cpp"
-
-
 JointPositionBounds.obj : "$(START_DIR)\JointPositionBounds.cpp"
 	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\JointPositionBounds.cpp"
+
+
+DistanceBoundsConstraint.obj : "$(START_DIR)\DistanceBoundsConstraint.cpp"
+	$(CPP) $(CPPFLAGS) -Fo"$@" "$(START_DIR)\DistanceBoundsConstraint.cpp"
 
 
 CoderTimeAPI.obj : "$(START_DIR)\CoderTimeAPI.cpp"

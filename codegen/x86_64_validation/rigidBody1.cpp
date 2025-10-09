@@ -2,7 +2,7 @@
 // File: rigidBody1.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 08:17:44
+// C/C++ source code generated on  : 08-Oct-2025 18:33:39
 //
 
 // Include Files
@@ -26,7 +26,7 @@ static const signed char iv1[9]{1, 0, 0, 0, 1, 0, 0, 0, 1};
 // Function Definitions
 //
 // Arguments    : GIKSolver *aInstancePtr
-//                robotics::manip::internal::b_RigidBodyTree &iobj_0
+//                robotics::manip::internal::RigidBodyTree &iobj_0
 //                robotics::manip::internal::CollisionSet &iobj_1
 //                rigidBodyJoint &iobj_2
 //                robotics::manip::internal::RigidBody &iobj_3
@@ -35,7 +35,7 @@ static const signed char iv1[9]{1, 0, 0, 0, 1, 0, 0, 0, 1};
 namespace gik9dof {
 namespace coder {
 rigidBody *rigidBody::b_init(GIKSolver *aInstancePtr,
-                             robotics::manip::internal::b_RigidBodyTree &iobj_0,
+                             robotics::manip::internal::RigidBodyTree &iobj_0,
                              robotics::manip::internal::CollisionSet &iobj_1,
                              rigidBodyJoint &iobj_2,
                              robotics::manip::internal::RigidBody &iobj_3)
@@ -51,7 +51,7 @@ rigidBody *rigidBody::b_init(GIKSolver *aInstancePtr,
   static const char b_cv4[5]{'f', 'i', 'x', 'e', 'd'};
   rigidBody *obj;
   robotics::manip::internal::CharacterVector s;
-  robotics::manip::internal::b_RigidBodyTree *b_default;
+  robotics::manip::internal::RigidBodyTree *b_default;
   double msubspace_data[36];
   double poslim_data[14];
   int exitg1;
@@ -73,7 +73,7 @@ rigidBody *rigidBody::b_init(GIKSolver *aInstancePtr,
   s = iobj_3.NameInternal;
   s.Length = 11.0;
   for (i = 0; i < 11; i++) {
-    s.Vector[i] = cv3[i];
+    s.Vector[i] = cv5[i];
   }
   iobj_3.NameInternal = s;
   iobj_2.InTree = false;
@@ -145,7 +145,7 @@ rigidBody *rigidBody::b_init(GIKSolver *aInstancePtr,
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -526,14 +526,14 @@ void rigidBody::b_set_Mass()
 
 //
 // Arguments    : GIKSolver *aInstancePtr
-//                robotics::manip::internal::b_RigidBodyTree &iobj_0
+//                robotics::manip::internal::RigidBodyTree &iobj_0
 //                robotics::manip::internal::CollisionSet &iobj_1
 //                rigidBodyJoint &iobj_2
 //                robotics::manip::internal::RigidBody &iobj_3
 // Return Type  : rigidBody *
 //
 rigidBody *rigidBody::c_init(GIKSolver *aInstancePtr,
-                             robotics::manip::internal::b_RigidBodyTree &iobj_0,
+                             robotics::manip::internal::RigidBodyTree &iobj_0,
                              robotics::manip::internal::CollisionSet &iobj_1,
                              rigidBodyJoint &iobj_2,
                              robotics::manip::internal::RigidBody &iobj_3)
@@ -550,7 +550,7 @@ rigidBody *rigidBody::c_init(GIKSolver *aInstancePtr,
   static const char b_cv4[5]{'f', 'i', 'x', 'e', 'd'};
   rigidBody *obj;
   robotics::manip::internal::CharacterVector s;
-  robotics::manip::internal::b_RigidBodyTree *b_default;
+  robotics::manip::internal::RigidBodyTree *b_default;
   double msubspace_data[36];
   double poslim_data[14];
   int exitg1;
@@ -572,7 +572,7 @@ rigidBody *rigidBody::c_init(GIKSolver *aInstancePtr,
   s = iobj_3.NameInternal;
   s.Length = 21.0;
   for (i = 0; i < 21; i++) {
-    s.Vector[i] = cv4[i];
+    s.Vector[i] = cv[i];
   }
   iobj_3.NameInternal = s;
   iobj_2.InTree = false;
@@ -644,7 +644,7 @@ rigidBody *rigidBody::c_init(GIKSolver *aInstancePtr,
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -1034,14 +1034,14 @@ rigidBody::rigidBody()
 
 //
 // Arguments    : GIKSolver *aInstancePtr
-//                robotics::manip::internal::b_RigidBodyTree &iobj_0
+//                robotics::manip::internal::RigidBodyTree &iobj_0
 //                robotics::manip::internal::CollisionSet &iobj_1
 //                rigidBodyJoint &iobj_2
 //                robotics::manip::internal::RigidBody &iobj_3
 // Return Type  : rigidBody *
 //
 rigidBody *rigidBody::d_init(GIKSolver *aInstancePtr,
-                             robotics::manip::internal::b_RigidBodyTree &iobj_0,
+                             robotics::manip::internal::RigidBodyTree &iobj_0,
                              robotics::manip::internal::CollisionSet &iobj_1,
                              rigidBodyJoint &iobj_2,
                              robotics::manip::internal::RigidBody &iobj_3)
@@ -1058,7 +1058,7 @@ rigidBody *rigidBody::d_init(GIKSolver *aInstancePtr,
   static const char b_cv4[5]{'f', 'i', 'x', 'e', 'd'};
   rigidBody *obj;
   robotics::manip::internal::CharacterVector s;
-  robotics::manip::internal::b_RigidBodyTree *b_default;
+  robotics::manip::internal::RigidBodyTree *b_default;
   double msubspace_data[36];
   double poslim_data[14];
   int exitg1;
@@ -1080,7 +1080,7 @@ rigidBody *rigidBody::d_init(GIKSolver *aInstancePtr,
   s = iobj_3.NameInternal;
   s.Length = 18.0;
   for (i = 0; i < 18; i++) {
-    s.Vector[i] = cv5[i];
+    s.Vector[i] = cv1[i];
   }
   iobj_3.NameInternal = s;
   iobj_2.InTree = false;
@@ -1152,7 +1152,7 @@ rigidBody *rigidBody::d_init(GIKSolver *aInstancePtr,
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -1541,14 +1541,14 @@ rigidBody::~rigidBody()
 
 //
 // Arguments    : GIKSolver *aInstancePtr
-//                robotics::manip::internal::b_RigidBodyTree &iobj_0
+//                robotics::manip::internal::RigidBodyTree &iobj_0
 //                robotics::manip::internal::CollisionSet &iobj_1
 //                rigidBodyJoint &iobj_2
 //                robotics::manip::internal::RigidBody &iobj_3
 // Return Type  : rigidBody *
 //
 rigidBody *rigidBody::e_init(GIKSolver *aInstancePtr,
-                             robotics::manip::internal::b_RigidBodyTree &iobj_0,
+                             robotics::manip::internal::RigidBodyTree &iobj_0,
                              robotics::manip::internal::CollisionSet &iobj_1,
                              rigidBodyJoint &iobj_2,
                              robotics::manip::internal::RigidBody &iobj_3)
@@ -1564,7 +1564,7 @@ rigidBody *rigidBody::e_init(GIKSolver *aInstancePtr,
   static const char b_cv4[5]{'f', 'i', 'x', 'e', 'd'};
   rigidBody *obj;
   robotics::manip::internal::CharacterVector s;
-  robotics::manip::internal::b_RigidBodyTree *b_default;
+  robotics::manip::internal::RigidBodyTree *b_default;
   double msubspace_data[36];
   double poslim_data[14];
   int exitg1;
@@ -1658,7 +1658,7 @@ rigidBody *rigidBody::e_init(GIKSolver *aInstancePtr,
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -2039,14 +2039,14 @@ void rigidBody::e_set_Mass()
 
 //
 // Arguments    : GIKSolver *aInstancePtr
-//                robotics::manip::internal::b_RigidBodyTree &iobj_0
+//                robotics::manip::internal::RigidBodyTree &iobj_0
 //                robotics::manip::internal::CollisionSet &iobj_1
 //                rigidBodyJoint &iobj_2
 //                robotics::manip::internal::RigidBody &iobj_3
 // Return Type  : rigidBody *
 //
 rigidBody *rigidBody::f_init(GIKSolver *aInstancePtr,
-                             robotics::manip::internal::b_RigidBodyTree &iobj_0,
+                             robotics::manip::internal::RigidBodyTree &iobj_0,
                              robotics::manip::internal::CollisionSet &iobj_1,
                              rigidBodyJoint &iobj_2,
                              robotics::manip::internal::RigidBody &iobj_3)
@@ -2062,7 +2062,7 @@ rigidBody *rigidBody::f_init(GIKSolver *aInstancePtr,
   static const char b_cv4[5]{'f', 'i', 'x', 'e', 'd'};
   rigidBody *obj;
   robotics::manip::internal::CharacterVector s;
-  robotics::manip::internal::b_RigidBodyTree *b_default;
+  robotics::manip::internal::RigidBodyTree *b_default;
   double msubspace_data[36];
   double poslim_data[14];
   int exitg1;
@@ -2156,7 +2156,7 @@ rigidBody *rigidBody::f_init(GIKSolver *aInstancePtr,
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -2537,14 +2537,14 @@ void rigidBody::f_set_Mass()
 
 //
 // Arguments    : GIKSolver *aInstancePtr
-//                robotics::manip::internal::b_RigidBodyTree &iobj_0
+//                robotics::manip::internal::RigidBodyTree &iobj_0
 //                robotics::manip::internal::CollisionSet &iobj_1
 //                rigidBodyJoint &iobj_2
 //                robotics::manip::internal::RigidBody &iobj_3
 // Return Type  : rigidBody *
 //
 rigidBody *rigidBody::g_init(GIKSolver *aInstancePtr,
-                             robotics::manip::internal::b_RigidBodyTree &iobj_0,
+                             robotics::manip::internal::RigidBodyTree &iobj_0,
                              robotics::manip::internal::CollisionSet &iobj_1,
                              rigidBodyJoint &iobj_2,
                              robotics::manip::internal::RigidBody &iobj_3)
@@ -2560,7 +2560,7 @@ rigidBody *rigidBody::g_init(GIKSolver *aInstancePtr,
   static const char b_cv4[5]{'f', 'i', 'x', 'e', 'd'};
   rigidBody *obj;
   robotics::manip::internal::CharacterVector s;
-  robotics::manip::internal::b_RigidBodyTree *b_default;
+  robotics::manip::internal::RigidBodyTree *b_default;
   double msubspace_data[36];
   double poslim_data[14];
   int exitg1;
@@ -2654,7 +2654,7 @@ rigidBody *rigidBody::g_init(GIKSolver *aInstancePtr,
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -3035,14 +3035,14 @@ void rigidBody::g_set_Mass()
 
 //
 // Arguments    : GIKSolver *aInstancePtr
-//                robotics::manip::internal::b_RigidBodyTree &iobj_0
+//                robotics::manip::internal::RigidBodyTree &iobj_0
 //                robotics::manip::internal::CollisionSet &iobj_1
 //                rigidBodyJoint &iobj_2
 //                robotics::manip::internal::RigidBody &iobj_3
 // Return Type  : rigidBody *
 //
 rigidBody *rigidBody::h_init(GIKSolver *aInstancePtr,
-                             robotics::manip::internal::b_RigidBodyTree &iobj_0,
+                             robotics::manip::internal::RigidBodyTree &iobj_0,
                              robotics::manip::internal::CollisionSet &iobj_1,
                              rigidBodyJoint &iobj_2,
                              robotics::manip::internal::RigidBody &iobj_3)
@@ -3058,7 +3058,7 @@ rigidBody *rigidBody::h_init(GIKSolver *aInstancePtr,
   static const char b_cv4[5]{'f', 'i', 'x', 'e', 'd'};
   rigidBody *obj;
   robotics::manip::internal::CharacterVector s;
-  robotics::manip::internal::b_RigidBodyTree *b_default;
+  robotics::manip::internal::RigidBodyTree *b_default;
   double msubspace_data[36];
   double poslim_data[14];
   int exitg1;
@@ -3152,7 +3152,7 @@ rigidBody *rigidBody::h_init(GIKSolver *aInstancePtr,
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -3533,14 +3533,14 @@ void rigidBody::h_set_Mass()
 
 //
 // Arguments    : GIKSolver *aInstancePtr
-//                robotics::manip::internal::b_RigidBodyTree &iobj_0
+//                robotics::manip::internal::RigidBodyTree &iobj_0
 //                robotics::manip::internal::CollisionSet &iobj_1
 //                rigidBodyJoint &iobj_2
 //                robotics::manip::internal::RigidBody &iobj_3
 // Return Type  : rigidBody *
 //
 rigidBody *rigidBody::i_init(GIKSolver *aInstancePtr,
-                             robotics::manip::internal::b_RigidBodyTree &iobj_0,
+                             robotics::manip::internal::RigidBodyTree &iobj_0,
                              robotics::manip::internal::CollisionSet &iobj_1,
                              rigidBodyJoint &iobj_2,
                              robotics::manip::internal::RigidBody &iobj_3)
@@ -3556,7 +3556,7 @@ rigidBody *rigidBody::i_init(GIKSolver *aInstancePtr,
   static const char b_cv4[5]{'f', 'i', 'x', 'e', 'd'};
   rigidBody *obj;
   robotics::manip::internal::CharacterVector s;
-  robotics::manip::internal::b_RigidBodyTree *b_default;
+  robotics::manip::internal::RigidBodyTree *b_default;
   double msubspace_data[36];
   double poslim_data[14];
   int exitg1;
@@ -3650,7 +3650,7 @@ rigidBody *rigidBody::i_init(GIKSolver *aInstancePtr,
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -4031,14 +4031,14 @@ void rigidBody::i_set_Mass()
 
 //
 // Arguments    : GIKSolver *aInstancePtr
-//                robotics::manip::internal::b_RigidBodyTree &iobj_0
+//                robotics::manip::internal::RigidBodyTree &iobj_0
 //                robotics::manip::internal::CollisionSet &iobj_1
 //                rigidBodyJoint &iobj_2
 //                robotics::manip::internal::RigidBody &iobj_3
 // Return Type  : rigidBody *
 //
 rigidBody *rigidBody::init(GIKSolver *aInstancePtr,
-                           robotics::manip::internal::b_RigidBodyTree &iobj_0,
+                           robotics::manip::internal::RigidBodyTree &iobj_0,
                            robotics::manip::internal::CollisionSet &iobj_1,
                            rigidBodyJoint &iobj_2,
                            robotics::manip::internal::RigidBody &iobj_3)
@@ -4054,7 +4054,7 @@ rigidBody *rigidBody::init(GIKSolver *aInstancePtr,
   static const char b_cv4[5]{'f', 'i', 'x', 'e', 'd'};
   rigidBody *obj;
   robotics::manip::internal::CharacterVector s;
-  robotics::manip::internal::b_RigidBodyTree *b_default;
+  robotics::manip::internal::RigidBodyTree *b_default;
   double msubspace_data[36];
   double poslim_data[14];
   int exitg1;
@@ -4076,7 +4076,7 @@ rigidBody *rigidBody::init(GIKSolver *aInstancePtr,
   s = iobj_3.NameInternal;
   s.Length = 11.0;
   for (i = 0; i < 11; i++) {
-    s.Vector[i] = cv2[i];
+    s.Vector[i] = cv4[i];
   }
   iobj_3.NameInternal = s;
   iobj_2.InTree = false;
@@ -4148,7 +4148,7 @@ rigidBody *rigidBody::init(GIKSolver *aInstancePtr,
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -4354,14 +4354,14 @@ rigidBody *rigidBody::init(GIKSolver *aInstancePtr,
 
 //
 // Arguments    : GIKSolver *aInstancePtr
-//                robotics::manip::internal::b_RigidBodyTree &iobj_0
+//                robotics::manip::internal::RigidBodyTree &iobj_0
 //                robotics::manip::internal::CollisionSet &iobj_1
 //                rigidBodyJoint &iobj_2
 //                robotics::manip::internal::RigidBody &iobj_3
 // Return Type  : rigidBody *
 //
 rigidBody *rigidBody::j_init(GIKSolver *aInstancePtr,
-                             robotics::manip::internal::b_RigidBodyTree &iobj_0,
+                             robotics::manip::internal::RigidBodyTree &iobj_0,
                              robotics::manip::internal::CollisionSet &iobj_1,
                              rigidBodyJoint &iobj_2,
                              robotics::manip::internal::RigidBody &iobj_3)
@@ -4377,7 +4377,7 @@ rigidBody *rigidBody::j_init(GIKSolver *aInstancePtr,
   static const char b_cv4[5]{'f', 'i', 'x', 'e', 'd'};
   rigidBody *obj;
   robotics::manip::internal::CharacterVector s;
-  robotics::manip::internal::b_RigidBodyTree *b_default;
+  robotics::manip::internal::RigidBodyTree *b_default;
   double msubspace_data[36];
   double poslim_data[14];
   int exitg1;
@@ -4471,7 +4471,7 @@ rigidBody *rigidBody::j_init(GIKSolver *aInstancePtr,
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -4852,14 +4852,14 @@ void rigidBody::j_set_Mass()
 
 //
 // Arguments    : GIKSolver *aInstancePtr
-//                robotics::manip::internal::b_RigidBodyTree &iobj_0
+//                robotics::manip::internal::RigidBodyTree &iobj_0
 //                robotics::manip::internal::CollisionSet &iobj_1
 //                rigidBodyJoint &iobj_2
 //                robotics::manip::internal::RigidBody &iobj_3
 // Return Type  : rigidBody *
 //
 rigidBody *rigidBody::k_init(GIKSolver *aInstancePtr,
-                             robotics::manip::internal::b_RigidBodyTree &iobj_0,
+                             robotics::manip::internal::RigidBodyTree &iobj_0,
                              robotics::manip::internal::CollisionSet &iobj_1,
                              rigidBodyJoint &iobj_2,
                              robotics::manip::internal::RigidBody &iobj_3)
@@ -4876,7 +4876,7 @@ rigidBody *rigidBody::k_init(GIKSolver *aInstancePtr,
   static const char b_cv4[5]{'f', 'i', 'x', 'e', 'd'};
   rigidBody *obj;
   robotics::manip::internal::CharacterVector s;
-  robotics::manip::internal::b_RigidBodyTree *b_default;
+  robotics::manip::internal::RigidBodyTree *b_default;
   double msubspace_data[36];
   double poslim_data[14];
   int exitg1;
@@ -4970,7 +4970,7 @@ rigidBody *rigidBody::k_init(GIKSolver *aInstancePtr,
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;

@@ -2,7 +2,7 @@
 // File: generalizedInverseKinematics.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 08:09:07
+// C/C++ source code generated on  : 08-Oct-2025 18:19:21
 //
 
 #ifndef GENERALIZEDINVERSEKINEMATICS_H
@@ -33,7 +33,7 @@ class constraintJointBounds;
 class constraintDistanceBounds;
 
 } // namespace coder
-struct struct1_T;
+struct struct0_T;
 
 } // namespace gik9dof
 
@@ -54,39 +54,41 @@ public:
                             double solverparams_ErrorChangeTolerance,
                             double solverparams_DampingBias,
                             bool solverparams_UseErrorDamping);
-  double step(GIKSolver *aInstancePtr, const double varargin_1[9],
-              constraintPoseTarget &varargin_2,
-              constraintJointBounds &varargin_3,
-              constraintDistanceBounds &varargin_4, double varargout_1[9],
-              struct1_T varargout_2_ConstraintViolations[3],
-              char varargout_2_Status_data[], int varargout_2_Status_size[2],
-              double &varargout_2_NumRandomRestarts,
-              double &varargout_2_ExitFlag);
   void matlabCodegenDestructor();
+  void step(GIKSolver *aInstancePtr, double varargin_1[9],
+            const constraintPoseTarget &varargin_2,
+            const constraintJointBounds &varargin_3,
+            constraintDistanceBounds *varargin_4,
+            constraintDistanceBounds *varargin_5,
+            constraintDistanceBounds *varargin_6,
+            constraintDistanceBounds *varargin_7,
+            constraintDistanceBounds *varargin_8,
+            constraintDistanceBounds *varargin_9,
+            constraintDistanceBounds *varargin_10,
+            constraintDistanceBounds *varargin_11,
+            constraintDistanceBounds *varargin_12,
+            constraintDistanceBounds *varargin_13,
+            constraintDistanceBounds *varargin_14,
+            constraintDistanceBounds *varargin_15,
+            constraintDistanceBounds *varargin_16,
+            constraintDistanceBounds *varargin_17,
+            constraintDistanceBounds *varargin_18,
+            constraintDistanceBounds *varargin_19,
+            constraintDistanceBounds *varargin_20,
+            constraintDistanceBounds *varargin_21,
+            constraintDistanceBounds *varargin_22,
+            constraintDistanceBounds *varargin_23, struct0_T *varargout_2);
   ~generalizedInverseKinematics();
   generalizedInverseKinematics();
-
-protected:
-  double stepImpl(GIKSolver *aInstancePtr, double initialGuess[9],
-                  const constraintPoseTarget &varargin_1,
-                  const constraintJointBounds &varargin_2,
-                  const constraintDistanceBounds &varargin_3,
-                  struct1_T solutionInfo_ConstraintViolations[3],
-                  char solutionInfo_Status_data[],
-                  int solutionInfo_Status_size[2],
-                  double &solutionInfo_NumRandomRestarts,
-                  double &solutionInfo_ExitFlag);
-
-public:
   bool matlabCodegenIsDeleted;
   robotics::core::internal::ErrorDampedLevenbergMarquardt *Solver;
-  robotics::manip::internal::RigidBodyTree *Tree;
+  robotics::manip::internal::b_RigidBodyTree *Tree;
   robotics::manip::internal::GIKProblem Problem;
   bool EnforceJointLimits;
   rigidBodyJoint _pobj0[22];
   robotics::manip::internal::RigidBody _pobj1[11];
   robotics::manip::internal::CollisionSet _pobj2[23];
-  robotics::manip::internal::RigidBodyTree _pobj3;
+  robotics::manip::internal::b_RigidBodyTree _pobj3;
   robotics::core::internal::ErrorDampedLevenbergMarquardt _pobj4;
 
 private:

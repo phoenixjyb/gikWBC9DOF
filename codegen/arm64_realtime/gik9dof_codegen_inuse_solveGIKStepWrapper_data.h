@@ -2,7 +2,7 @@
 // File: gik9dof_codegen_inuse_solveGIKStepWrapper_data.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 08:09:07
+// C/C++ source code generated on  : 08-Oct-2025 18:19:21
 //
 
 #ifndef GIK9DOF_CODEGEN_INUSE_SOLVEGIKSTEPWRAPPER_DATA_H
@@ -18,12 +18,12 @@
 // Variable Declarations
 namespace gik9dof {
 extern omp_nest_lock_t gik9dof_codegen_inuse_solveGIKStepWrapper_nestLockGlobal;
+extern const char cv[21];
+extern const char cv1[18];
 extern const signed char iv[16];
-extern const char cv1[9];
-extern const char cv2[11];
-extern const char cv3[11];
-extern const char cv4[21];
-extern const char cv5[18];
+extern const char cv3[9];
+extern const char cv4[11];
+extern const char cv5[11];
 extern const char cv6[14];
 extern const char cv7[14];
 extern const char cv8[14];

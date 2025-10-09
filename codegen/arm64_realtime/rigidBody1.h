@@ -2,7 +2,7 @@
 // File: rigidBody1.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 08:09:07
+// C/C++ source code generated on  : 08-Oct-2025 18:19:21
 //
 
 #ifndef RIGIDBODY1_H
@@ -21,7 +21,7 @@ namespace manip {
 namespace internal {
 class RigidBody;
 
-class b_RigidBodyTree;
+class RigidBodyTree;
 
 } // namespace internal
 } // namespace manip
@@ -49,7 +49,7 @@ namespace coder {
 class rigidBody {
 public:
   rigidBody *init(GIKSolver *aInstancePtr,
-                  robotics::manip::internal::b_RigidBodyTree &iobj_0,
+                  robotics::manip::internal::RigidBodyTree &iobj_0,
                   robotics::manip::internal::CollisionSet &iobj_1,
                   rigidBodyJoint &iobj_2,
                   robotics::manip::internal::RigidBody &iobj_3);
@@ -57,12 +57,12 @@ public:
   void set_CenterOfMass();
   void set_Inertia();
   rigidBody *b_init(GIKSolver *aInstancePtr,
-                    robotics::manip::internal::b_RigidBodyTree &iobj_0,
+                    robotics::manip::internal::RigidBodyTree &iobj_0,
                     robotics::manip::internal::CollisionSet &iobj_1,
                     rigidBodyJoint &iobj_2,
                     robotics::manip::internal::RigidBody &iobj_3);
   rigidBody *c_init(GIKSolver *aInstancePtr,
-                    robotics::manip::internal::b_RigidBodyTree &iobj_0,
+                    robotics::manip::internal::RigidBodyTree &iobj_0,
                     robotics::manip::internal::CollisionSet &iobj_1,
                     rigidBodyJoint &iobj_2,
                     robotics::manip::internal::RigidBody &iobj_3);
@@ -70,7 +70,7 @@ public:
   void b_set_CenterOfMass();
   void b_set_Inertia();
   rigidBody *d_init(GIKSolver *aInstancePtr,
-                    robotics::manip::internal::b_RigidBodyTree &iobj_0,
+                    robotics::manip::internal::RigidBodyTree &iobj_0,
                     robotics::manip::internal::CollisionSet &iobj_1,
                     rigidBodyJoint &iobj_2,
                     robotics::manip::internal::RigidBody &iobj_3);
@@ -78,7 +78,7 @@ public:
   void c_set_CenterOfMass();
   void c_set_Inertia();
   rigidBody *e_init(GIKSolver *aInstancePtr,
-                    robotics::manip::internal::b_RigidBodyTree &iobj_0,
+                    robotics::manip::internal::RigidBodyTree &iobj_0,
                     robotics::manip::internal::CollisionSet &iobj_1,
                     rigidBodyJoint &iobj_2,
                     robotics::manip::internal::RigidBody &iobj_3);
@@ -86,7 +86,7 @@ public:
   void d_set_CenterOfMass();
   void d_set_Inertia();
   rigidBody *f_init(GIKSolver *aInstancePtr,
-                    robotics::manip::internal::b_RigidBodyTree &iobj_0,
+                    robotics::manip::internal::RigidBodyTree &iobj_0,
                     robotics::manip::internal::CollisionSet &iobj_1,
                     rigidBodyJoint &iobj_2,
                     robotics::manip::internal::RigidBody &iobj_3);
@@ -94,7 +94,7 @@ public:
   void e_set_CenterOfMass();
   void e_set_Inertia();
   rigidBody *g_init(GIKSolver *aInstancePtr,
-                    robotics::manip::internal::b_RigidBodyTree &iobj_0,
+                    robotics::manip::internal::RigidBodyTree &iobj_0,
                     robotics::manip::internal::CollisionSet &iobj_1,
                     rigidBodyJoint &iobj_2,
                     robotics::manip::internal::RigidBody &iobj_3);
@@ -102,7 +102,7 @@ public:
   void f_set_CenterOfMass();
   void f_set_Inertia();
   rigidBody *h_init(GIKSolver *aInstancePtr,
-                    robotics::manip::internal::b_RigidBodyTree &iobj_0,
+                    robotics::manip::internal::RigidBodyTree &iobj_0,
                     robotics::manip::internal::CollisionSet &iobj_1,
                     rigidBodyJoint &iobj_2,
                     robotics::manip::internal::RigidBody &iobj_3);
@@ -110,7 +110,7 @@ public:
   void g_set_CenterOfMass();
   void g_set_Inertia();
   rigidBody *i_init(GIKSolver *aInstancePtr,
-                    robotics::manip::internal::b_RigidBodyTree &iobj_0,
+                    robotics::manip::internal::RigidBodyTree &iobj_0,
                     robotics::manip::internal::CollisionSet &iobj_1,
                     rigidBodyJoint &iobj_2,
                     robotics::manip::internal::RigidBody &iobj_3);
@@ -118,7 +118,7 @@ public:
   void h_set_CenterOfMass();
   void h_set_Inertia();
   rigidBody *j_init(GIKSolver *aInstancePtr,
-                    robotics::manip::internal::b_RigidBodyTree &iobj_0,
+                    robotics::manip::internal::RigidBodyTree &iobj_0,
                     robotics::manip::internal::CollisionSet &iobj_1,
                     rigidBodyJoint &iobj_2,
                     robotics::manip::internal::RigidBody &iobj_3);
@@ -126,7 +126,7 @@ public:
   void i_set_CenterOfMass();
   void i_set_Inertia();
   rigidBody *k_init(GIKSolver *aInstancePtr,
-                    robotics::manip::internal::b_RigidBodyTree &iobj_0,
+                    robotics::manip::internal::RigidBodyTree &iobj_0,
                     robotics::manip::internal::CollisionSet &iobj_1,
                     rigidBodyJoint &iobj_2,
                     robotics::manip::internal::RigidBody &iobj_3);
@@ -138,7 +138,7 @@ public:
   rigidBody();
   bool matlabCodegenIsDeleted;
   robotics::manip::internal::RigidBody *BodyInternal;
-  robotics::manip::internal::b_RigidBodyTree *TreeInternal;
+  robotics::manip::internal::RigidBodyTree *TreeInternal;
 };
 
 } // namespace coder

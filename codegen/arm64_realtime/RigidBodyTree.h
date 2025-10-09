@@ -2,7 +2,7 @@
 // File: RigidBodyTree.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 08:09:07
+// C/C++ source code generated on  : 08-Oct-2025 18:19:21
 //
 
 #ifndef RIGIDBODYTREE_H
@@ -33,13 +33,25 @@ namespace internal {
 class RigidBodyTree {
 public:
   RigidBodyTree *init(GIKSolver *aInstancePtr);
-  double findBodyIndexByName(const char bodyname_data[],
-                             const int bodyname_size[2]);
-  double findBodyIndexByJointName(const char jointname_data[],
-                                  const int jointname_size[2]);
+  void matlabCodegenDestructor();
+  ~RigidBodyTree();
+  RigidBodyTree();
+  bool matlabCodegenIsDeleted;
+  b_RigidBody Base;
+  FastVisualizationHelper b_FastVisualizationHelper;
+  b_RigidBody *Bodies[1];
+  b_RigidBody _pobj0;
+};
+
+class b_RigidBodyTree {
+public:
+  b_RigidBodyTree *init(GIKSolver *aInstancePtr);
   void addBody(RigidBody *bodyin, const char parentName_data[],
                const int parentName_size[2], CollisionSet &iobj_0,
                rigidBodyJoint &iobj_1, RigidBody &iobj_2);
+  double findBodyIndexByName(const ::coder::array<char, 2U> &bodyname);
+  double findBodyIndexByJointName(const char jointname_data[],
+                                  const int jointname_size[2]);
   void get_JointPositionLimits(::coder::array<double, 2U> &limits);
   void efficientFKAndJacobianForIK(const ::coder::array<double, 1U> &qv,
                                    double bid1, double bid2, double T_data[],
@@ -48,9 +60,11 @@ public:
   void kinematicPathInternal(RigidBody *body1, RigidBody *body2,
                              ::coder::array<double, 2U> &indices);
   void ancestorIndices(RigidBody *body, ::coder::array<double, 2U> &indices);
-  double validateInputBodyName(const char bodyname[17]);
-  RigidBodyTree();
-  ~RigidBodyTree();
+  void kinematicPath(const char body1Name_data[], const int body1Name_size[2],
+                     const char body2Name_data[], const int body2Name_size[2],
+                     ::coder::array<double, 2U> &indices);
+  b_RigidBodyTree();
+  ~b_RigidBodyTree();
   bool matlabCodegenIsDeleted;
   double NumBodies;
   RigidBody Base;
@@ -67,19 +81,6 @@ public:
   RigidBody _pobj2[11];
 };
 
-class b_RigidBodyTree {
-public:
-  b_RigidBodyTree *init(GIKSolver *aInstancePtr);
-  void matlabCodegenDestructor();
-  ~b_RigidBodyTree();
-  b_RigidBodyTree();
-  bool matlabCodegenIsDeleted;
-  b_RigidBody Base;
-  FastVisualizationHelper b_FastVisualizationHelper;
-  b_RigidBody *Bodies[1];
-  b_RigidBody _pobj0;
-};
-
 } // namespace internal
 } // namespace manip
 } // namespace robotics
@@ -88,10 +89,10 @@ public:
 
 // Function Declarations
 namespace gik9dof {
-void binary_expand_op_10(bool in1[9], const double in2[9],
+void binary_expand_op_29(bool in1[9], const double in2[9],
                          const ::coder::array<double, 2U> &in3);
 
-void binary_expand_op_11(bool in1[9], const double in2[9],
+void binary_expand_op_30(bool in1[9], const double in2[9],
                          const ::coder::array<double, 2U> &in3);
 
 } // namespace gik9dof

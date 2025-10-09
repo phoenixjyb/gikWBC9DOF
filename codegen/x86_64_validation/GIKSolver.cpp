@@ -2,7 +2,7 @@
 // File: GIKSolver.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 08:17:44
+// C/C++ source code generated on  : 08-Oct-2025 18:33:39
 //
 
 // Include Files
@@ -16,17 +16,20 @@
 #include "PoseTarget.h"
 #include "RigidBody.h"
 #include "RigidBodyTree.h"
+#include "buildRobotForCodegen.h"
+#include "constraintDistanceBounds.h"
+#include "constraintJointBounds.h"
+#include "constraintPoseTarget.h"
 #include "eml_rand_mt19937ar_stateful.h"
 #include "generalizedInverseKinematics.h"
 #include "gik9dof_codegen_inuse_solveGIKStepWrapper_data.h"
 #include "gik9dof_codegen_inuse_solveGIKStepWrapper_types.h"
-#include "rigidBody1.h"
 #include "rigidBodyJoint.h"
 #include "rigidBodyTree1.h"
 #include "rt_nonfinite.h"
-#include "solveGIKStepRealtime.h"
-#include "coder_bounded_array.h"
+#include "coder_array.h"
 #include "omp.h"
+#include <algorithm>
 #include <cstring>
 
 // Function Declarations
@@ -47,9 +50,13 @@ static void solveGIKStepWrapper_new(GIKSolver *aInstancePtr);
 namespace gik9dof {
 static void solveGIKStepWrapper_delete(GIKSolver *aInstancePtr)
 {
-  coder::robotics::manip::internal::RigidBody *obj;
+  coder::robotics::manip::internal::DistanceBoundsConstraint *obj;
+  coder::robotics::manip::internal::RigidBody *b_obj;
   gik9dof_codegen_inuse_solveGIKStepWrapperStackData *localSD;
   localSD = aInstancePtr->getStackData();
+  if (!localSD->pd->robot.matlabCodegenIsDeleted) {
+    localSD->pd->robot.matlabCodegenIsDeleted = true;
+  }
   localSD->pd->solver.matlabCodegenDestructor();
   if (!localSD->pd->solver._pobj4.matlabCodegenIsDeleted) {
     localSD->pd->solver._pobj4.matlabCodegenIsDeleted = true;
@@ -57,8 +64,11 @@ static void solveGIKStepWrapper_delete(GIKSolver *aInstancePtr)
   if (!localSD->pd->solver.Problem.matlabCodegenIsDeleted) {
     localSD->pd->solver.Problem.matlabCodegenIsDeleted = true;
   }
-  if (!localSD->pd->solver.Problem._pobj0.matlabCodegenIsDeleted) {
-    localSD->pd->solver.Problem._pobj0.matlabCodegenIsDeleted = true;
+  for (int i{0}; i < 20; i++) {
+    obj = &localSD->pd->solver.Problem._pobj0[i];
+    if (!obj->matlabCodegenIsDeleted) {
+      obj->matlabCodegenIsDeleted = true;
+    }
   }
   if (!localSD->pd->solver.Problem._pobj1.matlabCodegenIsDeleted) {
     localSD->pd->solver.Problem._pobj1.matlabCodegenIsDeleted = true;
@@ -66,52 +76,42 @@ static void solveGIKStepWrapper_delete(GIKSolver *aInstancePtr)
   if (!localSD->pd->solver.Problem._pobj2.matlabCodegenIsDeleted) {
     localSD->pd->solver.Problem._pobj2.matlabCodegenIsDeleted = true;
   }
-  if (!localSD->pd->robot.matlabCodegenIsDeleted) {
-    localSD->pd->robot.matlabCodegenIsDeleted = true;
+  if (!localSD->pd->solver._pobj3.matlabCodegenIsDeleted) {
+    localSD->pd->solver._pobj3.matlabCodegenIsDeleted = true;
   }
   if (!localSD->pd->robot.TreeInternal.matlabCodegenIsDeleted) {
     localSD->pd->robot.TreeInternal.matlabCodegenIsDeleted = true;
   }
-  if (!localSD->pd->solver._pobj3.matlabCodegenIsDeleted) {
-    localSD->pd->solver._pobj3.matlabCodegenIsDeleted = true;
-  }
-  if (!localSD->pd->robot.TreeInternal.Base.matlabCodegenIsDeleted) {
-    localSD->pd->robot.TreeInternal.Base.matlabCodegenIsDeleted = true;
-  }
   for (int i{0}; i < 11; i++) {
-    obj = &localSD->pd->robot.TreeInternal._pobj2[i];
-    if (!obj->matlabCodegenIsDeleted) {
-      obj->matlabCodegenIsDeleted = true;
-    }
-  }
-  for (int i{0}; i < 11; i++) {
-    obj = &localSD->pd->solver._pobj1[i];
-    if (!obj->matlabCodegenIsDeleted) {
-      obj->matlabCodegenIsDeleted = true;
+    b_obj = &localSD->pd->solver._pobj1[i];
+    if (!b_obj->matlabCodegenIsDeleted) {
+      b_obj->matlabCodegenIsDeleted = true;
     }
   }
   if (!localSD->pd->solver._pobj3.Base.matlabCodegenIsDeleted) {
     localSD->pd->solver._pobj3.Base.matlabCodegenIsDeleted = true;
   }
   for (int i{0}; i < 11; i++) {
-    obj = &localSD->pd->solver._pobj3._pobj2[i];
-    if (!obj->matlabCodegenIsDeleted) {
-      obj->matlabCodegenIsDeleted = true;
+    b_obj = &localSD->pd->solver._pobj3._pobj2[i];
+    if (!b_obj->matlabCodegenIsDeleted) {
+      b_obj->matlabCodegenIsDeleted = true;
+    }
+  }
+  if (!localSD->pd->robot.TreeInternal.Base.matlabCodegenIsDeleted) {
+    localSD->pd->robot.TreeInternal.Base.matlabCodegenIsDeleted = true;
+  }
+  for (int i{0}; i < 11; i++) {
+    b_obj = &localSD->pd->robot.TreeInternal._pobj2[i];
+    if (!b_obj->matlabCodegenIsDeleted) {
+      b_obj->matlabCodegenIsDeleted = true;
     }
   }
   for (int i{0}; i < 11; i++) {
-    obj = &localSD->pd->gobj_4[i];
-    if (!obj->matlabCodegenIsDeleted) {
-      obj->matlabCodegenIsDeleted = true;
+    b_obj = &localSD->pd->gobj_7[i];
+    if (!b_obj->matlabCodegenIsDeleted) {
+      b_obj->matlabCodegenIsDeleted = true;
     }
   }
-  localSD->pd->robot.TreeInternal.Base._pobj0.matlabCodegenDestructor();
-  localSD->pd->robot.TreeInternal._pobj0[0].matlabCodegenDestructor();
-  localSD->pd->robot.TreeInternal._pobj0[1].matlabCodegenDestructor();
-  for (int i{0}; i < 11; i++) {
-    localSD->pd->robot.TreeInternal._pobj2[i]._pobj0.matlabCodegenDestructor();
-  }
-  localSD->pd->robot._pobj0.matlabCodegenDestructor();
   for (int i{0}; i < 11; i++) {
     localSD->pd->solver._pobj1[i]._pobj0.matlabCodegenDestructor();
   }
@@ -124,11 +124,18 @@ static void solveGIKStepWrapper_delete(GIKSolver *aInstancePtr)
   for (int i{0}; i < 11; i++) {
     localSD->pd->solver._pobj3._pobj2[i]._pobj0.matlabCodegenDestructor();
   }
+  localSD->pd->robot.TreeInternal.Base._pobj0.matlabCodegenDestructor();
+  localSD->pd->robot.TreeInternal._pobj0[0].matlabCodegenDestructor();
+  localSD->pd->robot.TreeInternal._pobj0[1].matlabCodegenDestructor();
+  for (int i{0}; i < 11; i++) {
+    localSD->pd->robot.TreeInternal._pobj2[i]._pobj0.matlabCodegenDestructor();
+  }
+  localSD->pd->robot._pobj0.matlabCodegenDestructor();
   for (int i{0}; i < 22; i++) {
-    localSD->pd->gobj_2[i].matlabCodegenDestructor();
+    localSD->pd->gobj_5[i].matlabCodegenDestructor();
   }
   for (int i{0}; i < 11; i++) {
-    localSD->pd->gobj_4[i]._pobj0.matlabCodegenDestructor();
+    localSD->pd->gobj_7[i]._pobj0.matlabCodegenDestructor();
   }
 }
 
@@ -140,7 +147,7 @@ static void solveGIKStepWrapper_init(GIKSolver *aInstancePtr)
 {
   gik9dof_codegen_inuse_solveGIKStepWrapperStackData *localSD;
   localSD = aInstancePtr->getStackData();
-  localSD->pd->initialized_not_empty = false;
+  localSD->pd->solver_not_empty = false;
 }
 
 //
@@ -152,11 +159,19 @@ static void solveGIKStepWrapper_new(GIKSolver *aInstancePtr)
   gik9dof_codegen_inuse_solveGIKStepWrapperStackData *localSD;
   localSD = aInstancePtr->getStackData();
   for (int i{0}; i < 11; i++) {
-    localSD->pd->gobj_4[i]._pobj0.matlabCodegenIsDeleted = true;
+    localSD->pd->gobj_7[i]._pobj0.matlabCodegenIsDeleted = true;
   }
   for (int i{0}; i < 22; i++) {
-    localSD->pd->gobj_2[i].matlabCodegenIsDeleted = true;
+    localSD->pd->gobj_5[i].matlabCodegenIsDeleted = true;
   }
+  localSD->pd->robot._pobj0.matlabCodegenIsDeleted = true;
+  for (int i{0}; i < 11; i++) {
+    localSD->pd->robot.TreeInternal._pobj2[i]._pobj0.matlabCodegenIsDeleted =
+        true;
+  }
+  localSD->pd->robot.TreeInternal._pobj0[0].matlabCodegenIsDeleted = true;
+  localSD->pd->robot.TreeInternal._pobj0[1].matlabCodegenIsDeleted = true;
+  localSD->pd->robot.TreeInternal.Base._pobj0.matlabCodegenIsDeleted = true;
   for (int i{0}; i < 11; i++) {
     localSD->pd->solver._pobj3._pobj2[i]._pobj0.matlabCodegenIsDeleted = true;
   }
@@ -169,17 +184,13 @@ static void solveGIKStepWrapper_new(GIKSolver *aInstancePtr)
   for (int i{0}; i < 11; i++) {
     localSD->pd->solver._pobj1[i]._pobj0.matlabCodegenIsDeleted = true;
   }
-  localSD->pd->robot._pobj0.matlabCodegenIsDeleted = true;
   for (int i{0}; i < 11; i++) {
-    localSD->pd->robot.TreeInternal._pobj2[i]._pobj0.matlabCodegenIsDeleted =
-        true;
+    localSD->pd->gobj_7[i].matlabCodegenIsDeleted = true;
   }
-  localSD->pd->robot.TreeInternal._pobj0[0].matlabCodegenIsDeleted = true;
-  localSD->pd->robot.TreeInternal._pobj0[1].matlabCodegenIsDeleted = true;
-  localSD->pd->robot.TreeInternal.Base._pobj0.matlabCodegenIsDeleted = true;
   for (int i{0}; i < 11; i++) {
-    localSD->pd->gobj_4[i].matlabCodegenIsDeleted = true;
+    localSD->pd->robot.TreeInternal._pobj2[i].matlabCodegenIsDeleted = true;
   }
+  localSD->pd->robot.TreeInternal.Base.matlabCodegenIsDeleted = true;
   for (int i{0}; i < 11; i++) {
     localSD->pd->solver._pobj3._pobj2[i].matlabCodegenIsDeleted = true;
   }
@@ -187,19 +198,17 @@ static void solveGIKStepWrapper_new(GIKSolver *aInstancePtr)
   for (int i{0}; i < 11; i++) {
     localSD->pd->solver._pobj1[i].matlabCodegenIsDeleted = true;
   }
-  for (int i{0}; i < 11; i++) {
-    localSD->pd->robot.TreeInternal._pobj2[i].matlabCodegenIsDeleted = true;
-  }
-  localSD->pd->robot.TreeInternal.Base.matlabCodegenIsDeleted = true;
-  localSD->pd->solver._pobj3.matlabCodegenIsDeleted = true;
   localSD->pd->robot.TreeInternal.matlabCodegenIsDeleted = true;
-  localSD->pd->robot.matlabCodegenIsDeleted = true;
+  localSD->pd->solver._pobj3.matlabCodegenIsDeleted = true;
   localSD->pd->solver.Problem._pobj2.matlabCodegenIsDeleted = true;
   localSD->pd->solver.Problem._pobj1.matlabCodegenIsDeleted = true;
-  localSD->pd->solver.Problem._pobj0.matlabCodegenIsDeleted = true;
+  for (int i{0}; i < 20; i++) {
+    localSD->pd->solver.Problem._pobj0[i].matlabCodegenIsDeleted = true;
+  }
   localSD->pd->solver.Problem.matlabCodegenIsDeleted = true;
   localSD->pd->solver._pobj4.matlabCodegenIsDeleted = true;
   localSD->pd->solver.matlabCodegenIsDeleted = true;
+  localSD->pd->robot.matlabCodegenIsDeleted = true;
 }
 
 //
@@ -237,345 +246,276 @@ gik9dof_codegen_inuse_solveGIKStepWrapperStackData *GIKSolver::getStackData()
 }
 
 //
-// SOLVEGIKSTEPWRAPPER Wrapper for GIK solver with persistent robot and solver
-//    This wrapper initializes the robot and solver once and reuses them.
-//    Use this for code generation - it will generate initialization code.
+// SOLVEGIKSTEPWRAPPER GIK solver with 20 distance constraints for code
+// generation
+//    This version uses persistent variables pattern (proven to work with MATLAB
+//    Coder)
 //
 //
 // Arguments    : const double qCurrent[9]
 //                const double targetPose[16]
-//                double distanceLower
-//                double distanceWeight
+//                const int distBodyIndices[20]
+//                const int distRefBodyIndices[20]
+//                const double distBoundsLower[20]
+//                const double distBoundsUpper[20]
+//                const double distWeights[20]
 //                double qNext[9]
 //                struct0_T *solverInfo
 // Return Type  : void
 //
 void GIKSolver::gik9dof_codegen_inuse_solveGIKStepWrapper(
-    const double qCurrent[9], const double targetPose[16], double distanceLower,
-    double distanceWeight, double qNext[9], struct0_T *solverInfo)
+    const double qCurrent[9], const double targetPose[16], const int[20],
+    const int[20], const double distBoundsLower[20],
+    const double distBoundsUpper[20], const double distWeights[20],
+    double qNext[9], struct0_T *solverInfo)
 {
-  coder::rigidBody armBase;
-  coder::rigidBody armLink1;
-  coder::rigidBody armLink2;
-  coder::rigidBody armLink3;
-  coder::rigidBody armLink4;
-  coder::rigidBody armLink5;
-  coder::rigidBody armLink6;
-  coder::rigidBody baseX;
-  coder::rigidBody baseY;
-  coder::rigidBody chassis;
-  coder::rigidBody gripper;
-  coder::rigidBodyJoint lobj_24[22];
-  coder::rigidBodyJoint jntArm1;
-  coder::rigidBodyJoint jntArm2;
-  coder::rigidBodyJoint jntArm3;
-  coder::rigidBodyJoint jntArm4;
-  coder::rigidBodyJoint jntArm5;
-  coder::rigidBodyJoint jntArm6;
-  coder::rigidBodyJoint jntArmMount;
-  coder::rigidBodyJoint jntGripper;
-  coder::rigidBodyJoint jntTheta;
-  coder::rigidBodyJoint jntX;
-  coder::rigidBodyJoint jntY;
-  coder::rigidBodyTree *robot;
-  coder::robotics::manip::internal::CollisionSet lobj_23[11];
-  coder::robotics::manip::internal::RigidBody lobj_25[11];
-  coder::robotics::manip::internal::b_RigidBodyTree lobj_22[11];
+  coder::constraintDistanceBounds *r;
+  double lowerBound;
   double params_DampingBias;
   double params_ErrorChangeTolerance;
-  double params_GradientTolerance;
-  double params_MaxTime;
   double params_SolutionTolerance;
   double params_StepTolerance;
-  char tmp_data[200];
+  double upperBound;
+  double weight;
   bool b_expl_temp;
   bool params_RandomRestart;
   bool params_UseErrorDamping;
-  if (!pd_.initialized_not_empty) {
-    //  Build robot model procedurally
-    // BUILDROBOTFORCODEGEN Build 9-DOF mobile manipulator procedurally for code
-    // generation
-    //    This function constructs the rigidBodyTree without any file I/O,
-    //    making it compatible with MATLAB Coder for C++ code generation.
-    //
-    //    Robot structure: 3 base DOFs (x, y, theta) + 6 arm DOFs
-    //    All inertial, visual, and joint parameters are hardcoded from URDF.
-    //
-    for (int i{0}; i < 11; i++) {
-      lobj_25[i]._pobj0.matlabCodegenIsDeleted = true;
-    }
-    for (int i{0}; i < 11; i++) {
-      lobj_23[i].matlabCodegenIsDeleted = true;
-    }
-    for (int i{0}; i < 11; i++) {
-      lobj_22[i]._pobj0.CollisionsInternal.matlabCodegenIsDeleted = true;
-      lobj_22[i].Base.CollisionsInternal.matlabCodegenIsDeleted = true;
-    }
-    for (int i{0}; i < 11; i++) {
-      lobj_25[i].matlabCodegenIsDeleted = true;
-    }
-    for (int i{0}; i < 11; i++) {
-      lobj_22[i]._pobj0.matlabCodegenIsDeleted = true;
-      lobj_22[i].Base.matlabCodegenIsDeleted = true;
-      lobj_22[i].matlabCodegenIsDeleted = true;
-    }
-    int tmp_size[2];
-    gripper.matlabCodegenIsDeleted = true;
-    armLink6.matlabCodegenIsDeleted = true;
-    armLink5.matlabCodegenIsDeleted = true;
-    armLink4.matlabCodegenIsDeleted = true;
-    armLink3.matlabCodegenIsDeleted = true;
-    armLink2.matlabCodegenIsDeleted = true;
-    armLink1.matlabCodegenIsDeleted = true;
-    armBase.matlabCodegenIsDeleted = true;
-    chassis.matlabCodegenIsDeleted = true;
-    baseY.matlabCodegenIsDeleted = true;
-    baseX.matlabCodegenIsDeleted = true;
-    //  Create rigid body tree with column data format (required for GIK)
-    //  MaxNumBodies is required for code generation (base + 10 bodies = 11)
-    robot = pd_.robot.init(this);
-    robot->TreeInternal.Gravity[0] = 0.0;
-    robot->TreeInternal.Gravity[1] = 0.0;
-    robot->TreeInternal.Gravity[2] = -9.81;
-    //  BASE JOINTS (3 DOF planar base: x, y, theta)
-    //  Joint 1: Prismatic X (joint_x)
-    baseX.init(this, lobj_22[0], lobj_23[0], lobj_24[0], lobj_25[0]);
-    baseX.set_Mass();
-    baseX.set_CenterOfMass();
-    baseX.set_Inertia();
-    jntX.b_init();
-    jntX.setFixedTransform();
-    jntX.set_JointAxis();
-    jntX.set_PositionLimits();
-    jntX.set_HomePosition();
-    baseX.BodyInternal->JointInternal = jntX.copy(lobj_24[1]);
-    robot->get_BaseName(tmp_data, tmp_size);
-    robot->addBody(baseX, tmp_data, tmp_size, pd_.gobj_2[0], pd_.gobj_3[0],
-                   pd_.gobj_4[0]);
-    //  Joint 2: Prismatic Y (joint_y)
-    baseY.b_init(this, lobj_22[1], lobj_23[1], lobj_24[2], lobj_25[1]);
-    baseY.set_Mass();
-    baseY.set_CenterOfMass();
-    baseY.set_Inertia();
-    jntY.c_init();
-    jntY.setFixedTransform();
-    jntY.b_set_JointAxis();
-    jntY.set_PositionLimits();
-    jntY.set_HomePosition();
-    baseY.BodyInternal->JointInternal = jntY.copy(lobj_24[3]);
-    robot->addBody(baseY, pd_.gobj_2[2], pd_.gobj_3[2], pd_.gobj_4[1]);
-    //  Joint 3: Revolute Theta (joint_theta)
-    chassis.c_init(this, lobj_22[2], lobj_23[2], lobj_24[4], lobj_25[2]);
-    chassis.b_set_Mass();
-    chassis.b_set_CenterOfMass();
-    chassis.b_set_Inertia();
-    jntTheta.d_init();
-    jntTheta.setFixedTransform();
-    jntTheta.c_set_JointAxis();
-    jntTheta.set_PositionLimits(this);
-    jntTheta.set_HomePosition();
-    chassis.BodyInternal->JointInternal = jntTheta.copy(lobj_24[5]);
-    robot->b_addBody(chassis, pd_.gobj_2[4], pd_.gobj_3[4], pd_.gobj_4[2]);
-    //  ARM BASE LINK (fixed mount on chassis)
-    armBase.d_init(this, lobj_22[3], lobj_23[3], lobj_24[6], lobj_25[3]);
-    armBase.c_set_Mass();
-    armBase.c_set_CenterOfMass();
-    armBase.c_set_Inertia();
-    jntArmMount.e_init();
-    //  Origin: rpy="0 0 -1.5708" xyz="0.15995 0 0.9465"
-    jntArmMount.b_setFixedTransform();
-    armBase.BodyInternal->JointInternal = jntArmMount.copy(lobj_24[7]);
-    robot->c_addBody(armBase, pd_.gobj_2[6], pd_.gobj_3[6], pd_.gobj_4[3]);
-    //  ARM JOINT 1 (revolute, Y-axis)
-    armLink1.e_init(this, lobj_22[4], lobj_23[4], lobj_24[8], lobj_25[4]);
-    armLink1.d_set_Mass();
-    armLink1.d_set_CenterOfMass();
-    armLink1.d_set_Inertia();
-    jntArm1.f_init();
-    jntArm1.c_setFixedTransform();
-    jntArm1.b_set_JointAxis();
-    jntArm1.b_set_PositionLimits();
-    jntArm1.set_HomePosition();
-    armLink1.BodyInternal->JointInternal = jntArm1.copy(lobj_24[9]);
-    robot->d_addBody(armLink1, pd_.gobj_2[8], pd_.gobj_3[8], pd_.gobj_4[4]);
-    //  ARM JOINT 2 (revolute, -Z-axis)
-    armLink2.f_init(this, lobj_22[5], lobj_23[5], lobj_24[10], lobj_25[5]);
-    armLink2.e_set_Mass();
-    armLink2.e_set_CenterOfMass();
-    armLink2.e_set_Inertia();
-    jntArm2.g_init();
-    jntArm2.d_setFixedTransform();
-    jntArm2.d_set_JointAxis();
-    jntArm2.c_set_PositionLimits();
-    jntArm2.set_HomePosition();
-    armLink2.BodyInternal->JointInternal = jntArm2.copy(lobj_24[11]);
-    robot->e_addBody(armLink2, pd_.gobj_2[10], pd_.gobj_3[10], pd_.gobj_4[5]);
-    //  ARM JOINT 3 (revolute, -Z-axis)
-    armLink3.g_init(this, lobj_22[6], lobj_23[6], lobj_24[12], lobj_25[6]);
-    armLink3.f_set_Mass();
-    armLink3.f_set_CenterOfMass();
-    armLink3.f_set_Inertia();
-    jntArm3.h_init();
-    jntArm3.e_setFixedTransform();
-    jntArm3.d_set_JointAxis();
-    jntArm3.d_set_PositionLimits();
-    jntArm3.set_HomePosition();
-    armLink3.BodyInternal->JointInternal = jntArm3.copy(lobj_24[13]);
-    robot->f_addBody(armLink3, pd_.gobj_2[12], pd_.gobj_3[12], pd_.gobj_4[6]);
-    //  ARM JOINT 4 (revolute, X-axis)
-    armLink4.h_init(this, lobj_22[7], lobj_23[7], lobj_24[14], lobj_25[7]);
-    armLink4.g_set_Mass();
-    armLink4.g_set_CenterOfMass();
-    armLink4.g_set_Inertia();
-    jntArm4.i_init();
-    jntArm4.f_setFixedTransform();
-    jntArm4.set_JointAxis();
-    jntArm4.b_set_PositionLimits();
-    jntArm4.set_HomePosition();
-    armLink4.BodyInternal->JointInternal = jntArm4.copy(lobj_24[15]);
-    robot->g_addBody(armLink4, pd_.gobj_2[14], pd_.gobj_3[14], pd_.gobj_4[7]);
-    //  ARM JOINT 5 (revolute, Y-axis)
-    armLink5.i_init(this, lobj_22[8], lobj_23[8], lobj_24[16], lobj_25[8]);
-    armLink5.h_set_Mass();
-    armLink5.h_set_CenterOfMass();
-    armLink5.h_set_Inertia();
-    jntArm5.j_init();
-    jntArm5.g_setFixedTransform();
-    jntArm5.b_set_JointAxis();
-    jntArm5.e_set_PositionLimits();
-    jntArm5.set_HomePosition();
-    armLink5.BodyInternal->JointInternal = jntArm5.copy(lobj_24[17]);
-    robot->h_addBody(armLink5, pd_.gobj_2[16], pd_.gobj_3[16], pd_.gobj_4[8]);
-    //  ARM JOINT 6 (revolute, X-axis)
-    armLink6.j_init(this, lobj_22[9], lobj_23[9], lobj_24[18], lobj_25[9]);
-    armLink6.i_set_Mass();
-    armLink6.i_set_CenterOfMass();
-    armLink6.i_set_Inertia();
-    jntArm6.k_init();
-    jntArm6.h_setFixedTransform();
-    jntArm6.set_JointAxis();
-    jntArm6.b_set_PositionLimits();
-    jntArm6.set_HomePosition();
-    armLink6.BodyInternal->JointInternal = jntArm6.copy(lobj_24[19]);
-    robot->i_addBody(armLink6, pd_.gobj_2[18], pd_.gobj_3[18], pd_.gobj_4[9]);
-    //  END EFFECTOR (fixed gripper link)
-    gripper.k_init(this, lobj_22[10], lobj_23[10], lobj_24[20], lobj_25[10]);
-    gripper.j_set_Mass();
-    gripper.j_set_CenterOfMass();
-    gripper.j_set_Inertia();
-    jntGripper.l_init();
-    jntGripper.i_setFixedTransform();
-    gripper.BodyInternal->JointInternal = jntGripper.copy(lobj_24[21]);
-    robot->j_addBody(gripper, pd_.gobj_2[20], pd_.gobj_3[20], pd_.gobj_4[10]);
-    baseX.matlabCodegenDestructor();
-    baseY.matlabCodegenDestructor();
-    chassis.matlabCodegenDestructor();
-    armBase.matlabCodegenDestructor();
-    armLink1.matlabCodegenDestructor();
-    armLink2.matlabCodegenDestructor();
-    armLink3.matlabCodegenDestructor();
-    armLink4.matlabCodegenDestructor();
-    armLink5.matlabCodegenDestructor();
-    armLink6.matlabCodegenDestructor();
-    gripper.matlabCodegenDestructor();
-    for (int i{0}; i < 11; i++) {
-      lobj_22[i].matlabCodegenDestructor();
-    }
-    for (int i{0}; i < 11; i++) {
-      lobj_22[i].Base.matlabCodegenDestructor();
-    }
-    for (int i{0}; i < 11; i++) {
-      lobj_22[i]._pobj0.matlabCodegenDestructor();
-    }
-    for (int i{0}; i < 11; i++) {
-      lobj_25[i].matlabCodegenDestructor();
-    }
-    for (int i{0}; i < 11; i++) {
-      lobj_22[i].Base.CollisionsInternal.matlabCodegenDestructor();
-    }
-    for (int i{0}; i < 11; i++) {
-      lobj_22[i]._pobj0.CollisionsInternal.matlabCodegenDestructor();
-    }
-    for (int i{0}; i < 11; i++) {
-      lobj_23[i].matlabCodegenDestructor();
-    }
-    for (int i{0}; i < 11; i++) {
-      lobj_25[i]._pobj0.matlabCodegenDestructor();
-    }
-    double params_MaxNumIteration;
+  //  Not used (body pairs are fixed)
+  //  Persistent solver and constraints
+  if (!pd_.solver_not_empty) {
     char expl_temp[18];
-    //  Create GIK solver with Levenberg-Marquardt algorithm
+    //  Build robot model procedurally
+    codegen_inuse::buildRobotForCodegen(this, pd_.gobj_5[0], pd_.gobj_6[0],
+                                        pd_.gobj_7[0], pd_.robot);
+    //  Create GIK solver with 22 constraint inputs (1 pose + 1 joint + 20
+    //  distance)
     pd_.solver.init(this, pd_.robot);
+    pd_.solver_not_empty = true;
     //  Configure solver parameters for real-time performance
-    //  These settings optimize for speed while maintaining solution quality
-    params_MaxNumIteration = pd_.solver.Solver->getSolverParams(
-        expl_temp, params_MaxTime, params_GradientTolerance,
-        params_SolutionTolerance, b_expl_temp, params_RandomRestart,
-        params_StepTolerance, params_ErrorChangeTolerance, params_DampingBias,
+    weight = pd_.solver.Solver->getSolverParams(
+        expl_temp, lowerBound, upperBound, params_SolutionTolerance,
+        b_expl_temp, params_RandomRestart, params_StepTolerance,
+        params_ErrorChangeTolerance, params_DampingBias,
         params_UseErrorDamping);
     b_expl_temp = pd_.solver.EnforceJointLimits;
     pd_.solver.set_SolverParameters(
-        params_MaxNumIteration, 0.05, params_GradientTolerance,
-        params_SolutionTolerance, b_expl_temp, params_RandomRestart,
-        params_StepTolerance, params_ErrorChangeTolerance, params_DampingBias,
-        params_UseErrorDamping);
-    //  50ms timeout for real-time control
+        weight, 0.05, upperBound, params_SolutionTolerance, b_expl_temp,
+        params_RandomRestart, params_StepTolerance, params_ErrorChangeTolerance,
+        params_DampingBias, params_UseErrorDamping);
     pd_.solver.Solver->getSolverParams(
-        expl_temp, params_MaxTime, params_GradientTolerance,
-        params_SolutionTolerance, b_expl_temp, params_RandomRestart,
-        params_StepTolerance, params_ErrorChangeTolerance, params_DampingBias,
-        params_UseErrorDamping);
-    b_expl_temp = pd_.solver.EnforceJointLimits;
-    pd_.solver.set_SolverParameters(
-        50.0, params_MaxTime, params_GradientTolerance,
-        params_SolutionTolerance, b_expl_temp, params_RandomRestart,
-        params_StepTolerance, params_ErrorChangeTolerance, params_DampingBias,
-        params_UseErrorDamping);
-    //  Limit iterations to prevent excessive computation
-    params_MaxNumIteration = pd_.solver.Solver->getSolverParams(
-        expl_temp, params_MaxTime, params_GradientTolerance,
-        params_SolutionTolerance, b_expl_temp, params_RandomRestart,
-        params_StepTolerance, params_ErrorChangeTolerance, params_DampingBias,
-        params_UseErrorDamping);
-    b_expl_temp = pd_.solver.EnforceJointLimits;
-    pd_.solver.set_SolverParameters(
-        params_MaxNumIteration, params_MaxTime, params_GradientTolerance,
-        params_SolutionTolerance, b_expl_temp, false, params_StepTolerance,
+        expl_temp, lowerBound, upperBound, params_SolutionTolerance,
+        b_expl_temp, params_RandomRestart, params_StepTolerance,
         params_ErrorChangeTolerance, params_DampingBias,
         params_UseErrorDamping);
-    //  Disable restarts for deterministic timing
-    params_MaxNumIteration = pd_.solver.Solver->getSolverParams(
-        expl_temp, params_MaxTime, params_GradientTolerance,
-        params_SolutionTolerance, b_expl_temp, params_RandomRestart,
-        params_StepTolerance, params_ErrorChangeTolerance, params_DampingBias,
-        params_UseErrorDamping);
     b_expl_temp = pd_.solver.EnforceJointLimits;
     pd_.solver.set_SolverParameters(
-        params_MaxNumIteration, params_MaxTime, params_GradientTolerance,
-        1.0E-6, b_expl_temp, params_RandomRestart, params_StepTolerance,
+        1000.0, lowerBound, upperBound, params_SolutionTolerance, b_expl_temp,
+        params_RandomRestart, params_StepTolerance, params_ErrorChangeTolerance,
+        params_DampingBias, params_UseErrorDamping);
+    //  Increased from 50 for better convergence
+    weight = pd_.solver.Solver->getSolverParams(
+        expl_temp, lowerBound, upperBound, params_SolutionTolerance,
+        b_expl_temp, params_RandomRestart, params_StepTolerance,
         params_ErrorChangeTolerance, params_DampingBias,
         params_UseErrorDamping);
-    //  Good enough for robotic control
-    params_MaxNumIteration = pd_.solver.Solver->getSolverParams(
-        expl_temp, params_MaxTime, params_GradientTolerance,
-        params_SolutionTolerance, b_expl_temp, params_RandomRestart,
-        params_StepTolerance, params_ErrorChangeTolerance, params_DampingBias,
+    b_expl_temp = pd_.solver.EnforceJointLimits;
+    pd_.solver.set_SolverParameters(
+        weight, lowerBound, upperBound, params_SolutionTolerance, b_expl_temp,
+        false, params_StepTolerance, params_ErrorChangeTolerance,
+        params_DampingBias, params_UseErrorDamping);
+    weight = pd_.solver.Solver->getSolverParams(
+        expl_temp, lowerBound, upperBound, params_SolutionTolerance,
+        b_expl_temp, params_RandomRestart, params_StepTolerance,
+        params_ErrorChangeTolerance, params_DampingBias,
         params_UseErrorDamping);
     b_expl_temp = pd_.solver.EnforceJointLimits;
     pd_.solver.set_SolverParameters(
-        params_MaxNumIteration, params_MaxTime, 1.0E-7,
-        params_SolutionTolerance, b_expl_temp, params_RandomRestart,
-        params_StepTolerance, params_ErrorChangeTolerance, params_DampingBias,
+        weight, lowerBound, upperBound, 1.0E-6, b_expl_temp,
+        params_RandomRestart, params_StepTolerance, params_ErrorChangeTolerance,
+        params_DampingBias, params_UseErrorDamping);
+    weight = pd_.solver.Solver->getSolverParams(
+        expl_temp, lowerBound, upperBound, params_SolutionTolerance,
+        b_expl_temp, params_RandomRestart, params_StepTolerance,
+        params_ErrorChangeTolerance, params_DampingBias,
         params_UseErrorDamping);
-    //  Gradient convergence criteria
-    pd_.initialized_not_empty = true;
+    b_expl_temp = pd_.solver.EnforceJointLimits;
+    pd_.solver.set_SolverParameters(
+        weight, lowerBound, 1.0E-7, params_SolutionTolerance, b_expl_temp,
+        params_RandomRestart, params_StepTolerance, params_ErrorChangeTolerance,
+        params_DampingBias, params_UseErrorDamping);
+    //  Create pose and joint constraints
+    pd_.poseConstraint.init();
+    pd_.jointConstraint.init(pd_.robot);
+    //  Create 20 distance constraints with FIXED body pairs
+    //  For code generation, body names must be compile-time constants
+    //  All constraints start disabled (weight=0) and are enabled via weights
+    //  parameter Gripper to various bodies (most common use case)
+    pd_.distConstraints[0] = pd_.gobj_4[0].init();
+    pd_.distConstraints[0]->ReferenceBody.set_size(1, 21);
+    r = pd_.distConstraints[0];
+    for (int i{0}; i < 21; i++) {
+      r->ReferenceBody[i] = cv[i];
+    }
+    pd_.distConstraints[1] = pd_.gobj_4[1].init();
+    pd_.distConstraints[1]->ReferenceBody.set_size(1, 4);
+    pd_.distConstraints[1]->ReferenceBody[0] = 'b';
+    pd_.distConstraints[1]->ReferenceBody[1] = 'a';
+    pd_.distConstraints[1]->ReferenceBody[2] = 's';
+    pd_.distConstraints[1]->ReferenceBody[3] = 'e';
+    pd_.distConstraints[2] = pd_.gobj_4[2].init();
+    pd_.distConstraints[2]->ReferenceBody.set_size(1, 18);
+    r = pd_.distConstraints[2];
+    for (int i{0}; i < 18; i++) {
+      r->ReferenceBody[i] = cv1[i];
+    }
+    pd_.distConstraints[3] = pd_.gobj_4[3].b_init();
+    pd_.distConstraints[3]->ReferenceBody.set_size(1, 21);
+    r = pd_.distConstraints[3];
+    for (int i{0}; i < 21; i++) {
+      r->ReferenceBody[i] = cv[i];
+    }
+    pd_.distConstraints[4] = pd_.gobj_4[4].c_init();
+    pd_.distConstraints[4]->ReferenceBody.set_size(1, 21);
+    r = pd_.distConstraints[4];
+    for (int i{0}; i < 21; i++) {
+      r->ReferenceBody[i] = cv[i];
+    }
+    //  Remaining constraints with default gripper->base pairs
+    pd_.distConstraints[5] = pd_.gobj_4[5].init();
+    pd_.distConstraints[5]->ReferenceBody.set_size(1, 4);
+    pd_.distConstraints[5]->ReferenceBody[0] = 'b';
+    pd_.distConstraints[5]->ReferenceBody[1] = 'a';
+    pd_.distConstraints[5]->ReferenceBody[2] = 's';
+    pd_.distConstraints[5]->ReferenceBody[3] = 'e';
+    pd_.distConstraints[6] = pd_.gobj_4[6].init();
+    pd_.distConstraints[6]->ReferenceBody.set_size(1, 4);
+    pd_.distConstraints[6]->ReferenceBody[0] = 'b';
+    pd_.distConstraints[6]->ReferenceBody[1] = 'a';
+    pd_.distConstraints[6]->ReferenceBody[2] = 's';
+    pd_.distConstraints[6]->ReferenceBody[3] = 'e';
+    pd_.distConstraints[7] = pd_.gobj_4[7].init();
+    pd_.distConstraints[7]->ReferenceBody.set_size(1, 4);
+    pd_.distConstraints[7]->ReferenceBody[0] = 'b';
+    pd_.distConstraints[7]->ReferenceBody[1] = 'a';
+    pd_.distConstraints[7]->ReferenceBody[2] = 's';
+    pd_.distConstraints[7]->ReferenceBody[3] = 'e';
+    pd_.distConstraints[8] = pd_.gobj_4[8].init();
+    pd_.distConstraints[8]->ReferenceBody.set_size(1, 4);
+    pd_.distConstraints[8]->ReferenceBody[0] = 'b';
+    pd_.distConstraints[8]->ReferenceBody[1] = 'a';
+    pd_.distConstraints[8]->ReferenceBody[2] = 's';
+    pd_.distConstraints[8]->ReferenceBody[3] = 'e';
+    pd_.distConstraints[9] = pd_.gobj_4[9].init();
+    pd_.distConstraints[9]->ReferenceBody.set_size(1, 4);
+    pd_.distConstraints[9]->ReferenceBody[0] = 'b';
+    pd_.distConstraints[9]->ReferenceBody[1] = 'a';
+    pd_.distConstraints[9]->ReferenceBody[2] = 's';
+    pd_.distConstraints[9]->ReferenceBody[3] = 'e';
+    pd_.distConstraints[10] = pd_.gobj_4[10].init();
+    pd_.distConstraints[10]->ReferenceBody.set_size(1, 4);
+    pd_.distConstraints[10]->ReferenceBody[0] = 'b';
+    pd_.distConstraints[10]->ReferenceBody[1] = 'a';
+    pd_.distConstraints[10]->ReferenceBody[2] = 's';
+    pd_.distConstraints[10]->ReferenceBody[3] = 'e';
+    pd_.distConstraints[11] = pd_.gobj_4[11].init();
+    pd_.distConstraints[11]->ReferenceBody.set_size(1, 4);
+    pd_.distConstraints[11]->ReferenceBody[0] = 'b';
+    pd_.distConstraints[11]->ReferenceBody[1] = 'a';
+    pd_.distConstraints[11]->ReferenceBody[2] = 's';
+    pd_.distConstraints[11]->ReferenceBody[3] = 'e';
+    pd_.distConstraints[12] = pd_.gobj_4[12].init();
+    pd_.distConstraints[12]->ReferenceBody.set_size(1, 4);
+    pd_.distConstraints[12]->ReferenceBody[0] = 'b';
+    pd_.distConstraints[12]->ReferenceBody[1] = 'a';
+    pd_.distConstraints[12]->ReferenceBody[2] = 's';
+    pd_.distConstraints[12]->ReferenceBody[3] = 'e';
+    pd_.distConstraints[13] = pd_.gobj_4[13].init();
+    pd_.distConstraints[13]->ReferenceBody.set_size(1, 4);
+    pd_.distConstraints[13]->ReferenceBody[0] = 'b';
+    pd_.distConstraints[13]->ReferenceBody[1] = 'a';
+    pd_.distConstraints[13]->ReferenceBody[2] = 's';
+    pd_.distConstraints[13]->ReferenceBody[3] = 'e';
+    pd_.distConstraints[14] = pd_.gobj_4[14].init();
+    pd_.distConstraints[14]->ReferenceBody.set_size(1, 4);
+    pd_.distConstraints[14]->ReferenceBody[0] = 'b';
+    pd_.distConstraints[14]->ReferenceBody[1] = 'a';
+    pd_.distConstraints[14]->ReferenceBody[2] = 's';
+    pd_.distConstraints[14]->ReferenceBody[3] = 'e';
+    pd_.distConstraints[15] = pd_.gobj_4[15].init();
+    pd_.distConstraints[15]->ReferenceBody.set_size(1, 4);
+    pd_.distConstraints[15]->ReferenceBody[0] = 'b';
+    pd_.distConstraints[15]->ReferenceBody[1] = 'a';
+    pd_.distConstraints[15]->ReferenceBody[2] = 's';
+    pd_.distConstraints[15]->ReferenceBody[3] = 'e';
+    pd_.distConstraints[16] = pd_.gobj_4[16].init();
+    pd_.distConstraints[16]->ReferenceBody.set_size(1, 4);
+    pd_.distConstraints[16]->ReferenceBody[0] = 'b';
+    pd_.distConstraints[16]->ReferenceBody[1] = 'a';
+    pd_.distConstraints[16]->ReferenceBody[2] = 's';
+    pd_.distConstraints[16]->ReferenceBody[3] = 'e';
+    pd_.distConstraints[17] = pd_.gobj_4[17].init();
+    pd_.distConstraints[17]->ReferenceBody.set_size(1, 4);
+    pd_.distConstraints[17]->ReferenceBody[0] = 'b';
+    pd_.distConstraints[17]->ReferenceBody[1] = 'a';
+    pd_.distConstraints[17]->ReferenceBody[2] = 's';
+    pd_.distConstraints[17]->ReferenceBody[3] = 'e';
+    pd_.distConstraints[18] = pd_.gobj_4[18].init();
+    pd_.distConstraints[18]->ReferenceBody.set_size(1, 4);
+    pd_.distConstraints[18]->ReferenceBody[0] = 'b';
+    pd_.distConstraints[18]->ReferenceBody[1] = 'a';
+    pd_.distConstraints[18]->ReferenceBody[2] = 's';
+    pd_.distConstraints[18]->ReferenceBody[3] = 'e';
+    pd_.distConstraints[19] = pd_.gobj_4[19].init();
+    pd_.distConstraints[19]->ReferenceBody.set_size(1, 4);
+    pd_.distConstraints[19]->ReferenceBody[0] = 'b';
+    pd_.distConstraints[19]->ReferenceBody[1] = 'a';
+    pd_.distConstraints[19]->ReferenceBody[2] = 's';
+    pd_.distConstraints[19]->ReferenceBody[3] = 'e';
+    //  Initialize all as disabled
+    for (int i{0}; i < 20; i++) {
+      r = pd_.distConstraints[i];
+      r->Bounds[0] = 0.0;
+      r->Bounds[1] = 100.0;
+      pd_.distConstraints[i]->Weights = 0.0;
+    }
   }
-  //  Call the realtime solver
-  solverInfo->Iterations = codegen_inuse::solveGIKStepRealtime(
-      this, pd_.robot, pd_.solver, qCurrent, targetPose, distanceLower,
-      distanceWeight, qNext, solverInfo->ConstraintViolations,
-      solverInfo->Status.data, solverInfo->Status.size,
-      solverInfo->NumRandomRestarts, solverInfo->ExitFlag);
+  //  Update pose constraint
+  std::copy(&targetPose[0], &targetPose[16],
+            &pd_.poseConstraint.TargetTransform[0]);
+  //  Update distance constraint bounds and weights (body pairs are FIXED at
+  //  initialization)
+  for (int i{0}; i < 20; i++) {
+    lowerBound = 0.0;
+    upperBound = 100.0;
+    weight = 0.0;
+    //  Process bounds if this constraint is enabled
+    params_SolutionTolerance = distWeights[i];
+    if (params_SolutionTolerance > 0.0) {
+      weight = distBoundsLower[i];
+      if (weight > 0.0) {
+        lowerBound = weight;
+      }
+      weight = distBoundsUpper[i];
+      if ((weight > 0.0) && (weight <= 100.0)) {
+        upperBound = weight;
+      }
+      weight = params_SolutionTolerance;
+    }
+    pd_.distConstraints[i]->Bounds[0] = lowerBound;
+    pd_.distConstraints[i]->Bounds[1] = upperBound;
+    pd_.distConstraints[i]->Weights = weight;
+  }
+  //  Solve IK with all constraints
+  std::copy(&qCurrent[0], &qCurrent[9], &qNext[0]);
+  pd_.solver.step(
+      this, qNext, pd_.poseConstraint, pd_.jointConstraint,
+      pd_.distConstraints[0], pd_.distConstraints[1], pd_.distConstraints[2],
+      pd_.distConstraints[3], pd_.distConstraints[4], pd_.distConstraints[5],
+      pd_.distConstraints[6], pd_.distConstraints[7], pd_.distConstraints[8],
+      pd_.distConstraints[9], pd_.distConstraints[10], pd_.distConstraints[11],
+      pd_.distConstraints[12], pd_.distConstraints[13], pd_.distConstraints[14],
+      pd_.distConstraints[15], pd_.distConstraints[16], pd_.distConstraints[17],
+      pd_.distConstraints[18], pd_.distConstraints[19], solverInfo);
 }
 
 } // namespace gik9dof

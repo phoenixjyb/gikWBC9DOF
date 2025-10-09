@@ -2,7 +2,7 @@
 // File: strcmp.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 08:17:44
+// C/C++ source code generated on  : 08-Oct-2025 18:33:39
 //
 
 // Include Files
@@ -24,21 +24,19 @@ namespace internal {
 bool b_strcmp(const char a_data[], const int a_size[2],
               const ::coder::array<char, 2U> &b)
 {
-  int nb;
   bool b_b;
   bool b_bool;
   b_bool = false;
-  nb = b.size(0) * b.size(1);
   b_b = (a_size[1] == 0);
-  if (b_b && ((b.size(0) == 0) || (b.size(1) == 0))) {
+  if (b_b && (b.size(1) == 0)) {
     b_bool = true;
-  } else if ((b.size(0) == 1) && (a_size[1] == b.size(1))) {
+  } else if (a_size[1] == b.size(1)) {
     int kstr;
     kstr = 0;
     int exitg1;
     do {
       exitg1 = 0;
-      if (kstr <= nb - 1) {
+      if (kstr <= b.size(1) - 1) {
         if (a_data[kstr] != b[kstr]) {
           exitg1 = 1;
         } else {
@@ -56,27 +54,28 @@ bool b_strcmp(const char a_data[], const int a_size[2],
 //
 // Arguments    : const char a_data[]
 //                const int a_size[2]
-//                const char b_data[]
-//                const int b_size[2]
+//                const ::coder::array<char, 2U> &b
 // Return Type  : bool
 //
-bool b_strcmp(const char a_data[], const int a_size[2], const char b_data[],
-              const int b_size[2])
+bool c_strcmp(const char a_data[], const int a_size[2],
+              const ::coder::array<char, 2U> &b)
 {
-  bool b;
+  int nb;
+  bool b_b;
   bool b_bool;
   b_bool = false;
-  b = (a_size[1] == 0);
-  if (b && (b_size[1] == 0)) {
+  nb = b.size(0) * b.size(1);
+  b_b = (a_size[1] == 0);
+  if (b_b && ((b.size(0) == 0) || (b.size(1) == 0))) {
     b_bool = true;
-  } else if (a_size[1] == b_size[1]) {
+  } else if ((b.size(0) == 1) && (a_size[1] == b.size(1))) {
     int kstr;
     kstr = 0;
     int exitg1;
     do {
       exitg1 = 0;
-      if (kstr <= b_size[1] - 1) {
-        if (a_data[kstr] != b_data[kstr]) {
+      if (kstr <= nb - 1) {
+        if (a_data[kstr] != b[kstr]) {
           exitg1 = 1;
         } else {
           kstr++;

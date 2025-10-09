@@ -2,7 +2,7 @@
 // File: _coder_gik9dof_codegen_inuse_solveGIKStepWrapper_api.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 08:09:07
+// C/C++ source code generated on  : 08-Oct-2025 18:19:21
 //
 
 #ifndef _CODER_GIK9DOF_CODEGEN_INUSE_SOLVEGIKSTEPWRAPPER_API_H
@@ -26,7 +26,7 @@ struct struct1_T {
 struct struct0_T {
   real_T Iterations;
   real_T NumRandomRestarts;
-  struct1_T ConstraintViolations[3];
+  struct1_T ConstraintViolations[22];
   real_T ExitFlag;
   coder::bounded_array<char_T, 14U, 2U> Status;
 };
@@ -37,10 +37,12 @@ extern emlrtContext emlrtContextGlobal;
 
 // Function Declarations
 void gik9dof_codegen_inuse_solveGIKStepWrapper(
-    real_T qCurrent[9], real_T targetPose[16], real_T distanceLower,
-    real_T distanceWeight, real_T qNext[9], struct0_T *solverInfo);
+    real_T qCurrent[9], real_T targetPose[16], int32_T distBodyIndices[20],
+    int32_T distRefBodyIndices[20], real_T distBoundsLower[20],
+    real_T distBoundsUpper[20], real_T distWeights[20], real_T qNext[9],
+    struct0_T *solverInfo);
 
-void gik9dof_codegen_inuse_solveGIKStepWrapper_api(const mxArray *const prhs[4],
+void gik9dof_codegen_inuse_solveGIKStepWrapper_api(const mxArray *const prhs[7],
                                                    int32_T nlhs,
                                                    const mxArray *plhs[2]);
 

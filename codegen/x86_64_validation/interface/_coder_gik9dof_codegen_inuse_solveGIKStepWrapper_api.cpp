@@ -2,7 +2,7 @@
 // File: _coder_gik9dof_codegen_inuse_solveGIKStepWrapper_api.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 08:17:44
+// C/C++ source code generated on  : 08-Oct-2025 18:33:39
 //
 
 // Include Files
@@ -34,17 +34,22 @@ static real_T (*b_emlrt_marshallIn(const emlrtStack &sp,
 static real_T (*b_emlrt_marshallIn(const emlrtStack &sp, const mxArray *u,
                                    const emlrtMsgIdentifier *parentId))[16];
 
-static real_T c_emlrt_marshallIn(const emlrtStack &sp, const mxArray *b_nullptr,
-                                 const char_T *identifier);
+static int32_T (*c_emlrt_marshallIn(const emlrtStack &sp,
+                                    const mxArray *b_nullptr,
+                                    const char_T *identifier))[20];
 
-static real_T c_emlrt_marshallIn(const emlrtStack &sp, const mxArray *u,
-                                 const emlrtMsgIdentifier *parentId);
+static int32_T (*c_emlrt_marshallIn(const emlrtStack &sp, const mxArray *u,
+                                    const emlrtMsgIdentifier *parentId))[20];
 
-static real_T (*d_emlrt_marshallIn(const emlrtStack &sp, const mxArray *src,
-                                   const emlrtMsgIdentifier *msgId))[9];
+static real_T (*d_emlrt_marshallIn(const emlrtStack &sp,
+                                   const mxArray *b_nullptr,
+                                   const char_T *identifier))[20];
+
+static real_T (*d_emlrt_marshallIn(const emlrtStack &sp, const mxArray *u,
+                                   const emlrtMsgIdentifier *parentId))[20];
 
 static real_T (*e_emlrt_marshallIn(const emlrtStack &sp, const mxArray *src,
-                                   const emlrtMsgIdentifier *msgId))[16];
+                                   const emlrtMsgIdentifier *msgId))[9];
 
 static void emlrtExitTimeCleanupDtorFcn(const void *r);
 
@@ -59,8 +64,14 @@ static const mxArray *emlrt_marshallOut(real_T u[9]);
 static const mxArray *emlrt_marshallOut(const emlrtStack &sp,
                                         const struct0_T &u);
 
-static real_T f_emlrt_marshallIn(const emlrtStack &sp, const mxArray *src,
-                                 const emlrtMsgIdentifier *msgId);
+static real_T (*f_emlrt_marshallIn(const emlrtStack &sp, const mxArray *src,
+                                   const emlrtMsgIdentifier *msgId))[16];
+
+static int32_T (*g_emlrt_marshallIn(const emlrtStack &sp, const mxArray *src,
+                                    const emlrtMsgIdentifier *msgId))[20];
+
+static real_T (*h_emlrt_marshallIn(const emlrtStack &sp, const mxArray *src,
+                                   const emlrtMsgIdentifier *msgId))[20];
 
 // Function Definitions
 //
@@ -93,7 +104,7 @@ static real_T (*b_emlrt_marshallIn(const emlrtStack &sp, const mxArray *u,
                                    const emlrtMsgIdentifier *parentId))[16]
 {
   real_T(*y)[16];
-  y = e_emlrt_marshallIn(sp, emlrtAlias(u), parentId);
+  y = f_emlrt_marshallIn(sp, emlrtAlias(u), parentId);
   emlrtDestroyArray(&u);
   return y;
 }
@@ -102,13 +113,14 @@ static real_T (*b_emlrt_marshallIn(const emlrtStack &sp, const mxArray *u,
 // Arguments    : const emlrtStack &sp
 //                const mxArray *b_nullptr
 //                const char_T *identifier
-// Return Type  : real_T
+// Return Type  : int32_T (*)[20]
 //
-static real_T c_emlrt_marshallIn(const emlrtStack &sp, const mxArray *b_nullptr,
-                                 const char_T *identifier)
+static int32_T (*c_emlrt_marshallIn(const emlrtStack &sp,
+                                    const mxArray *b_nullptr,
+                                    const char_T *identifier))[20]
 {
   emlrtMsgIdentifier thisId;
-  real_T y;
+  int32_T(*y)[20];
   thisId.fIdentifier = const_cast<const char_T *>(identifier);
   thisId.fParent = nullptr;
   thisId.bParentIsCell = false;
@@ -121,13 +133,48 @@ static real_T c_emlrt_marshallIn(const emlrtStack &sp, const mxArray *b_nullptr,
 // Arguments    : const emlrtStack &sp
 //                const mxArray *u
 //                const emlrtMsgIdentifier *parentId
-// Return Type  : real_T
+// Return Type  : int32_T (*)[20]
 //
-static real_T c_emlrt_marshallIn(const emlrtStack &sp, const mxArray *u,
-                                 const emlrtMsgIdentifier *parentId)
+static int32_T (*c_emlrt_marshallIn(const emlrtStack &sp, const mxArray *u,
+                                    const emlrtMsgIdentifier *parentId))[20]
 {
-  real_T y;
-  y = f_emlrt_marshallIn(sp, emlrtAlias(u), parentId);
+  int32_T(*y)[20];
+  y = g_emlrt_marshallIn(sp, emlrtAlias(u), parentId);
+  emlrtDestroyArray(&u);
+  return y;
+}
+
+//
+// Arguments    : const emlrtStack &sp
+//                const mxArray *b_nullptr
+//                const char_T *identifier
+// Return Type  : real_T (*)[20]
+//
+static real_T (*d_emlrt_marshallIn(const emlrtStack &sp,
+                                   const mxArray *b_nullptr,
+                                   const char_T *identifier))[20]
+{
+  emlrtMsgIdentifier thisId;
+  real_T(*y)[20];
+  thisId.fIdentifier = const_cast<const char_T *>(identifier);
+  thisId.fParent = nullptr;
+  thisId.bParentIsCell = false;
+  y = d_emlrt_marshallIn(sp, emlrtAlias(b_nullptr), &thisId);
+  emlrtDestroyArray(&b_nullptr);
+  return y;
+}
+
+//
+// Arguments    : const emlrtStack &sp
+//                const mxArray *u
+//                const emlrtMsgIdentifier *parentId
+// Return Type  : real_T (*)[20]
+//
+static real_T (*d_emlrt_marshallIn(const emlrtStack &sp, const mxArray *u,
+                                   const emlrtMsgIdentifier *parentId))[20]
+{
+  real_T(*y)[20];
+  y = h_emlrt_marshallIn(sp, emlrtAlias(u), parentId);
   emlrtDestroyArray(&u);
   return y;
 }
@@ -138,7 +185,7 @@ static real_T c_emlrt_marshallIn(const emlrtStack &sp, const mxArray *u,
 //                const emlrtMsgIdentifier *msgId
 // Return Type  : real_T (*)[9]
 //
-static real_T (*d_emlrt_marshallIn(const emlrtStack &sp, const mxArray *src,
+static real_T (*e_emlrt_marshallIn(const emlrtStack &sp, const mxArray *src,
                                    const emlrtMsgIdentifier *msgId))[9]
 {
   static const int32_T dims{9};
@@ -148,26 +195,6 @@ static real_T (*d_emlrt_marshallIn(const emlrtStack &sp, const mxArray *src,
   emlrtCheckVsBuiltInR2012b((emlrtConstCTX)&sp, msgId, src, "double", false, 1U,
                             (const void *)&dims, &b, &i);
   ret = (real_T(*)[9])emlrtMxGetData(src);
-  emlrtDestroyArray(&src);
-  return ret;
-}
-
-//
-// Arguments    : const emlrtStack &sp
-//                const mxArray *src
-//                const emlrtMsgIdentifier *msgId
-// Return Type  : real_T (*)[16]
-//
-static real_T (*e_emlrt_marshallIn(const emlrtStack &sp, const mxArray *src,
-                                   const emlrtMsgIdentifier *msgId))[16]
-{
-  static const int32_T dims[2]{4, 4};
-  real_T(*ret)[16];
-  int32_T iv[2];
-  boolean_T bv[2]{false, false};
-  emlrtCheckVsBuiltInR2012b((emlrtConstCTX)&sp, msgId, src, "double", false, 2U,
-                            (const void *)&dims[0], &bv[0], &iv[0]);
-  ret = (real_T(*)[16])emlrtMxGetData(src);
   emlrtDestroyArray(&src);
   return ret;
 }
@@ -210,7 +237,7 @@ static real_T (*emlrt_marshallIn(const emlrtStack &sp, const mxArray *u,
                                  const emlrtMsgIdentifier *parentId))[9]
 {
   real_T(*y)[9];
-  y = d_emlrt_marshallIn(sp, emlrtAlias(u), parentId);
+  y = e_emlrt_marshallIn(sp, emlrtAlias(u), parentId);
   emlrtDestroyArray(&u);
   return y;
 }
@@ -254,7 +281,7 @@ static const mxArray *emlrt_marshallOut(const emlrtStack &sp,
   const mxArray *h_y;
   const mxArray *m;
   const mxArray *y;
-  struct1_T b_u[3];
+  struct1_T b_u[22];
   const struct1_T *r;
   real_T *pData;
   int32_T iv[2];
@@ -270,15 +297,15 @@ static const mxArray *emlrt_marshallOut(const emlrtStack &sp,
   m = emlrtCreateDoubleScalar(u.NumRandomRestarts);
   emlrtAssign(&c_y, m);
   emlrtSetFieldR2017b(y, 0, "NumRandomRestarts", c_y, 1);
-  b_u[0] = u.ConstraintViolations[0];
-  b_u[1] = u.ConstraintViolations[1];
-  b_u[2] = u.ConstraintViolations[2];
+  for (int32_T i{0}; i < 22; i++) {
+    b_u[i] = u.ConstraintViolations[i];
+  }
   d_y = nullptr;
   iv[0] = 1;
-  iv[1] = 3;
+  iv[1] = 22;
   emlrtAssign(&d_y,
               emlrtCreateStructArray(2, &iv[0], 2, (const char_T **)&sv1[0]));
-  for (int32_T i{0}; i < 3; i++) {
+  for (int32_T i{0}; i < 22; i++) {
     int32_T i1;
     int32_T loop_ub;
     int32_T u_size_idx_1;
@@ -335,27 +362,69 @@ static const mxArray *emlrt_marshallOut(const emlrtStack &sp,
 // Arguments    : const emlrtStack &sp
 //                const mxArray *src
 //                const emlrtMsgIdentifier *msgId
-// Return Type  : real_T
+// Return Type  : real_T (*)[16]
 //
-static real_T f_emlrt_marshallIn(const emlrtStack &sp, const mxArray *src,
-                                 const emlrtMsgIdentifier *msgId)
+static real_T (*f_emlrt_marshallIn(const emlrtStack &sp, const mxArray *src,
+                                   const emlrtMsgIdentifier *msgId))[16]
 {
-  static const int32_T dims{0};
-  real_T ret;
-  emlrtCheckBuiltInR2012b((emlrtConstCTX)&sp, msgId, src, "double", false, 0U,
-                          (const void *)&dims);
-  ret = *static_cast<real_T *>(emlrtMxGetData(src));
+  static const int32_T dims[2]{4, 4};
+  real_T(*ret)[16];
+  int32_T iv[2];
+  boolean_T bv[2]{false, false};
+  emlrtCheckVsBuiltInR2012b((emlrtConstCTX)&sp, msgId, src, "double", false, 2U,
+                            (const void *)&dims[0], &bv[0], &iv[0]);
+  ret = (real_T(*)[16])emlrtMxGetData(src);
   emlrtDestroyArray(&src);
   return ret;
 }
 
 //
-// Arguments    : const mxArray * const prhs[4]
+// Arguments    : const emlrtStack &sp
+//                const mxArray *src
+//                const emlrtMsgIdentifier *msgId
+// Return Type  : int32_T (*)[20]
+//
+static int32_T (*g_emlrt_marshallIn(const emlrtStack &sp, const mxArray *src,
+                                    const emlrtMsgIdentifier *msgId))[20]
+{
+  static const int32_T dims{20};
+  int32_T(*ret)[20];
+  int32_T i;
+  boolean_T b{false};
+  emlrtCheckVsBuiltInR2012b((emlrtConstCTX)&sp, msgId, src, "int32", false, 1U,
+                            (const void *)&dims, &b, &i);
+  ret = (int32_T(*)[20])emlrtMxGetData(src);
+  emlrtDestroyArray(&src);
+  return ret;
+}
+
+//
+// Arguments    : const emlrtStack &sp
+//                const mxArray *src
+//                const emlrtMsgIdentifier *msgId
+// Return Type  : real_T (*)[20]
+//
+static real_T (*h_emlrt_marshallIn(const emlrtStack &sp, const mxArray *src,
+                                   const emlrtMsgIdentifier *msgId))[20]
+{
+  static const int32_T dims{20};
+  real_T(*ret)[20];
+  int32_T i;
+  boolean_T b{false};
+  emlrtCheckVsBuiltInR2012b((emlrtConstCTX)&sp, msgId, src, "double", false, 1U,
+                            (const void *)&dims, &b, &i);
+  ret = (real_T(*)[20])emlrtMxGetData(src);
+  emlrtDestroyArray(&src);
+  return ret;
+}
+
+//
+// Arguments    : const mxArray * const prhs[7]
 //                int32_T nlhs
 //                const mxArray *plhs[2]
 // Return Type  : void
 //
-void gik9dof_codegen_inuse_solveGIKStepWrapper_api(const mxArray *const prhs[4],
+void gik9dof_codegen_inuse_solveGIKStepWrapper_api(const mxArray *const prhs[7],
                                                    int32_T nlhs,
                                                    const mxArray *plhs[2])
 {
@@ -364,25 +433,46 @@ void gik9dof_codegen_inuse_solveGIKStepWrapper_api(const mxArray *const prhs[4],
       nullptr, // tls
       nullptr  // prev
   };
+  const mxArray *prhs_copy_idx_0;
+  const mxArray *prhs_copy_idx_1;
+  const mxArray *prhs_copy_idx_4;
+  const mxArray *prhs_copy_idx_5;
+  const mxArray *prhs_copy_idx_6;
   struct0_T solverInfo;
+  real_T(*distBoundsLower)[20];
+  real_T(*distBoundsUpper)[20];
+  real_T(*distWeights)[20];
   real_T(*targetPose)[16];
   real_T(*qCurrent)[9];
   real_T(*qNext)[9];
-  real_T distanceLower;
-  real_T distanceWeight;
+  int32_T(*distBodyIndices)[20];
+  int32_T(*distRefBodyIndices)[20];
   st.tls = emlrtRootTLSGlobal;
   qNext = (real_T(*)[9])mxMalloc(sizeof(real_T[9]));
   emlrtHeapReferenceStackEnterFcnR2012b(&st);
+  prhs_copy_idx_0 = emlrtProtectR2012b(prhs[0], 0, false, -1);
+  prhs_copy_idx_1 = emlrtProtectR2012b(prhs[1], 1, false, -1);
+  prhs_copy_idx_4 = emlrtProtectR2012b(prhs[4], 4, false, -1);
+  prhs_copy_idx_5 = emlrtProtectR2012b(prhs[5], 5, false, -1);
+  prhs_copy_idx_6 = emlrtProtectR2012b(prhs[6], 6, false, -1);
   // Marshall function inputs
-  qCurrent = emlrt_marshallIn(st, emlrtAlias(prhs[0]), "qCurrent");
-  targetPose = b_emlrt_marshallIn(st, emlrtAlias(prhs[1]), "targetPose");
-  distanceLower = c_emlrt_marshallIn(st, emlrtAliasP(prhs[2]), "distanceLower");
-  distanceWeight =
-      c_emlrt_marshallIn(st, emlrtAliasP(prhs[3]), "distanceWeight");
+  qCurrent = emlrt_marshallIn(st, emlrtAlias(prhs_copy_idx_0), "qCurrent");
+  targetPose =
+      b_emlrt_marshallIn(st, emlrtAlias(prhs_copy_idx_1), "targetPose");
+  distBodyIndices =
+      c_emlrt_marshallIn(st, emlrtAlias(prhs[2]), "distBodyIndices");
+  distRefBodyIndices =
+      c_emlrt_marshallIn(st, emlrtAlias(prhs[3]), "distRefBodyIndices");
+  distBoundsLower =
+      d_emlrt_marshallIn(st, emlrtAlias(prhs_copy_idx_4), "distBoundsLower");
+  distBoundsUpper =
+      d_emlrt_marshallIn(st, emlrtAlias(prhs_copy_idx_5), "distBoundsUpper");
+  distWeights =
+      d_emlrt_marshallIn(st, emlrtAlias(prhs_copy_idx_6), "distWeights");
   // Invoke the target function
-  gik9dof_codegen_inuse_solveGIKStepWrapper(*qCurrent, *targetPose,
-                                            distanceLower, distanceWeight,
-                                            *qNext, &solverInfo);
+  gik9dof_codegen_inuse_solveGIKStepWrapper(
+      *qCurrent, *targetPose, *distBodyIndices, *distRefBodyIndices,
+      *distBoundsLower, *distBoundsUpper, *distWeights, *qNext, &solverInfo);
   // Marshall function outputs
   plhs[0] = emlrt_marshallOut(*qNext);
   if (nlhs > 1) {

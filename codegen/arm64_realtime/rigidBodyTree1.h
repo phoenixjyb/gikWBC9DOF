@@ -2,7 +2,7 @@
 // File: rigidBodyTree1.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 08:09:07
+// C/C++ source code generated on  : 08-Oct-2025 18:19:21
 //
 
 #ifndef RIGIDBODYTREE1_H
@@ -42,11 +42,6 @@ class rigidBodyTree {
 public:
   rigidBodyTree *init(GIKSolver *aInstancePtr);
   void get_BaseName(char basename_data[], int basename_size[2]) const;
-  void addBody(rigidBody &bodyin, const char parentName_data[],
-               const int parentName_size[2],
-               robotics::manip::internal::CollisionSet &iobj_0,
-               rigidBodyJoint &iobj_1,
-               robotics::manip::internal::RigidBody &iobj_2);
   void addBody(rigidBody &bodyin,
                robotics::manip::internal::CollisionSet &iobj_0,
                rigidBodyJoint &iobj_1,
@@ -90,7 +85,7 @@ public:
   rigidBodyTree();
   ~rigidBodyTree();
   bool matlabCodegenIsDeleted;
-  robotics::manip::internal::RigidBodyTree TreeInternal;
+  robotics::manip::internal::b_RigidBodyTree TreeInternal;
   robotics::manip::internal::CollisionSet _pobj0;
 };
 

@@ -2,7 +2,7 @@
 // File: _coder_gik9dof_codegen_inuse_solveGIKStepWrapper_mex.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 08:17:44
+// C/C++ source code generated on  : 08-Oct-2025 18:33:39
 //
 
 // Include Files
@@ -42,24 +42,24 @@ emlrtCTX mexFunctionCreateRootTLS()
 // Arguments    : int32_T nlhs
 //                mxArray *plhs[2]
 //                int32_T nrhs
-//                const mxArray *prhs[4]
+//                const mxArray *prhs[7]
 // Return Type  : void
 //
 void unsafe_gik9dof_codegen_inuse_solveGIKStepWrapper_mexFunction(
-    int32_T nlhs, mxArray *plhs[2], int32_T nrhs, const mxArray *prhs[4])
+    int32_T nlhs, mxArray *plhs[2], int32_T nrhs, const mxArray *prhs[7])
 {
   emlrtStack st{
       nullptr, // site
       nullptr, // tls
       nullptr  // prev
   };
-  const mxArray *b_prhs[4];
+  const mxArray *b_prhs[7];
   const mxArray *outputs[2];
-  int32_T i;
+  int32_T i1;
   st.tls = emlrtRootTLSGlobal;
   // Check for proper number of arguments.
-  if (nrhs != 4) {
-    emlrtErrMsgIdAndTxt(&st, "EMLRT:runTime:WrongNumberOfInputs", 5, 12, 4, 4,
+  if (nrhs != 7) {
+    emlrtErrMsgIdAndTxt(&st, "EMLRT:runTime:WrongNumberOfInputs", 5, 12, 7, 4,
                         41, "gik9dof.codegen_inuse.solveGIKStepWrapper");
   }
   if (nlhs > 2) {
@@ -67,18 +67,17 @@ void unsafe_gik9dof_codegen_inuse_solveGIKStepWrapper_mexFunction(
                         "gik9dof.codegen_inuse.solveGIKStepWrapper");
   }
   // Call the function.
-  b_prhs[0] = prhs[0];
-  b_prhs[1] = prhs[1];
-  b_prhs[2] = prhs[2];
-  b_prhs[3] = prhs[3];
+  for (int32_T i{0}; i < 7; i++) {
+    b_prhs[i] = prhs[i];
+  }
   gik9dof_codegen_inuse_solveGIKStepWrapper_api(b_prhs, nlhs, outputs);
   // Copy over outputs to the caller.
   if (nlhs < 1) {
-    i = 1;
+    i1 = 1;
   } else {
-    i = nlhs;
+    i1 = nlhs;
   }
-  emlrtReturnArrays(i, &plhs[0], &outputs[0]);
+  emlrtReturnArrays(i1, &plhs[0], &outputs[0]);
 }
 
 //

@@ -2,7 +2,7 @@
 // File: JointPositionBounds.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 08:17:44
+// C/C++ source code generated on  : 08-Oct-2025 18:33:39
 //
 
 // Include Files
@@ -251,6 +251,40 @@ void JointPositionBounds::get_KinematicPath(
     b_value[b_i] = b_value[j2];
     b_value[j2] = xtmp;
   }
+}
+
+//
+// Arguments    : b_RigidBodyTree *tree
+// Return Type  : JointPositionBounds *
+//
+JointPositionBounds *JointPositionBounds::init(b_RigidBodyTree *tree)
+{
+  JointPositionBounds *obj;
+  double numElements;
+  int obj_idx_0;
+  obj = this;
+  numElements = tree->PositionNumber;
+  obj->Tree = tree;
+  obj->NumElements = numElements;
+  obj_idx_0 = static_cast<int>(obj->NumElements);
+  obj->BoundsInternal.set_size(obj_idx_0, 2);
+  obj_idx_0 <<= 1;
+  for (int i{0}; i < obj_idx_0; i++) {
+    obj->BoundsInternal[i] = 0.0;
+  }
+  obj_idx_0 = static_cast<int>(obj->NumElements);
+  obj->Weights.set_size(1, obj_idx_0);
+  for (int i{0}; i < obj_idx_0; i++) {
+    obj->Weights[i] = 1.0;
+  }
+  obj->Tree->get_JointPositionLimits(obj->BoundsInternal);
+  obj_idx_0 = static_cast<int>(obj->NumElements);
+  obj->Weights.set_size(1, obj_idx_0);
+  for (int i{0}; i < obj_idx_0; i++) {
+    obj->Weights[i] = 1.0;
+  }
+  obj->matlabCodegenIsDeleted = false;
+  return obj;
 }
 
 } // namespace internal

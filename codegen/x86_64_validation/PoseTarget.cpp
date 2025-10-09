@@ -2,7 +2,7 @@
 // File: PoseTarget.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 08:17:44
+// C/C++ source code generated on  : 08-Oct-2025 18:33:39
 //
 
 // Include Files
@@ -10,9 +10,11 @@
 #include "CharacterVector.h"
 #include "RigidBody.h"
 #include "RigidBodyTree.h"
+#include "gik9dof_codegen_inuse_solveGIKStepWrapper_data.h"
 #include "rt_nonfinite.h"
 #include "sqrt.h"
 #include "svd.h"
+#include "coder_array.h"
 #include "rt_defines.h"
 #include <algorithm>
 #include <cmath>
@@ -36,6 +38,49 @@ PoseTarget::PoseTarget() = default;
 // Return Type  : void
 //
 PoseTarget::~PoseTarget() = default;
+
+//
+// Arguments    : const ::coder::array<double, 1U> &q
+//                double g[2]
+//                double J_data[]
+//                int J_size[2]
+// Return Type  : void
+//
+void PoseTarget::evaluate(const ::coder::array<double, 1U> &q, double g[2],
+                          double J_data[], int J_size[2])
+{
+  ::coder::array<double, 2U> C;
+  ::coder::array<double, 2U> Jrobot;
+  double T_data[16];
+  double JTwist[12];
+  int T_size[2];
+  int coffset;
+  int n_tmp;
+  Tree->efficientFKAndJacobianForIK(q, EndEffectorIndex, ReferenceBodyIndex,
+                                    T_data, T_size, Jrobot);
+  evaluateFromTransform(T_data, T_size, g, JTwist);
+  n_tmp = Jrobot.size(1);
+  C.set_size(2, Jrobot.size(1));
+  for (int j{0}; j < n_tmp; j++) {
+    int boffset;
+    coffset = j << 1;
+    boffset = j * 6;
+    for (int i{0}; i < 2; i++) {
+      double s;
+      s = 0.0;
+      for (int k{0}; k < 6; k++) {
+        s += JTwist[(k << 1) + i] * Jrobot[boffset + k];
+      }
+      C[coffset + i] = s;
+    }
+  }
+  J_size[0] = 2;
+  J_size[1] = Jrobot.size(1);
+  n_tmp = C.size(1) << 1;
+  for (coffset = 0; coffset < n_tmp; coffset++) {
+    J_data[coffset] = C[coffset];
+  }
+}
 
 //
 // Arguments    : const double T_data[]
@@ -261,7 +306,7 @@ void PoseTarget::get_EndEffector(char value_data[], int value_size[2])
 {
   CharacterVector c_obj;
   RigidBody *b_obj;
-  RigidBodyTree *obj;
+  b_RigidBodyTree *obj;
   if (EndEffectorIndex > 0.0) {
     int loop_ub;
     b_obj = Tree->Bodies[static_cast<int>(EndEffectorIndex) - 1];
@@ -302,7 +347,7 @@ void PoseTarget::get_ReferenceBody(char value_data[], int value_size[2])
 {
   CharacterVector c_obj;
   RigidBody *b_obj;
-  RigidBodyTree *obj;
+  b_RigidBodyTree *obj;
   if (ReferenceBodyIndex > 0.0) {
     int loop_ub;
     b_obj = Tree->Bodies[static_cast<int>(ReferenceBodyIndex) - 1];
@@ -332,6 +377,37 @@ void PoseTarget::get_ReferenceBody(char value_data[], int value_size[2])
       ::std::copy(&c_obj.Vector[0], &c_obj.Vector[loop_ub], &value_data[0]);
     }
   }
+}
+
+//
+// Arguments    : b_RigidBodyTree *tree
+// Return Type  : PoseTarget *
+//
+PoseTarget *PoseTarget::init(b_RigidBodyTree *tree)
+{
+  PoseTarget *obj;
+  int obj_idx_0;
+  obj = this;
+  for (int i{0}; i < 16; i++) {
+    obj->TargetTransform[i] = iv[i];
+  }
+  obj->Tree = tree;
+  obj->NumElements = 2.0;
+  obj_idx_0 = static_cast<int>(obj->NumElements);
+  obj->BoundsInternal.set_size(obj_idx_0, 2);
+  obj_idx_0 <<= 1;
+  for (int i{0}; i < obj_idx_0; i++) {
+    obj->BoundsInternal[i] = 0.0;
+  }
+  obj_idx_0 = static_cast<int>(obj->NumElements);
+  obj->Weights.set_size(1, obj_idx_0);
+  for (int i{0}; i < obj_idx_0; i++) {
+    obj->Weights[i] = 1.0;
+  }
+  obj->EndEffectorIndex = 1.0;
+  obj->ReferenceBodyIndex = 0.0;
+  obj->matlabCodegenIsDeleted = false;
+  return obj;
 }
 
 } // namespace internal

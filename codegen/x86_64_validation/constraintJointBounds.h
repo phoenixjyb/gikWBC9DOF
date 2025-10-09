@@ -2,14 +2,14 @@
 // File: constraintJointBounds.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 08:17:44
+// C/C++ source code generated on  : 08-Oct-2025 18:33:39
 //
 
 #ifndef CONSTRAINTJOINTBOUNDS_H
 #define CONSTRAINTJOINTBOUNDS_H
 
 // Include Files
-#include "gik9dof_codegen_inuse_solveGIKStepWrapper_types.h"
+#include "gik9dof_codegen_inuse_solveGIKStepWrapper_types1.h"
 #include "rtwtypes.h"
 #include "coder_array.h"
 #include <cstddef>
@@ -35,7 +35,7 @@ public:
   ::coder::array<double, 2U> WeightsInternal;
 
 protected:
-  cell_53 ConstructorPropertyDefaultValues;
+  cell_12 ConstructorPropertyDefaultValues;
 
 private:
   double NumElements;

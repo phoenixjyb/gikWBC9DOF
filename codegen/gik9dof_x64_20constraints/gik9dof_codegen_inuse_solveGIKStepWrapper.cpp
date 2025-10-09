@@ -116,7 +116,7 @@ void solveGIKStepWrapper(const double qCurrent[9], const double targetPose[16],
                                    params_DampingBias, params_UseErrorDamping);
     b_expl_temp = solver.EnforceJointLimits;
     solver.set_SolverParameters(
-        50.0, lowerBound, upperBound, params_SolutionTolerance, b_expl_temp,
+        1000.0, lowerBound, upperBound, params_SolutionTolerance, b_expl_temp,
         params_RandomRestart, params_StepTolerance, params_ErrorChangeTolerance,
         params_DampingBias, params_UseErrorDamping);
     weight = solver.Solver->getSolverParams(

@@ -2,7 +2,7 @@
 // File: PoseTarget.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 08:17:44
+// C/C++ source code generated on  : 08-Oct-2025 18:33:39
 //
 
 #ifndef POSETARGET_H
@@ -20,7 +20,7 @@ namespace coder {
 namespace robotics {
 namespace manip {
 namespace internal {
-class RigidBodyTree;
+class b_RigidBodyTree;
 
 }
 } // namespace manip
@@ -36,6 +36,9 @@ namespace manip {
 namespace internal {
 class PoseTarget {
 public:
+  PoseTarget *init(b_RigidBodyTree *tree);
+  void evaluate(const ::coder::array<double, 1U> &q, double g[2],
+                double J_data[], int J_size[2]);
   void evaluateFromTransform(const double T_data[], const int T_size[2],
                              double g[2], double JTwist[12]) const;
   void get_EndEffector(char value_data[], int value_size[2]);
@@ -44,7 +47,7 @@ public:
   ~PoseTarget();
   bool matlabCodegenIsDeleted;
   double NumElements;
-  RigidBodyTree *Tree;
+  b_RigidBodyTree *Tree;
   ::coder::array<double, 2U> BoundsInternal;
   ::coder::array<double, 2U> Weights;
   double ReferenceBodyIndex;

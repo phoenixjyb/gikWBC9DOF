@@ -2,7 +2,7 @@
 // File: GIKProblem.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 08:09:07
+// C/C++ source code generated on  : 08-Oct-2025 18:19:21
 //
 
 #ifndef GIKPROBLEM_H
@@ -24,7 +24,7 @@ namespace coder {
 namespace robotics {
 namespace manip {
 namespace internal {
-class RigidBodyTree;
+class b_RigidBodyTree;
 
 }
 } // namespace manip
@@ -36,6 +36,8 @@ class constraintJointBounds;
 class constraintDistanceBounds;
 
 } // namespace coder
+struct struct1_T;
+
 } // namespace gik9dof
 
 // Type Definitions
@@ -46,14 +48,31 @@ namespace manip {
 namespace internal {
 class GIKProblem {
 public:
-  void updateDesignVariableBounds();
-  void residualsInternal(const ::coder::array<double, 1U> &x,
-                         ::coder::array<double, 1U> &f,
-                         ::coder::array<double, 2U> &J);
+  GIKProblem *init(b_RigidBodyTree *tree);
+  void set_DesignVariableBounds(const ::coder::array<double, 2U> &b_value);
   void set_EnforceJointLimits(bool b_value);
   void update(const constraintPoseTarget &varargin_1,
               const constraintJointBounds &varargin_2,
-              const constraintDistanceBounds &varargin_3);
+              const constraintDistanceBounds *varargin_3,
+              const constraintDistanceBounds *varargin_4,
+              const constraintDistanceBounds *varargin_5,
+              const constraintDistanceBounds *varargin_6,
+              const constraintDistanceBounds *varargin_7,
+              const constraintDistanceBounds *varargin_8,
+              const constraintDistanceBounds *varargin_9,
+              const constraintDistanceBounds *varargin_10,
+              const constraintDistanceBounds *varargin_11,
+              const constraintDistanceBounds *varargin_12,
+              const constraintDistanceBounds *varargin_13,
+              const constraintDistanceBounds *varargin_14,
+              const constraintDistanceBounds *varargin_15,
+              const constraintDistanceBounds *varargin_16,
+              const constraintDistanceBounds *varargin_17,
+              const constraintDistanceBounds *varargin_18,
+              const constraintDistanceBounds *varargin_19,
+              const constraintDistanceBounds *varargin_20,
+              const constraintDistanceBounds *varargin_21,
+              const constraintDistanceBounds *varargin_22);
   void residuals(const ::coder::array<double, 1U> &x,
                  ::coder::array<double, 1U> &f);
   void residuals(const ::coder::array<double, 1U> &x,
@@ -62,28 +81,41 @@ public:
   double evaluateSolution(const ::coder::array<double, 1U> &x,
                           ::coder::array<double, 1U> &ev);
   void get_KinematicPath(double value_data[], int value_size[2]);
+  void constraintViolations(const ::coder::array<double, 1U> &x,
+                            struct1_T violations[22]);
+  void b_set_EnforceJointLimits();
   GIKProblem();
   ~GIKProblem();
+
+private:
+  void updateDesignVariableBounds();
+  void residualsInternal(const ::coder::array<double, 1U> &x,
+                         ::coder::array<double, 1U> &f,
+                         ::coder::array<double, 2U> &J);
+
+public:
   bool matlabCodegenIsDeleted;
   ::coder::array<double, 2U> DesignVariableBoundsInternal;
-  ::coder::array<double, 2U> ConstraintMatrixInternal;
-  ::coder::array<double, 1U> ConstraintBoundInternal;
-  RigidBodyTree *Tree;
+  b_RigidBodyTree *Tree;
   cell_6 Constraints;
   double NumResiduals;
   double NumSlacks;
   double NumPositions;
   double NumVariables;
-  cell_wrap_7 ResidualIndices[3];
-  cell_wrap_7 SlackIndices[3];
+  cell_wrap_7 ResidualIndices[22];
+  cell_wrap_7 SlackIndices[22];
+  DistanceBoundsConstraint _pobj0[20];
+  JointPositionBounds _pobj1;
+  PoseTarget _pobj2;
+
+private:
+  ::coder::array<double, 2U> ConstraintMatrixInternal;
+  ::coder::array<double, 1U> ConstraintBoundInternal;
   bool EnforceJointLimitsInternal;
-  cell_wrap_8 EqualityFlags[3];
+  cell_wrap_8 EqualityFlags[22];
   ::coder::array<double, 1U> LastX;
   ::coder::array<double, 1U> LastF;
   ::coder::array<double, 2U> LastJ;
-  DistanceBoundsConstraint _pobj0;
-  JointPositionBounds _pobj1;
-  PoseTarget _pobj2;
 };
 
 } // namespace internal

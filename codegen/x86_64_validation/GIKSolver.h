@@ -2,7 +2,7 @@
 // File: GIKSolver.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 08:17:44
+// C/C++ source code generated on  : 08-Oct-2025 18:33:39
 //
 
 #ifndef GIKSOLVER_H
@@ -20,12 +20,11 @@ class GIKSolver {
 public:
   GIKSolver();
   ~GIKSolver();
-  void gik9dof_codegen_inuse_solveGIKStepWrapper(const double qCurrent[9],
-                                                 const double targetPose[16],
-                                                 double distanceLower,
-                                                 double distanceWeight,
-                                                 double qNext[9],
-                                                 struct0_T *solverInfo);
+  void gik9dof_codegen_inuse_solveGIKStepWrapper(
+      const double qCurrent[9], const double targetPose[16],
+      const int distBodyIndices[20], const int distRefBodyIndices[20],
+      const double distBoundsLower[20], const double distBoundsUpper[20],
+      const double distWeights[20], double qNext[9], struct0_T *solverInfo);
   gik9dof_codegen_inuse_solveGIKStepWrapperStackData *getStackData();
 
 private:

@@ -2,7 +2,7 @@
 // File: RigidBody.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 08:17:44
+// C/C++ source code generated on  : 08-Oct-2025 18:33:39
 //
 
 // Include Files
@@ -66,6 +66,7 @@ RigidBody *RigidBody::copy(CollisionSet &iobj_0, rigidBodyJoint &iobj_1,
   CollisionSet *c_obj;
   CollisionSet *newObj;
   RigidBody *newbody;
+  ::coder::array<char, 2U> vec;
   double msubspace_data[36];
   double poslim_data[14];
   double b_obj[9];
@@ -76,10 +77,10 @@ RigidBody *RigidBody::copy(CollisionSet &iobj_0, rigidBodyJoint &iobj_1,
   int ibmat;
   int loop_ub;
   int poslim_size_idx_0;
-  char vec_data[204];
   signed char b_I[36];
   signed char c_I[9];
   signed char homepos_data[7];
+  signed char b_tmp;
   bool result;
   obj = NameInternal;
   if (obj.Length < 1.0) {
@@ -106,9 +107,9 @@ RigidBody *RigidBody::copy(CollisionSet &iobj_0, rigidBodyJoint &iobj_1,
   iobj_2.NameInternal = s;
   (&iobj_1)[0].InTree = false;
   for (i = 0; i < 16; i++) {
-    ibmat = iv[i];
-    (&iobj_1)[0].JointToParentTransform[i] = ibmat;
-    (&iobj_1)[0].ChildToJointTransform[i] = ibmat;
+    b_tmp = iv[i];
+    (&iobj_1)[0].JointToParentTransform[i] = b_tmp;
+    (&iobj_1)[0].ChildToJointTransform[i] = b_tmp;
   }
   for (i = 0; i < 14; i++) {
     (&iobj_1)[0].PositionLimitsInternal[i] = 0.0;
@@ -130,17 +131,18 @@ RigidBody *RigidBody::copy(CollisionSet &iobj_0, rigidBodyJoint &iobj_1,
   }
   (&iobj_1)[0].TypeInternal = s;
   s = (&iobj_1)[0].NameInternal;
-  ibmat = loop_ub + 4;
-  if (loop_ub - 1 >= 0) {
-    ::std::copy(&obj.Vector[0], &obj.Vector[loop_ub], &vec_data[0]);
+  vec.set_size(1, loop_ub + 4);
+  for (i = 0; i < loop_ub; i++) {
+    vec[i] = obj.Vector[i];
   }
-  vec_data[loop_ub] = '_';
-  vec_data[loop_ub + 1] = 'j';
-  vec_data[loop_ub + 2] = 'n';
-  vec_data[loop_ub + 3] = 't';
-  s.Length = loop_ub + 4;
-  if (ibmat - 1 >= 0) {
-    ::std::copy(&vec_data[0], &vec_data[ibmat], &s.Vector[0]);
+  vec[loop_ub] = '_';
+  vec[loop_ub + 1] = 'j';
+  vec[loop_ub + 2] = 'n';
+  vec[loop_ub + 3] = 't';
+  s.Length = vec.size(1);
+  loop_ub = vec.size(1);
+  for (i = 0; i < loop_ub; i++) {
+    s.Vector[i] = vec[i];
   }
   (&iobj_1)[0].NameInternal = s;
   obj = (&iobj_1)[0].TypeInternal;
@@ -181,7 +183,7 @@ RigidBody *RigidBody::copy(CollisionSet &iobj_0, rigidBodyJoint &iobj_1,
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != obj.Vector[ibmat]) {
+          if (cv3[ibmat] != obj.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -262,17 +264,16 @@ RigidBody *RigidBody::copy(CollisionSet &iobj_0, rigidBodyJoint &iobj_1,
       msubspace_data[i] = b_I[i];
     }
     poslim_size_idx_0 = 7;
-    for (homepos_size_idx_1 = 0; homepos_size_idx_1 < 2; homepos_size_idx_1++) {
-      signed char b_tmp;
-      ibmat = homepos_size_idx_1 * 3;
-      b_tmp = static_cast<signed char>(10 * homepos_size_idx_1 - 5);
+    for (loop_ub = 0; loop_ub < 2; loop_ub++) {
+      ibmat = loop_ub * 3;
+      b_tmp = static_cast<signed char>(10 * loop_ub - 5);
       b[ibmat] = b_tmp;
       b[ibmat + 1] = b_tmp;
       b[ibmat + 2] = b_tmp;
-      poslim_data[7 * homepos_size_idx_1] = rtNaN;
-      poslim_data[7 * homepos_size_idx_1 + 1] = rtNaN;
-      poslim_data[7 * homepos_size_idx_1 + 2] = rtNaN;
-      poslim_data[7 * homepos_size_idx_1 + 3] = rtNaN;
+      poslim_data[7 * loop_ub] = rtNaN;
+      poslim_data[7 * loop_ub + 1] = rtNaN;
+      poslim_data[7 * loop_ub + 2] = rtNaN;
+      poslim_data[7 * loop_ub + 3] = rtNaN;
     }
     for (i = 0; i < 2; i++) {
       poslim_data[7 * i + 4] = b[3 * i];
@@ -615,7 +616,7 @@ RigidBody *RigidBody::init(const char bodyInput[11], CollisionSet &iobj_0,
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;

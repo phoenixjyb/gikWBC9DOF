@@ -2,7 +2,7 @@
 // File: gik9dof_codegen_inuse_solveGIKStepWrapper_data.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 08:17:44
+// C/C++ source code generated on  : 08-Oct-2025 18:33:39
 //
 
 // Include Files
@@ -14,19 +14,19 @@
 namespace gik9dof {
 omp_nest_lock_t gik9dof_codegen_inuse_solveGIKStepWrapper_nestLockGlobal;
 
+const char cv[21]{'a', 'b', 's', 't', 'r', 'a', 'c', 't', '_', 'c', 'h',
+                  'a', 's', 's', 'i', 's', '_', 'l', 'i', 'n', 'k'};
+
+const char cv1[18]{'l', 'e', 'f', 't', '_', 'a', 'r', 'm', '_',
+                   'b', 'a', 's', 'e', '_', 'l', 'i', 'n', 'k'};
+
 const signed char iv[16]{1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
 
-const char cv1[9]{'p', 'r', 'i', 's', 'm', 'a', 't', 'i', 'c'};
+const char cv3[9]{'p', 'r', 'i', 's', 'm', 'a', 't', 'i', 'c'};
 
-const char cv2[11]{'b', 'a', 's', 'e', '_', 'l', 'i', 'n', 'k', '_', 'x'};
+const char cv4[11]{'b', 'a', 's', 'e', '_', 'l', 'i', 'n', 'k', '_', 'x'};
 
-const char cv3[11]{'b', 'a', 's', 'e', '_', 'l', 'i', 'n', 'k', '_', 'y'};
-
-const char cv4[21]{'a', 'b', 's', 't', 'r', 'a', 'c', 't', '_', 'c', 'h',
-                   'a', 's', 's', 'i', 's', '_', 'l', 'i', 'n', 'k'};
-
-const char cv5[18]{'l', 'e', 'f', 't', '_', 'a', 'r', 'm', '_',
-                   'b', 'a', 's', 'e', '_', 'l', 'i', 'n', 'k'};
+const char cv5[11]{'b', 'a', 's', 'e', '_', 'l', 'i', 'n', 'k', '_', 'y'};
 
 const char cv6[14]{'l', 'e', 'f', 't', '_', 'a', 'r',
                    'm', '_', 'l', 'i', 'n', 'k', '1'};

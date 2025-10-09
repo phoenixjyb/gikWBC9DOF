@@ -2,7 +2,7 @@
 // File: rand.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 08:17:44
+// C/C++ source code generated on  : 08-Oct-2025 18:33:39
 //
 
 #ifndef RAND_H
@@ -22,9 +22,9 @@ class GIKSolver;
 // Function Declarations
 namespace gik9dof {
 namespace coder {
-int b_rand(GIKSolver *aInstancePtr, double varargin_1, double r_data[]);
-
 void b_rand(GIKSolver *aInstancePtr, double r[5]);
+
+int b_rand(GIKSolver *aInstancePtr, double varargin_1, double r_data[]);
 
 void c_rand(GIKSolver *aInstancePtr, double r[3]);
 

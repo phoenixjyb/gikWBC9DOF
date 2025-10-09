@@ -2,7 +2,7 @@
 // File: _coder_gik9dof_codegen_inuse_solveGIKStepWrapper_mex.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 08:09:07
+// C/C++ source code generated on  : 08-Oct-2025 18:19:21
 //
 
 #ifndef _CODER_GIK9DOF_CODEGEN_INUSE_SOLVEGIKSTEPWRAPPER_MEX_H
@@ -20,7 +20,7 @@ MEXFUNCTION_LINKAGE void mexFunction(int32_T nlhs, mxArray *plhs[],
 emlrtCTX mexFunctionCreateRootTLS();
 
 void unsafe_gik9dof_codegen_inuse_solveGIKStepWrapper_mexFunction(
-    int32_T nlhs, mxArray *plhs[2], int32_T nrhs, const mxArray *prhs[4]);
+    int32_T nlhs, mxArray *plhs[2], int32_T nrhs, const mxArray *prhs[7]);
 
 #endif
 //

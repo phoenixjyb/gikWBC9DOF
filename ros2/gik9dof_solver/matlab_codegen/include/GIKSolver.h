@@ -32,7 +32,7 @@ public:
 private:
   gik9dof_codegen_realtime_solveGIKStepWrapperPersistentData pd_;
   gik9dof_codegen_realtime_solveGIKStepWrapperStackData SD_;
-  int max_iterations_{1500};  // Default max iterations, can be overridden
+  int max_iterations_{1000};  // Default max iterations (aligned with codegen wrapper)
 };
 
 } // namespace gik9dof

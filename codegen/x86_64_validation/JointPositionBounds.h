@@ -2,7 +2,7 @@
 // File: JointPositionBounds.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 08:17:44
+// C/C++ source code generated on  : 08-Oct-2025 18:33:39
 //
 
 #ifndef JOINTPOSITIONBOUNDS_H
@@ -20,7 +20,7 @@ namespace coder {
 namespace robotics {
 namespace manip {
 namespace internal {
-class RigidBodyTree;
+class b_RigidBodyTree;
 
 }
 } // namespace manip
@@ -36,12 +36,13 @@ namespace manip {
 namespace internal {
 class JointPositionBounds {
 public:
+  JointPositionBounds *init(b_RigidBodyTree *tree);
   void get_KinematicPath(::coder::array<double, 2U> &b_value) const;
   JointPositionBounds();
   ~JointPositionBounds();
   bool matlabCodegenIsDeleted;
   double NumElements;
-  RigidBodyTree *Tree;
+  b_RigidBodyTree *Tree;
   ::coder::array<double, 2U> BoundsInternal;
   ::coder::array<double, 2U> Weights;
 };

@@ -2,7 +2,7 @@
 // File: validatestring.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 08:17:44
+// C/C++ source code generated on  : 08-Oct-2025 18:33:39
 //
 
 // Include Files
@@ -116,7 +116,7 @@ void validatestring(const char str_data[], const int str_size[2],
         exitg1 = 0;
         if (u0 <= u1 - 1) {
           if (b_cv[static_cast<int>(static_cast<unsigned char>(str_data[u0]) &
-                                    127U)] != b_cv[static_cast<int>(cv1[u0])]) {
+                                    127U)] != b_cv[static_cast<int>(cv3[u0])]) {
             exitg1 = 1;
           } else {
             u0++;
@@ -131,13 +131,13 @@ void validatestring(const char str_data[], const int str_size[2],
           nmatched = 1;
           partial_match_size_idx_1 = 9;
           for (u0 = 0; u0 < 9; u0++) {
-            partial_match_data[u0] = cv1[u0];
+            partial_match_data[u0] = cv3[u0];
           }
         } else {
           if (!matched) {
             partial_match_size_idx_1 = 9;
             for (u0 = 0; u0 < 9; u0++) {
-              partial_match_data[u0] = cv1[u0];
+              partial_match_data[u0] = cv3[u0];
             }
           }
           matched = true;
