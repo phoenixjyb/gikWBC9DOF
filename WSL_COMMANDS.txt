@@ -1,0 +1,25 @@
+# =============================================================================
+# COPY AND PASTE INTO WSL - Planner ARM64 Codegen
+# =============================================================================
+# 
+# Instructions:
+# 1. Open WSL terminal (type 'wsl' in PowerShell)
+# 2. Copy ALL lines below (from 'cd' to the last 'file' command)
+# 3. Paste into WSL terminal
+# 4. Wait 5-15 minutes for codegen to complete
+#
+# =============================================================================
+
+cd /mnt/c/Users/yanbo/wSpace/codegenGIKsample/Trial/gikWBC9DOF
+
+/home/yanbo/MATLAB/R2024a/bin/matlab -nodisplay -nosplash -nodesktop -r "addpath(genpath('matlab')); run('generate_code_planner_arm64.m'); exit;"
+
+# After codegen completes, verify:
+ls -lh codegen/planner_arm64/*.cpp | wc -l
+file codegen/planner_arm64/*.o | head -3
+
+# =============================================================================
+# Expected output:
+# - ~30 .cpp files
+# - Binary format: ELF 64-bit LSB relocatable, ARM aarch64
+# =============================================================================
