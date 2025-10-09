@@ -87,7 +87,8 @@ if ($useRsync) {
     # Use rsync (much faster, shows progress)
     try {
         wsl rsync -avz --progress `
-            --exclude='build/' --exclude='install/' --exclude='log/' `
+            --exclude='build' --exclude='install' --exclude='log' `
+            --exclude='*_bak' --exclude='*_backup_*' `
             "$wslPath/" "$Username@${OrinIP}:$RemotePath/ros2/"
         
         if ($LASTEXITCODE -eq 0) {
