@@ -32,6 +32,8 @@ arguments
     options.StageBHybridSafetyMargin (1,1) double = 0.15
     options.StageBHybridMinTurningRadius (1,1) double = 0.5
     options.StageBHybridMotionPrimitiveLength (1,1) double = 0.5
+    options.StageBUseReedsShepp (1,1) logical = false
+    options.StageBReedsSheppNumSamples (1,1) double {mustBePositive} = 50
     options.StageBMaxLinearSpeed (1,1) double = 1.5
     options.StageBMaxYawRate (1,1) double = 3.0
     options.StageBMaxJointSpeed (1,1) double = 1.0
@@ -1048,6 +1050,107 @@ maxLinearStep = options.StageBMaxLinearSpeed / rateHz;
 maxYawStep = options.StageBMaxYawRate / rateHz;
 
 states = densifyHybridStates(statesRaw, maxLinearStep, maxYawStep);
+
+if isfield(options, "StageBUseReedsShepp") && options.StageBUseReedsShepp
+    states = smoothStageBWithReedsShepp(states, options.StageBHybridMinTurningRadius, options.StageBReedsSheppNumSamples);
+    states = densifyHybridStates(states, maxLinearStep, maxYawStep);
+end
+end
+
+function statesOut = smoothStageBWithReedsShepp(statesIn, minTurningRadius, numSamples)
+if isempty(statesIn) || size(statesIn,1) < 2
+    statesOut = statesIn;
+    return
+end
+
+conn = reedsSheppConnection('MinTurningRadius', max(minTurningRadius, eps));
+statesOut = statesIn(1,:);
+for idx = 1:size(statesIn,1)-1
+    q1 = statesIn(idx,:);
+    q2 = statesIn(idx+1,:);
+    try
+        [pathSeg, ~] = connect(conn, q1, q2);
+    catch
+        pathSeg = {};
+    end
+    if isempty(pathSeg)
+        statesOut(end+1,:) = q2; %#ok<AGROW>
+        continue
+    end
+    segmentStates = discretizeReedsSheppSegment(pathSeg{1}, numSamples);
+    statesOut = [statesOut; segmentStates(2:end,:)]; %#ok<AGROW>
+end
+
+totalDistance = sum(vecnorm(diff(statesOut(:,1:2).'),2,1));
+straightDist = norm(statesIn(end,1:2) - statesIn(1,1:2));
+if totalDistance > max(10*straightDist, straightDist + 10)
+    statesOut = statesIn;
+end
+end
+
+function segStates = discretizeReedsSheppSegment(segment, numSamples)
+if nargin < 2 || numSamples <= 0
+    numSamples = 50;
+end
+
+totalLen = sum(segment.MotionLengths);
+if totalLen <= 0
+    segStates = [segment.StartPose; segment.GoalPose];
+    return
+end
+
+pose = segment.StartPose;
+segStates = pose;
+
+for i = 1:numel(segment.MotionLengths)
+    length_i = segment.MotionLengths(i);
+    if length_i <= 0
+        continue
+    end
+    typeChar = segment.MotionTypes(i);
+    if isa(typeChar, "string") || isa(typeChar, "char")
+        type = char(typeChar);
+    else
+        type = char(typeChar);
+    end
+    type = type(1);
+    direction = segment.MotionDirections(i);
+    numSteps = max(ceil(numSamples * (length_i / totalLen)), 1);
+    ds = length_i / numSteps;
+    for stepIdx = 1:numSteps
+        switch type
+            case 'S'
+                step = direction * ds;
+                pose(1) = pose(1) + step * cos(pose(3));
+                pose(2) = pose(2) + step * sin(pose(3));
+            case {'L','R'}
+                if type == 'L'
+                    curvature = direction / segment.MinTurningRadius;
+                else
+                    curvature = -direction / segment.MinTurningRadius;
+                end
+                deltaTheta = curvature * ds;
+                theta0 = pose(3);
+                theta1 = wrapToPi(theta0 + deltaTheta);
+                if abs(curvature) < 1e-9
+                    pose(1) = pose(1) + direction * ds * cos(theta0);
+                    pose(2) = pose(2) + direction * ds * sin(theta0);
+                    pose(3) = theta1;
+                else
+                    pose(1) = pose(1) + (sin(theta1) - sin(theta0)) / curvature;
+                    pose(2) = pose(2) - (cos(theta1) - cos(theta0)) / curvature;
+                    pose(3) = theta1;
+                end
+            otherwise
+                step = direction * ds;
+                pose(1) = pose(1) + step * cos(pose(3));
+                pose(2) = pose(2) + step * sin(pose(3));
+        end
+        segStates(end+1,:) = pose; %#ok<AGROW>
+    end
+end
+
+segStates(end,:) = segment.GoalPose;
 end
 
 function simResOut = ensureDocking(simResIn, goalBase, followerOptions, sampleTime, posTol, yawTol)
