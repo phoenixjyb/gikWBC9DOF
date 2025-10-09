@@ -27,10 +27,11 @@ Write-Host "Date: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Gr
 Write-Host "================================================`n" -ForegroundColor Cyan
 
 # Verify we're in the right directory
-$projectRoot = $PSScriptRoot
+# $PSScriptRoot is scripts/deployment/, so go up two levels
+$projectRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 if (-not (Test-Path (Join-Path $projectRoot "ros2"))) {
     Write-Host "✗ Error: ros2/ directory not found" -ForegroundColor Red
-    Write-Host "  Run this script from the project root" -ForegroundColor Yellow
+    Write-Host "  Project root: $projectRoot" -ForegroundColor Yellow
     exit 1
 }
 
