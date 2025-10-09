@@ -39,7 +39,7 @@
 // MATLAB Coder generated planner
 #include "HybridAStarPlanner.h"
 #include "OccupancyGrid2D.h"
-#include "gik9dof_planHybridAStarCodegen_types.h"
+#include "planHybridAStarCodegen_types.h"
 
 // NOTE: NOT including GIKSolver.h to avoid struct0_T/struct1_T conflicts with planner types
 // Stage B2 will use planner waypoints directly without invoking full GIK solver

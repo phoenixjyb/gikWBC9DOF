@@ -273,8 +273,8 @@ bool StageBController::planPath()
     
     auto plan_start = std::chrono::high_resolution_clock::now();
     
-    planner_->b_gik9dof_planHybridAStarCodegen(&start_state, &goal_state, 
-                                                &occupancy_grid_, path, &search_stats);
+    planner_->b_planHybridAStarCodegen(&start_state, &goal_state, 
+                                       &occupancy_grid_, path, &search_stats);
     
     auto plan_end = std::chrono::high_resolution_clock::now();
     double planning_time = std::chrono::duration<double>(plan_end - plan_start).count();
