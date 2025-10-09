@@ -10,11 +10,12 @@ option(USE_ARM64_CODE "Use ARM64 generated code instead of x64" OFF)
 
 # Find all generated source files
 if(USE_ARM64_CODE)
-    set(CODEGEN_DIR "${CMAKE_SOURCE_DIR}/../codegen/gik9dof_arm64_20constraints")
-    message(STATUS "Using ARM64 generated code (Linux)")
+    set(CODEGEN_DIR "${CMAKE_SOURCE_DIR}/../codegen/arm64_realtime")
+    message(STATUS "Using ARM64 generated code (Linux) - MaxTime=50ms real-time version")
 else()
-    set(CODEGEN_DIR "${CMAKE_SOURCE_DIR}/../codegen/gik9dof_x64_20constraints")
-    message(STATUS "Using x64 generated code (Windows)")
+    # Use archived x64 validation code for Windows testing
+    set(CODEGEN_DIR "${CMAKE_SOURCE_DIR}/../codegen/archive/x64_wsl_validation_final")
+    message(STATUS "Using x64 archived validation code (Windows)")
 endif()
 
 # Collect all .cpp and .c files from codegen directory (excluding interface and examples)

@@ -10,16 +10,16 @@ echo "========================================"
 
 # Convert Windows path to WSL path
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CODEGEN_DIR="${SCRIPT_DIR}/../codegen/gik9dof_arm64_20constraints"
+CODEGEN_DIR="${SCRIPT_DIR}/../codegen/arm64_realtime"
 
 # Check for ARM64 codegen directory
 if [ ! -d "$CODEGEN_DIR" ]; then
-    echo "❌ Error: ARM64 codegen directory not found: $CODEGEN_DIR"
-    echo "Please run generate_gik_20constraints_arm64.m first!"
+    echo "❌ Error: ARM64 real-time codegen directory not found: $CODEGEN_DIR"
+    echo "Please run generate_code_arm64.m to regenerate the code!"
     exit 1
 fi
 
-echo "✅ Found ARM64 codegen directory"
+echo "✅ Found ARM64 real-time codegen directory (MaxTime=50ms)"
 
 # Create build directory
 BUILD_DIR="${SCRIPT_DIR}/build_wsl"

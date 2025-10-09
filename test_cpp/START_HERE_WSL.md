@@ -4,9 +4,21 @@
 
 Testing in WSL is **much better** than Windows because:
 - ✅ Uses ARM64 generated code (same as AGX Orin target)
+- ✅ **MaxTime=50ms real-time configuration** (production-ready)
 - ✅ Linux environment (matches production)
 - ✅ No MSVC/Windows header issues
 - ✅ Direct path to ROS2 integration
+
+## 📁 **Code Source After Cleanup (Oct 9, 2025)**
+
+**Current Test Uses:** `codegen/arm64_realtime/`
+- ✅ 206 files
+- ✅ MaxTime = **50ms** (0.05s)
+- ✅ MaxIterations = 1000
+- ✅ Generated with Linux MATLAB (R2024a)
+- ✅ Production-ready for Jetson Orin
+
+**Old folders archived to:** `codegen/archive/`
 
 ---
 
