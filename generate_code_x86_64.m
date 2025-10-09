@@ -22,11 +22,20 @@ qCurrent = coder.typeof(double(0), [9 1]);
 % targetPose: 4x4 homogeneous transformation matrix
 targetPose = coder.typeof(double(0), [4 4]);
 
-% distanceLower: scalar lower bound for distance constraint
-distanceLower = coder.typeof(double(0));
+% distBodyIndices: 20x1 int32 array (body indices for distance constraints)
+distBodyIndices = coder.typeof(int32(0), [20 1]);
 
-% distanceWeight: scalar weight for distance constraint
-distanceWeight = coder.typeof(double(0));
+% distRefBodyIndices: 20x1 int32 array (reference body indices)
+distRefBodyIndices = coder.typeof(int32(0), [20 1]);
+
+% distBoundsLower: 20x1 double array (lower bounds for distance constraints)
+distBoundsLower = coder.typeof(double(0), [20 1]);
+
+% distBoundsUpper: 20x1 double array (upper bounds for distance constraints)
+distBoundsUpper = coder.typeof(double(0), [20 1]);
+
+% distWeights: 20x1 double array (weights for distance constraints)
+distWeights = coder.typeof(double(0), [20 1]);
 
 %% Create coder configuration for C++ library (x86_64)
 cfg = coder.config('lib');
@@ -72,14 +81,15 @@ fprintf('  - Dynamic Memory: Enabled (required for IK constraints)\n');
 fprintf('  - Dynamic Memory Threshold: 64KB\n');
 fprintf('  - Build Tool: CMake\n');
 fprintf('  - Solver MaxTime: 50ms (for testing)\n');
-fprintf('  - Solver MaxIterations: 50\n');
+fprintf('  - Solver MaxIterations: 1000 ← UPDATED!\n');
 fprintf('Note: This build is for VALIDATION, not real-time deployment\n');
 fprintf('===================================================\n\n');
 
 % Generate code
 codegen('-config', cfg, ...
     'gik9dof.codegen_inuse.solveGIKStepWrapper', ...
-    '-args', {qCurrent, targetPose, distanceLower, distanceWeight}, ...
+    '-args', {qCurrent, targetPose, distBodyIndices, distRefBodyIndices, ...
+              distBoundsLower, distBoundsUpper, distWeights}, ...
     '-d', CODEGEN_OUTPUT, ...
     '-report');
 

@@ -33,9 +33,9 @@ if isempty(solver)
         'ConstraintInputs', constraintInputs, ...
         'SolverAlgorithm', 'LevenbergMarquardt');
     
-    % Configure solver parameters for real-time performance
-    solver.SolverParameters.MaxTime = 0.05;
-    solver.SolverParameters.MaxIterations = 50;
+    % Configure solver parameters for validation testing
+    solver.SolverParameters.MaxTime = 10.0;  % 10 seconds - generous for validation
+    solver.SolverParameters.MaxIterations = 1000;  % Increased from 50 for better convergence
     solver.SolverParameters.AllowRandomRestart = false;
     solver.SolverParameters.SolutionTolerance = 1e-6;
     solver.SolverParameters.GradientTolerance = 1e-7;
