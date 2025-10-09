@@ -5,7 +5,7 @@ function result = runStagedReference(options)
 %   results folder, and returns metadata about the run. Name-value options:
 %       RunLabel         - Text appended to results folder name.
 %       ExecutionMode    - 'ppForIk' (default) or 'pureIk'.
-%       RateHz           - Control loop frequency (default 30 Hz).
+%       RateHz           - Control loop frequency (default 10 Hz).
 %       MaxIterations    - Solver iteration cap (default 150).
 %       UseStageBHybridAStar - Toggle Stage B hybrid A* (default true).
 %       StageBMode       - 'pureHyb' (default) or 'gikInLoop'.
@@ -31,7 +31,7 @@ function result = runStagedReference(options)
 arguments
     options.RunLabel (1,1) string = "staged_reference"
     options.ExecutionMode (1,1) string {mustBeMember(options.ExecutionMode, ["ppForIk","pureIk"])} = "ppForIk"
-    options.RateHz (1,1) double {mustBePositive} = 30
+    options.RateHz (1,1) double {mustBePositive} = 10
     options.MaxIterations (1,1) double {mustBePositive} = 150
     options.UseStageBHybridAStar (1,1) logical = true
     options.StageBMode (1,1) string {mustBeMember(options.StageBMode, ["gikInLoop","pureHyb"])} = "pureHyb"

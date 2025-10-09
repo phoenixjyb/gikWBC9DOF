@@ -12,7 +12,7 @@ function pipeline = runStagedTrajectory(robot, trajStruct, options)
 %
 %   Optional name-value:
 %       DistanceSpecs       - Distance constraint specs for Stage C (struct array).
-%       RateHz              - Control loop rate (default 100).
+%       RateHz              - Control loop rate (default 10).
 %       Verbose             - Verbosity flag (default false).
 %       DistanceWeight      - Weight used when DistanceSpecs empty (default 0.5).
 %       StageBReedsSheppParams - Struct controlling Stage B RS shortcutting
@@ -29,7 +29,7 @@ arguments
     options.ConfigTools (1,1) struct
     options.DistanceSpecs struct = struct([])
     options.DistanceWeight (1,1) double = 0.5
-    options.RateHz (1,1) double {mustBePositive} = 100
+    options.RateHz (1,1) double {mustBePositive} = 10
     options.Verbose (1,1) logical = false
     options.CommandFcn = []
     options.FloorDiscs struct = struct([])
@@ -1187,9 +1187,9 @@ plannerInfo.hcParamsApplied = struct();
 
 useClothoid = isfield(options, "StageBUseClothoid") && options.StageBUseClothoid;
 if useClothoid
-    hcDefaults = struct( ...
-        'discretizationDistance', 0.05, ...
-        'maxNumWaypoints', int32(0));
+hcDefaults = struct( ...
+    'discretizationDistance', 0.03, ...
+    'maxNumWaypoints', int32(0));
     hcParamsUser = struct();
     if isfield(options, "StageBClothoidParams") && ~isempty(options.StageBClothoidParams)
         hcParamsUser = options.StageBClothoidParams;
@@ -1683,7 +1683,7 @@ statesRS = densifyHybridStates(statesRS, maxLinearStep, maxYawStep);
 statesHC = statesRS;
 hcInfo = struct('applied', false);
 if isfield(options, 'StageBUseClothoid') && options.StageBUseClothoid
-    hcParams = struct('discretizationDistance', 0.05);
+    hcParams = struct('discretizationDistance', 0.03);
     if isfield(options, 'StageBClothoidParams') && ~isempty(options.StageBClothoidParams)
         hcParams = mergeStructs(hcParams, options.StageBClothoidParams);
     end
