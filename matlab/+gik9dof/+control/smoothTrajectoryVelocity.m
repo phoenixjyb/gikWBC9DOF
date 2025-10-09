@@ -92,9 +92,16 @@ end
 
 %% Find Current Segment
 % Find the segment we're currently in or approaching
-idx = find(t_waypoints >= t_current, 1, 'first');
+% NOTE: Using manual loop instead of find() for MATLAB Coder compatibility (fixed-size arrays)
+idx = 0;
+for i = 1:N
+    if t_waypoints(i) >= t_current
+        idx = i;
+        break;
+    end
+end
 
-if isempty(idx)
+if idx == 0
     % Past all waypoints, decelerate to stop
     vx_cmd = decelerateToStop(vx_prev, ax_prev, dt, params.ax_max, params.jx_max);
     wz_cmd = decelerateToStop(wz_prev, alpha_prev, dt, params.alpha_max, params.jerk_wz_max);
@@ -137,39 +144,37 @@ else
     vx_target = min(vx_target, params.vx_max);
     
     % Target angular velocity
-    dtheta = wrapToPi(theta1 - theta0);
+    % NOTE: Use local wrapAngle instead of wrapToPi for codegen compatibility
+    dtheta = wrapAngle(theta1 - theta0);
     wz_target = dtheta / segment_duration;
     wz_target = sign(wz_target) * min(abs(wz_target), params.wz_max);
 end
 
 %% Apply Smoothing Based on Method
-switch params.smoothing_method
-    case 'scurve'
-        % S-curve acceleration profile with jerk limiting
-        [vx_cmd, ax_cmd] = applySCurve(vx_prev, ax_prev, vx_target, dt, ...
-            params.ax_max, params.jx_max);
-        [wz_cmd, alpha_cmd] = applySCurve(wz_prev, alpha_prev, wz_target, dt, ...
-            params.alpha_max, params.jerk_wz_max);
-        
-        % NOTE: Safety verification removed - applySCurve should enforce jerk limit
-        % If violations still occur, the issue is in applySCurve logic
-        
-    case 'exponential'
-        % Exponential smoothing (simpler, faster)
-        tau_v = 0.2; % Time constant for velocity smoothing (seconds)
-        tau_w = 0.15; % Time constant for angular velocity
-        
-        alpha_v = exp(-dt / tau_v);
-        alpha_w = exp(-dt / tau_w);
-        
-        vx_cmd = alpha_v * vx_prev + (1 - alpha_v) * vx_target;
-        wz_cmd = alpha_w * wz_prev + (1 - alpha_w) * wz_target;
-        
-        ax_cmd = (vx_cmd - vx_prev) / dt;
-        alpha_cmd = (wz_cmd - wz_prev) / dt;
-        
-    otherwise
-        error('Unknown smoothing method: %s', params.smoothing_method);
+% NOTE: For codegen, we only support 'scurve' method
+% The strcmp with params.smoothing_method is kept for compatibility but will be optimized away
+if strcmp(params.smoothing_method, 'exponential')
+    % Exponential smoothing (simpler, faster)
+    tau_v = 0.2; % Time constant for velocity smoothing (seconds)
+    tau_w = 0.15; % Time constant for angular velocity
+    
+    alpha_v = exp(-dt / tau_v);
+    alpha_w = exp(-dt / tau_w);
+    
+    vx_cmd = alpha_v * vx_prev + (1 - alpha_v) * vx_target;
+    wz_cmd = alpha_w * wz_prev + (1 - alpha_w) * wz_target;
+    
+    ax_cmd = (vx_cmd - vx_prev) / dt;
+    alpha_cmd = (wz_cmd - wz_prev) / dt;
+else
+    % S-curve acceleration profile with jerk limiting (default)
+    [vx_cmd, ax_cmd] = applySCurve(vx_prev, ax_prev, vx_target, dt, ...
+        params.ax_max, params.jx_max);
+    [wz_cmd, alpha_cmd] = applySCurve(wz_prev, alpha_prev, wz_target, dt, ...
+        params.alpha_max, params.jerk_wz_max);
+    
+    % NOTE: Safety verification removed - applySCurve should enforce jerk limit
+    % If violations still occur, the issue is in applySCurve logic
 end
 
 %% Compute TRUE Jerk (BEFORE any final clamping!)
@@ -290,3 +295,11 @@ if sign(v_out) ~= sign(v_current)
 end
 
 end
+
+%% Local Helper: Wrap angle to [-pi, pi]
+function wrapped = wrapAngle(angle)
+%WRAPANGLE Wrap angle to [-pi, pi] range (codegen-compatible version)
+% This replaces wrapToPi for MATLAB Coder compatibility
+wrapped = mod(angle + pi, 2*pi) - pi;
+end
+

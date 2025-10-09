@@ -29,6 +29,14 @@
 // MATLAB Coder generated types (only the ones that don't conflict)
 #include "velocity_controller/holisticVelocityController_types.h"
 #include "purepursuit/purePursuitVelocityController_types.h"
+#include "trajectory_smoothing/smoothTrajectoryVelocity.h"
+#include "trajectory_smoothing/smoothTrajectoryVelocity_types.h"
+
+// Velocity smoothing (use separate names to avoid struct0_T conflict)
+#include "velocity_smoothing/smoothVelocityCommand.h"
+#include "velocity_smoothing/smoothVelocityCommand_types.h"
+#include "velocity_smoothing/smoothVelocityCommand_initialize.h"
+#include "velocity_smoothing/smoothVelocityCommand_terminate.h"
 
 // Forward declarations to avoid namespace conflicts
 // DO NOT include GIKSolver or Stage B headers here - they conflict with planner types
@@ -83,6 +91,7 @@ private:
     // ========== COMMAND PUBLISHERS ==========
     void publishJointCommand();
     void publishBaseCommand();
+    void publishBaseCommandSmoothed();  // MODE 3: Trajectory smoothing (NEW)
     void publishDiagnostics(double solve_time_ms, const geometry_msgs::msg::Pose& target_pose);
     
     // ========== ROS2 COMMUNICATION ==========
@@ -171,6 +180,44 @@ private:
     gik9dof_purepursuit::struct0_T pp_params_;  // Pure Pursuit parameters
     gik9dof_purepursuit::struct1_T pp_state_;   // Pure Pursuit state (path buffer)
     bool pp_controller_initialized_;            // Flag to track first call
+    
+    // ========== TRAJECTORY SMOOTHING (MODE 3) ==========
+    // Waypoint buffer for smoothing (rolling window, max 5 elements)
+    struct WaypointState {
+        double x, y, theta, t;
+    };
+    std::deque<WaypointState> waypoint_buffer_;
+    static constexpr size_t MAX_WAYPOINT_BUFFER_SIZE = 5;
+    
+    // Smoothing state (persistent across calls for continuous acceleration)
+    double vx_prev_ = 0.0;
+    double wz_prev_ = 0.0;
+    double ax_prev_ = 0.0;
+    double alpha_prev_ = 0.0;
+    rclcpp::Time t_prev_;
+    
+    // Smoothing parameters (loaded from ROS2 params)
+    struct0_T smoothing_params_;  // For Mode 3 trajectory smoothing
+    
+    // Tick counter for dual-frequency operation (10Hz GIK, 50Hz velocity)
+    int control_tick_counter_ = 0;
+    
+    // ========== VELOCITY SMOOTHING (STAGE B) ==========
+    // Universal velocity smoothing for reactive controllers (Stages A, B, Modes 0/1/2)
+    bool enable_velocity_smoothing_ = false;
+    
+    // Velocity smoothing state (persistent across calls)
+    double vx_smooth_prev_ = 0.0;
+    double wz_smooth_prev_ = 0.0;
+    double ax_smooth_prev_ = 0.0;
+    double alpha_smooth_prev_ = 0.0;
+    
+    // Velocity smoothing parameters
+    VelSmoothParams_T vel_smooth_params_;  // For Stage B / Modes 0/1/2 velocity smoothing
+    
+    // Helper method to apply velocity smoothing
+    void applySmoothingToVelocity(double vx_raw, double wz_raw,
+                                  double& vx_out, double& wz_out);
     
     // ========== STAGED CONTROL STATE MACHINE ==========
     enum class ControlMode { HOLISTIC, STAGED };

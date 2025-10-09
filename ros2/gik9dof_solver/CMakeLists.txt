@@ -30,6 +30,7 @@ include_directories(
   include/shared_robotics  # MATLAB Robotics System Toolbox collision headers
   include/velocity_controller  # MATLAB Coder generated velocity controller (simple heading)
   include/purepursuit  # MATLAB Coder generated Pure Pursuit controller
+  include/trajectory_smoothing  # MATLAB Coder generated trajectory smoothing
 )
 
 # MATLAB Coder generated source files
@@ -118,6 +119,84 @@ endif()
 # Disable warnings for MATLAB generated code
 target_compile_options(hybrid_astar_planner PRIVATE -w)
 
+# ========================================
+# Trajectory Smoothing Library (MATLAB Coder)
+# ========================================
+set(TRAJECTORY_SMOOTHING_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/trajectory_smoothing")
+
+# Collect all trajectory smoothing source files
+file(GLOB TRAJECTORY_SMOOTHING_SOURCES
+    "${TRAJECTORY_SMOOTHING_DIR}/*.cpp"
+)
+
+message(STATUS "Trajectory smoothing sources: ${TRAJECTORY_SMOOTHING_SOURCES}")
+
+# Create trajectory smoothing library
+add_library(trajectory_smoothing STATIC ${TRAJECTORY_SMOOTHING_SOURCES})
+
+target_include_directories(trajectory_smoothing PUBLIC
+  ${TRAJECTORY_SMOOTHING_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/trajectory_smoothing
+)
+
+# Apply same architecture-specific flags as other MATLAB generated code
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64|ARM64")
+  message(STATUS "Configuring trajectory smoothing for ARM64")
+  target_compile_definitions(trajectory_smoothing PRIVATE 
+    __SSE2__=0
+    __AVX__=0
+    __AVX2__=0
+  )
+  target_compile_options(trajectory_smoothing PRIVATE 
+    -march=armv8-a
+    -mtune=cortex-a78
+  )
+else()
+  message(STATUS "Configuring trajectory smoothing for x86_64")
+endif()
+
+# Disable warnings for MATLAB generated code
+target_compile_options(trajectory_smoothing PRIVATE -w)
+
+# ========================================
+# Velocity Smoothing Library (MATLAB Coder)
+# ========================================
+set(VEL_SMOOTHING_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/velocity_smoothing")
+
+# Collect all velocity smoothing source files
+file(GLOB VEL_SMOOTHING_SOURCES
+    "${VEL_SMOOTHING_DIR}/*.cpp"
+)
+
+message(STATUS "Velocity smoothing sources: ${VEL_SMOOTHING_SOURCES}")
+
+# Create velocity smoothing library
+add_library(velocity_smoothing STATIC ${VEL_SMOOTHING_SOURCES})
+
+target_include_directories(velocity_smoothing PUBLIC
+  ${VEL_SMOOTHING_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/velocity_smoothing
+)
+
+# Apply same architecture-specific flags as other MATLAB generated code
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64|ARM64")
+  message(STATUS "Configuring velocity smoothing for ARM64")
+  target_compile_definitions(velocity_smoothing PRIVATE 
+    __SSE2__=0
+    __AVX__=0
+    __AVX2__=0
+  )
+  target_compile_options(velocity_smoothing PRIVATE 
+    -march=armv8-a
+    -mtune=cortex-a78
+  )
+else()
+  message(STATUS "Configuring velocity smoothing for x86_64")
+endif()
+
+# Disable warnings for MATLAB generated code
+target_compile_options(velocity_smoothing PRIVATE -w)
+
 # ===== Stage B Controller Library =====
 # Separate library to isolate namespace conflicts between GIK solver and planner
 add_library(stage_b_controller STATIC
@@ -171,6 +250,8 @@ ament_target_dependencies(gik9dof_solver_node
 target_link_libraries(gik9dof_solver_node
   gik_matlab_solver      # MATLAB generated solver library
   stage_b_controller     # Stage B controller (uses planner library)
+  trajectory_smoothing   # Trajectory smoothing library (MATLAB Coder)
+  velocity_smoothing     # Velocity smoothing library (MATLAB Coder)
   Eigen3::Eigen
   OpenMP::OpenMP_CXX
 )

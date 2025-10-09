@@ -91,6 +91,23 @@ GIK9DOFSolverNode::GIK9DOFSolverNode() : Node("gik9dof_solver_node")
         this->declare_parameter("purepursuit.goal_tolerance", 0.2);
         this->declare_parameter("purepursuit.interp_spacing", 0.05);
         
+        // Trajectory Smoothing parameters (mode 3)
+        this->declare_parameter("smoothing.vx_max", 1.5);
+        this->declare_parameter("smoothing.ax_max", 1.0);
+        this->declare_parameter("smoothing.jx_max", 5.0);
+        this->declare_parameter("smoothing.wz_max", 2.0);
+        this->declare_parameter("smoothing.alpha_max", 3.0);
+        this->declare_parameter("smoothing.jerk_wz_max", 10.0);
+        
+        // Velocity smoothing parameters (for Stages A/B, Modes 0/1/2)
+        this->declare_parameter("velocity_smoothing.enable", true);
+        this->declare_parameter("velocity_smoothing.vx_max", 1.5);
+        this->declare_parameter("velocity_smoothing.ax_max", 1.0);
+        this->declare_parameter("velocity_smoothing.jx_max", 5.0);
+        this->declare_parameter("velocity_smoothing.wz_max", 2.0);
+        this->declare_parameter("velocity_smoothing.alpha_max", 3.0);
+        this->declare_parameter("velocity_smoothing.jerk_wz_max", 10.0);
+        
         // Staged control parameters
         this->declare_parameter("staged.stage_b_mode", 1);  // 1=Pure Hybrid A*, 2=GIK-Assisted
         this->declare_parameter("staged.planner.max_iterations", 1000);
@@ -193,6 +210,40 @@ GIK9DOFSolverNode::GIK9DOFSolverNode() : Node("gik9dof_solver_node")
             pp_state_.prevPoseYaw = 0.0;
             pp_state_.lastRefTime = 0.0;
             pp_controller_initialized_ = false;
+        } else if (velocity_control_mode_ == 3) {
+            // Trajectory Smoothing (Mode 3)
+            smoothTrajectoryVelocity_initialize();
+            
+            // Load smoothing parameters
+            smoothing_params_.vx_max = this->get_parameter("smoothing.vx_max").as_double();
+            smoothing_params_.ax_max = this->get_parameter("smoothing.ax_max").as_double();
+            smoothing_params_.jx_max = this->get_parameter("smoothing.jx_max").as_double();
+            smoothing_params_.wz_max = this->get_parameter("smoothing.wz_max").as_double();
+            smoothing_params_.alpha_max = this->get_parameter("smoothing.alpha_max").as_double();
+            smoothing_params_.jerk_wz_max = this->get_parameter("smoothing.jerk_wz_max").as_double();
+            strcpy(smoothing_params_.smoothing_method, "scurve");
+            
+            // Initialize smoothing state
+            t_prev_ = this->now();
+        }
+        
+        // Load velocity smoothing parameters (for all modes except Mode 3)
+        enable_velocity_smoothing_ = this->get_parameter("velocity_smoothing.enable").as_bool();
+        if (enable_velocity_smoothing_) {
+            smoothVelocityCommand_initialize();
+            
+            vel_smooth_params_.vx_max = this->get_parameter("velocity_smoothing.vx_max").as_double();
+            vel_smooth_params_.ax_max = this->get_parameter("velocity_smoothing.ax_max").as_double();
+            vel_smooth_params_.jx_max = this->get_parameter("velocity_smoothing.jx_max").as_double();
+            vel_smooth_params_.wz_max = this->get_parameter("velocity_smoothing.wz_max").as_double();
+            vel_smooth_params_.alpha_max = this->get_parameter("velocity_smoothing.alpha_max").as_double();
+            vel_smooth_params_.jerk_wz_max = this->get_parameter("velocity_smoothing.jerk_wz_max").as_double();
+            
+            RCLCPP_INFO(this->get_logger(), "Velocity smoothing enabled for Stages A/B, Modes 0/1/2");
+            RCLCPP_INFO(this->get_logger(), "  Linear:  vx_max=%.2f m/s, ax_max=%.2f m/s², jx_max=%.2f m/s³",
+                vel_smooth_params_.vx_max, vel_smooth_params_.ax_max, vel_smooth_params_.jx_max);
+            RCLCPP_INFO(this->get_logger(), "  Angular: wz_max=%.2f rad/s, alpha_max=%.2f rad/s², jerk_wz_max=%.2f rad/s³",
+                vel_smooth_params_.wz_max, vel_smooth_params_.alpha_max, vel_smooth_params_.jerk_wz_max);
         }
         
         // Initialize Stage B controller if in staged mode
@@ -277,7 +328,8 @@ GIK9DOFSolverNode::GIK9DOFSolverNode() : Node("gik9dof_solver_node")
         const char* mode_names[] = {
             "Legacy (5-point differentiation)", 
             "Simple Heading Controller (P + feedforward)", 
-            "Pure Pursuit (lookahead path following)"
+            "Pure Pursuit (lookahead path following)",
+            "Trajectory Smoothing (S-curve acceleration/jerk limits)"
         };
         RCLCPP_INFO(this->get_logger(), "Velocity controller mode: %d - %s", 
             velocity_control_mode_, mode_names[velocity_control_mode_]);
@@ -293,6 +345,13 @@ GIK9DOFSolverNode::GIK9DOFSolverNode() : Node("gik9dof_solver_node")
                 pp_params_.vxNominal, pp_params_.vxMax, pp_params_.wzMax);
             RCLCPP_INFO(this->get_logger(), "    Path: buffer=%d waypoints, spacing=%.2f m, tolerance=%.2f m",
                 (int)pp_params_.pathBufferSize, pp_params_.waypointSpacing, pp_params_.goalTolerance);
+        } else if (velocity_control_mode_ == 3) {
+            RCLCPP_INFO(this->get_logger(), "  Trajectory Smoothing params:");
+            RCLCPP_INFO(this->get_logger(), "    Linear: vx_max=%.2f m/s, ax_max=%.2f m/s², jx_max=%.2f m/s³",
+                smoothing_params_.vx_max, smoothing_params_.ax_max, smoothing_params_.jx_max);
+            RCLCPP_INFO(this->get_logger(), "    Angular: wz_max=%.2f rad/s, alpha_max=%.2f rad/s², jerk_wz_max=%.2f rad/s³",
+                smoothing_params_.wz_max, smoothing_params_.alpha_max, smoothing_params_.jerk_wz_max);
+            RCLCPP_INFO(this->get_logger(), "    Method: %s", smoothing_params_.smoothing_method);
         }
         
         RCLCPP_INFO(this->get_logger(), "Publishing to:");
@@ -450,12 +509,31 @@ void GIK9DOFSolverNode::controlLoop()
             return;
         }
         
-        // ========== STATE MACHINE CONTROL ==========
-        if (control_mode_ == ControlMode::STAGED) {
-            executeStagedControl(target_pose);
-        } else {
-            // Holistic mode: Direct 9-DOF GIK solve
-            executeHolisticControl(target_pose);
+        // ========== DUAL-FREQUENCY CONTROL LOOP (MODE 3 ONLY) ==========
+        // MODE 3: Run GIK at 10Hz (every 5th tick @ 50Hz timer), velocity smoothing at 50Hz
+        // OTHER MODES: Run GIK every tick (at control_rate_)
+        
+        control_tick_counter_++;
+        bool should_solve_ik = (velocity_control_mode_ != 3) || (control_tick_counter_ % 5 == 0);
+        
+        if (should_solve_ik) {
+            // ========== STATE MACHINE CONTROL ==========
+            if (control_mode_ == ControlMode::STAGED) {
+                executeStagedControl(target_pose);
+            } else {
+                // Holistic mode: Direct 9-DOF GIK solve
+                executeHolisticControl(target_pose);
+            }
+        }
+        
+        // ========== VELOCITY COMMAND (ALWAYS RUN) ==========
+        // MODE 3: Runs at 50Hz (smoothed velocity)
+        // OTHER MODES: Runs at control_rate_ (after GIK)
+        if (velocity_control_mode_ == 3) {
+            publishBaseCommandSmoothed();
+        } else if (!should_solve_ik) {
+            // Skip velocity command for other modes when GIK didn't run
+            // (should never happen since should_solve_ik is always true for modes 0/1/2)
         }
     }
     
@@ -561,6 +639,15 @@ void GIK9DOFSolverNode::executeStageB(const geometry_msgs::msg::Pose& target_pos
                                    base_cmd, 
                                    arm_cmd);
         
+        // Apply velocity smoothing if enabled
+        double vx_final, wz_final;
+        applySmoothingToVelocity(base_cmd.linear.x, base_cmd.angular.z, 
+                                vx_final, wz_final);
+        
+        // Update command with smoothed velocity
+        base_cmd.linear.x = vx_final;
+        base_cmd.angular.z = wz_final;
+        
         // Publish base command
         base_cmd_pub_->publish(base_cmd);
         
@@ -588,7 +675,23 @@ void GIK9DOFSolverNode::executeHolisticControl(const geometry_msgs::msg::Pose& t
         
         if (solve_success) {
             publishJointCommand();
-            publishBaseCommand();  // NEW: Publish base velocity commands (vx, wz)
+            
+            // MODE 3: Buffer waypoint for trajectory smoothing (10Hz @ 50Hz timer)
+            if (velocity_control_mode_ == 3) {
+                WaypointState wp;
+                wp.x = target_config_[0];
+                wp.y = target_config_[1];
+                wp.theta = target_config_[2];
+                wp.t = this->now().seconds();
+                
+                waypoint_buffer_.push_back(wp);
+                if (waypoint_buffer_.size() > MAX_WAYPOINT_BUFFER_SIZE) {
+                    waypoint_buffer_.pop_front();
+                }
+            } else {
+                // OTHER MODES: Publish velocity immediately after GIK
+                publishBaseCommand();
+            }
             
             if (publish_diagnostics_) {
                 publishDiagnostics(solve_time_ms, target_pose);
@@ -1165,6 +1268,101 @@ void GIK9DOFSolverNode::publishBaseCommand()
             
         }  // End of legacy 5-point differentiation
     }  // End of publishBaseCommand()
+
+// ═══════════════════════════════════════════════════════════════════════
+// MODE 3: Trajectory Smoothing with Acceleration and Jerk Limits
+// ═══════════════════════════════════════════════════════════════════════
+void GIK9DOFSolverNode::publishBaseCommandSmoothed()
+{
+    if (waypoint_buffer_.size() < 2) {
+        // Not enough waypoints, stop smoothly
+        publishZeroVelocity();
+        return;
+    }
+    
+    // Convert deque to fixed-size arrays for generated C++ function
+    double waypoints_x[5] = {0.0};
+    double waypoints_y[5] = {0.0};
+    double waypoints_theta[5] = {0.0};
+    double t_waypoints[5] = {0.0};
+    
+    size_t n = std::min(waypoint_buffer_.size(), MAX_WAYPOINT_BUFFER_SIZE);
+    for (size_t i = 0; i < n; i++) {
+        waypoints_x[i] = waypoint_buffer_[i].x;
+        waypoints_y[i] = waypoint_buffer_[i].y;
+        waypoints_theta[i] = waypoint_buffer_[i].theta;
+        t_waypoints[i] = waypoint_buffer_[i].t;
+    }
+    
+    double t_current = this->now().seconds();
+    
+    // Output variables
+    double vx_cmd, wz_cmd, ax_cmd, alpha_cmd, jerk_vx_cmd, jerk_wz_cmd;
+    
+    // Call generated C++ function
+    smoothTrajectoryVelocity(
+        waypoints_x,
+        waypoints_y,
+        waypoints_theta,
+        t_waypoints,
+        t_current,
+        &smoothing_params_,
+        &vx_cmd, &wz_cmd, &ax_cmd, &alpha_cmd, &jerk_vx_cmd, &jerk_wz_cmd
+    );
+    
+    // Publish velocity command
+    auto msg = geometry_msgs::msg::Twist();
+    msg.linear.x = vx_cmd;
+    msg.linear.y = 0.0;
+    msg.linear.z = 0.0;
+    msg.angular.x = 0.0;
+    msg.angular.y = 0.0;
+    msg.angular.z = wz_cmd;
+    base_cmd_pub_->publish(msg);
+    
+    // Debug logging (throttled)
+    static int log_counter = 0;
+    if (++log_counter >= 250) {  // Every 5 seconds @ 50Hz
+        RCLCPP_DEBUG(this->get_logger(),
+            "Smoothed: vx=%.3f m/s, wz=%.3f rad/s, ax=%.3f m/s², buffer=%zu",
+            vx_cmd, wz_cmd, ax_cmd, waypoint_buffer_.size());
+        log_counter = 0;
+    }
+}
+
+void GIK9DOFSolverNode::applySmoothingToVelocity(
+    double vx_raw, double wz_raw,
+    double& vx_out, double& wz_out)
+{
+    if (!enable_velocity_smoothing_) {
+        // Pass through without smoothing
+        vx_out = vx_raw;
+        wz_out = wz_raw;
+        return;
+    }
+    
+    // Compute dt (time since last call)
+    double dt = 1.0 / control_rate_;  // e.g., 0.02s for 50Hz
+    
+    double ax_out, alpha_out;
+    
+    // Call generated C++ function
+    smoothVelocityCommand(
+        vx_raw, wz_raw,
+        vx_smooth_prev_, wz_smooth_prev_,
+        ax_smooth_prev_, alpha_smooth_prev_,
+        dt,
+        &vel_smooth_params_,
+        &vx_out, &wz_out,
+        &ax_out, &alpha_out
+    );
+    
+    // Update state for next call
+    vx_smooth_prev_ = vx_out;
+    wz_smooth_prev_ = wz_out;
+    ax_smooth_prev_ = ax_out;
+    alpha_smooth_prev_ = alpha_out;
+}
     
 void GIK9DOFSolverNode::publishDiagnostics(double solve_time_ms, const geometry_msgs::msg::Pose& target_pose)
     {

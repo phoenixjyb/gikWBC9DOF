@@ -4,7 +4,9 @@
 gik9dof_solver_node:
   ros__parameters:
     # Control loop rate (Hz)
-    control_rate: 10.0
+    # NOTE: Set to 50.0 when using velocity_control_mode: 3 (Trajectory Smoothing)
+    #       Set to 10.0 for other modes (0, 1, 2)
+    control_rate: 50.0
     
     # Maximum solve time per iteration (seconds)
     max_solve_time: 0.05
@@ -29,7 +31,8 @@ gik9dof_solver_node:
     #   0 = Legacy 5-point finite differentiation (open-loop)
     #   1 = Simple heading controller (P + feedforward)
     #   2 = Pure Pursuit path following (lookahead-based)
-    velocity_control_mode: 2
+    #   3 = Trajectory Smoothing (S-curve acceleration/jerk limits) - RECOMMENDED
+    velocity_control_mode: 3
     
     # ═══════════════════════════════════════════════════════════════════════
     # SIMPLE HEADING CONTROLLER PARAMETERS (mode = 1)
@@ -113,6 +116,76 @@ gik9dof_solver_node:
       # Interpolation spacing (m) - spacing between interpolated path points
       # Smaller = smoother path following but more computation
       interp_spacing: 0.05
+    
+    # ═══════════════════════════════════════════════════════════════════════
+    # TRAJECTORY SMOOTHING PARAMETERS (mode = 3)
+    # ═══════════════════════════════════════════════════════════════════════
+    
+    smoothing:
+      # Linear velocity limits
+      # Maximum forward velocity (m/s)
+      vx_max: 1.5
+      
+      # Maximum forward acceleration (m/s²)
+      # Lower values = smoother, more conservative motion
+      # Higher values = faster response, more aggressive
+      # Typical range: 0.5 - 1.5 m/s²
+      ax_max: 1.0
+      
+      # Maximum forward jerk (m/s³)
+      # Lower values = smoother transitions, less tipping risk
+      # Higher values = faster response but potential instability
+      # Typical range: 3.0 - 10.0 m/s³
+      jx_max: 5.0
+      
+      # Angular velocity limits
+      # Maximum angular velocity (rad/s)
+      wz_max: 2.0
+      
+      # Maximum angular acceleration (rad/s²)
+      # Lower values = smoother turning
+      # Higher values = faster turns but potential instability
+      # Typical range: 2.0 - 5.0 rad/s²
+      alpha_max: 3.0
+      
+      # Maximum angular jerk (rad/s³)
+      # Lower values = smoother rotational transitions
+      # Higher values = faster turns but potential instability
+      # Typical range: 5.0 - 15.0 rad/s³
+      jerk_wz_max: 10.0
+    
+    # ═══════════════════════════════════════════════════════════════════════
+    # VELOCITY SMOOTHING (for Stages A/B, Modes 0/1/2)
+    # ═══════════════════════════════════════════════════════════════════════
+    # Universal velocity smoothing layer for reactive controllers
+    # Applies S-curve acceleration/jerk limits to raw velocity commands
+    # Use this for Stage B (Hybrid A*) and Modes 0/1/2 (Heading, Pure Pursuit)
+    
+    velocity_smoothing:
+      # Enable/disable velocity smoothing layer
+      enable: true
+      
+      # Maximum forward velocity (m/s)
+      vx_max: 1.5
+      
+      # Maximum forward acceleration (m/s²)
+      # Lower values = smoother starts/stops
+      # Higher values = faster acceleration but potential wheel slip
+      ax_max: 1.0
+      
+      # Maximum forward jerk (m/s³)
+      # Lower values = smoother transitions
+      # Higher values = faster response but potential instability
+      jx_max: 5.0
+      
+      # Maximum angular velocity (rad/s)
+      wz_max: 2.0
+      
+      # Maximum angular acceleration (rad/s²)
+      alpha_max: 3.0
+      
+      # Maximum angular jerk (rad/s³)
+      jerk_wz_max: 10.0
 
 # ═══════════════════════════════════════════════════════════════════════
 # TUNING GUIDE
@@ -121,7 +194,48 @@ gik9dof_solver_node:
 # CONTROL MODE SELECTION:
 #   velocity_control_mode: 0  →  Legacy 5-point differentiation (baseline)
 #   velocity_control_mode: 1  →  Simple heading controller (P + feedforward)
-#   velocity_control_mode: 2  →  Pure Pursuit path following (RECOMMENDED)
+#   velocity_control_mode: 2  →  Pure Pursuit path following (lookahead-based)
+#   velocity_control_mode: 3  →  Trajectory Smoothing (S-curve acceleration/jerk limits) (RECOMMENDED FOR MOBILE MANIPULATOR)
+#
+# NOTE: Mode 3 requires control_rate: 50.0 for optimal performance
+#
+# ───────────────────────────────────────────────────────────────────────
+# TRAJECTORY SMOOTHING TUNING (mode = 3):
+# ───────────────────────────────────────────────────────────────────────
+#
+# CRITICAL: Set control_rate: 50.0 when using mode 3
+#   - GIK solves at 10Hz (every 5th tick)
+#   - Velocity smoothing runs at 50Hz (every tick)
+#   - This prevents tipping by limiting acceleration spikes
+#
+# Acceleration Limits (primary tuning parameters):
+#   ax_max (forward acceleration):
+#     - Start: 1.0 m/s² (conservative, prevents tipping)
+#     - Decrease: If robot tips forward during acceleration
+#     - Increase: For faster response (test carefully!)
+#     - Too high: Risk of tipping on uneven ground
+#
+#   alpha_max (angular acceleration):
+#     - Start: 3.0 rad/s² (smooth turning)
+#     - Decrease: If robot oscillates during turns
+#     - Increase: For sharper turns
+#
+# Jerk Limits (smoothness parameters):
+#   jx_max (forward jerk):
+#     - Start: 5.0 m/s³ (S-curve smoothing)
+#     - Decrease: For smoother motion (more gradual acceleration)
+#     - Increase: For faster response (but less smooth)
+#     - Too low: Sluggish feel
+#     - Too high: Jerky motion defeats the purpose
+#
+#   jerk_wz_max (angular jerk):
+#     - Start: 10.0 rad/s³
+#     - Decrease: For smoother turning
+#     - Increase: For faster turning response
+#
+# Velocity Limits (safety parameters):
+#   vx_max: 1.5 m/s (hardware limit)
+#   wz_max: 2.0 rad/s (hardware limit)
 #
 # ───────────────────────────────────────────────────────────────────────
 # PURE PURSUIT TUNING (mode = 2):
