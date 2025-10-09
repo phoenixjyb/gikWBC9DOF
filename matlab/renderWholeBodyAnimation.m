@@ -41,6 +41,11 @@ arguments
     options.BaseTimesOverride double = []
     options.TargetPath double = []
     options.Obstacles = []
+    options.ReferenceBasePath double = []
+    options.ReferenceBaseLabel (1,1) string = "Reference Base (GIK)"
+    options.ExecutedBaseLabel (1,1) string = "Executed Base (Log)"
+    options.StageBPath double = []
+    options.StageBLabel (1,1) string = "Stage B Executed Base"
 end
 
 if ~isfield(log, 'qTraj') || isempty(log.qTraj)
@@ -100,17 +105,43 @@ end
 if isempty(options.Obstacles) && isfield(log, 'floorDiscs') && ~isempty(log.floorDiscs)
     options.Obstacles = struct('discs', {log.floorDiscs});
 end
+if isempty(options.ReferenceBasePath)
+    if isfield(log, 'referenceBaseStates') && ~isempty(log.referenceBaseStates)
+        options.ReferenceBasePath = log.referenceBaseStates;
+    elseif isfield(log, 'stageLogs') && isfield(log.stageLogs, 'stageC') && ...
+            isfield(log.stageLogs.stageC, 'referenceBaseStates') && ~isempty(log.stageLogs.stageC.referenceBaseStates)
+        options.ReferenceBasePath = log.stageLogs.stageC.referenceBaseStates;
+    end
+end
+if isempty(options.StageBPath) && isfield(log, 'stageLogs') && ...
+        isfield(log.stageLogs, 'stageB') && isfield(log.stageLogs.stageB, 'execBaseStates') && ...
+        ~isempty(log.stageLogs.stageB.execBaseStates)
+    options.StageBPath = log.stageLogs.stageB.execBaseStates;
+end
+if isempty(options.ExecutedBaseLabel)
+    options.ExecutedBaseLabel = "Executed Base (Log)";
+end
+if isempty(options.ReferenceBaseLabel) && ~isempty(options.ReferenceBasePath)
+    options.ReferenceBaseLabel = "Reference Base (GIK)";
+end
 
 vizArgs = {'VideoFile', char(string(videoPath)), ...
     'VideoFrameRate', options.VideoFrameRate, ...
     'FigureScale', options.FigureScale, ...
     'StageLabels', options.StageLabels, ...
     'StageBoundaries', stageBoundsResampled};
+vizArgs = [vizArgs, {'ExecutedBaseLabel', options.ExecutedBaseLabel}]; %#ok<AGROW>
 if ~isempty(options.TargetPath)
     vizArgs = [vizArgs, {'TargetPath', options.TargetPath}]; %#ok<AGROW>
 end
 if ~isempty(options.Obstacles)
     vizArgs = [vizArgs, {'Obstacles', options.Obstacles}]; %#ok<AGROW>
+end
+if ~isempty(options.ReferenceBasePath)
+    vizArgs = [vizArgs, {'ReferenceBasePath', options.ReferenceBasePath}, {'ReferenceBaseLabel', options.ReferenceBaseLabel}]; %#ok<AGROW>
+end
+if ~isempty(options.StageBPath)
+    vizArgs = [vizArgs, {'StageBPath', options.StageBPath}, {'StageBLabel', options.StageBLabel}]; %#ok<AGROW>
 end
 
 gik9dof.viz.animate_whole_body(robot, armJointNames, armTrajectory, armTimes, ...

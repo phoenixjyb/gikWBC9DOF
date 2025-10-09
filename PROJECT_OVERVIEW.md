@@ -4,6 +4,8 @@
 
 ```
 gikWBC9DOF/
+├─ config/
+│  └─ chassis_profiles.yaml          # YAML presets for chassis/follower tuning
 ├─ meshes/                          # Runtime geometry (STL)
 ├─ 1_pull_world_scaled.json         # Reference EE trajectory
 ├─ results/<timestamp>_*            # Holistic vs. staged artifacts (logs, MP4, PNG)
@@ -46,7 +48,7 @@ gikWBC9DOF/
 
 | Area                      | Key Files / Directories                                             | Purpose |
 |---------------------------|---------------------------------------------------------------------|---------|
-| Assets & environment      | `meshes/`, `1_pull_world_scaled.json`, `environmentConfig.m`, `collisionTools.m` | Physical geometry, base home pose, obstacle definitions. |
+| Assets & environment      | `meshes/`, `1_pull_world_scaled.json`, `environmentConfig.m`, `collisionTools.m`, `config/chassis_profiles.yaml` | Physical geometry, base home pose, obstacle definitions, chassis presets. |
 | Core control & planning   | `trackReferenceTrajectory.m`, `runStagedTrajectory.m`, `runTrajectoryControl.m`, `createGikSolver.m`, `generateHolisticRamp.m`, `+control/*.m` | Holistic controller, staged pipeline, Stage B Hybrid A* integration, unified chassis interface. |
 | Animation & visualization | `+viz/animate_whole_body.m`, `animateStagedWithHelper.m`, `animateHolisticWithHelper.m` | Staged-style animations, obstacle halos, target/actual path overlays. |
 | Orchestration             | `run_environment_compare.m`, `run_staged_reference.m`, `regenerate_animations_from_logs.m`, `saveRunArtifacts.m`, `createResultsFolder.m` | Batch runs, timestamped result folders, artifact regeneration. |
@@ -102,6 +104,10 @@ gikWBC9DOF/
    regenerate_animations_from_logs
    ```
    Point `runFolder` at the desired `results/<timestamp>_*` directory to regenerate staged-style MP4s and diagnostic PNGs without rerunning the controllers.
+
+> Chassis/follower tuning lives in `config/chassis_profiles.yaml`. Use
+> `gik9dof.control.loadChassisProfile("wide_track")` (or supply overrides)
+> before running the scripts above to keep MATLAB and future C++ builds in sync.
 
 ## Animation Workflow
 

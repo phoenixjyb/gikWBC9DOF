@@ -62,16 +62,18 @@ arguments
     options.StageCLookaheadTimeGain (1,1) double {mustBeNonnegative} = 0.05
     options.StageCDesiredLinearVelocity (1,1) double = 1.0
     options.StageCMaxLinearSpeed (1,1) double {mustBePositive} = 1.5
-    options.StageCMinLinearSpeed (1,1) double = -1.0
-    options.StageCMaxAngularVelocity (1,1) double {mustBePositive} = 2.0
-    options.StageCTrackWidth (1,1) double {mustBePositive} = 0.674
+    options.StageCMinLinearSpeed (1,1) double = -0.4
+    options.StageCMaxAngularVelocity (1,1) double {mustBePositive} = 2.5
+    options.StageCTrackWidth (1,1) double {mustBePositive} = 0.573
     options.StageCWheelBase (1,1) double {mustBePositive} = 0.36
-    options.StageCMaxWheelSpeed (1,1) double {mustBePositive} = 2.0
+    options.StageCMaxWheelSpeed (1,1) double {mustBePositive} = 3.3
     options.StageCWaypointSpacing (1,1) double {mustBePositive} = 0.15
     options.StageCPathBufferSize (1,1) double {mustBePositive} = 30.0
-    options.StageCGoalTolerance (1,1) double {mustBePositive} = 0.05
+    options.StageCGoalTolerance (1,1) double {mustBePositive} = 0.10
     options.StageCInterpSpacing (1,1) double {mustBePositive} = 0.05
     options.StageCReverseEnabled (1,1) logical = true
+    options.ChassisProfile (1,1) string = "wide_track"
+    options.ChassisOverrides struct = struct()
 end
 
 % Resolve assets and instantiate robot.
@@ -113,6 +115,9 @@ idxY = find(jointNames == "joint_y", 1);
 idxTheta = find(jointNames == "joint_theta", 1);
 baseIdx = [idxX, idxY, idxTheta];
 armIdx = setdiff(1:numel(q0), baseIdx);
+
+chassisParams = gik9dof.control.loadChassisProfile(options.ChassisProfile, ...
+    "Overrides", options.ChassisOverrides);
 
 if options.DistanceMargin < 0
     error("gik9dof:trackReferenceTrajectory:InvalidDistanceMargin", ...
@@ -272,13 +277,27 @@ switch options.Mode
 
                 baseReferenceTail = logRef.qTraj(baseIdx, 2:end).';
                 baseReference = [q0(baseIdx).'; baseReferenceTail];
-                followerParams = struct('LookaheadBase', 0.4, 'LookaheadVelGain', 0.2, ...
-                    'LookaheadTimeGain', 0.05, 'VxNominal', 1.0, 'VxMax', 1.5, ...
-                    'VxMin', -1.0, 'WzMax', 2.0, 'TrackWidth', 0.674, 'WheelBase', 0.36, ...
-                    'MaxWheelSpeed', 2.0, 'WaypointSpacing', 0.15, 'PathBufferSize', 30.0, ...
-                    'GoalTolerance', 0.05, 'InterpSpacing', 0.05, 'ReverseEnabled', true);
+                chassisHolistic = chassisParams;
+                chassisHolistic.vx_max = options.RampMaxLinearSpeed;
+                chassisHolistic.vx_min = max(chassisHolistic.vx_min, -options.RampMaxLinearSpeed);
+                chassisHolistic.wz_max = options.RampMaxYawRate;
+                chassisHolistic.wheel_speed_max = max(chassisHolistic.wheel_speed_max, options.RampMaxLinearSpeed + 0.5);
+                chassisHolistic.reverse_enabled = false;
+                chassisHolistic.interp_spacing_min = options.StageCInterpSpacing;
+                chassisHolistic.interp_spacing_max = options.StageCWaypointSpacing;
+
+                followerOptions = struct( ...
+                    'SampleTime', 1/options.RateHz, ...
+                    'ChassisParams', chassisHolistic, ...
+                    'ControllerMode', "blended", ...
+                    'LookaheadBase', options.StageCLookaheadDistance, ...
+                    'LookaheadVelGain', options.StageCLookaheadVelGain, ...
+                    'LookaheadTimeGain', options.StageCLookaheadTimeGain, ...
+                    'GoalTolerance', options.StageCGoalTolerance, ...
+                    'ReverseEnabled', false);
+
                 simRes = gik9dof.control.simulatePurePursuitExecution(baseReference, ...
-                    'SampleTime', 1/options.RateHz, 'FollowerOptions', followerParams);
+                    'SampleTime', 1/options.RateHz, 'FollowerOptions', followerOptions);
 
                 bundleFinal = gik9dof.createGikSolver(robot, ...
                     "EnableAiming", options.EnableAiming, ...
@@ -286,7 +305,12 @@ switch options.Mode
                     "DistanceWeight", distanceWeight, ...
                     "MaxIterations", options.MaxIterations);
 
-                executedBase = simRes.poses(2:end, :);
+                baseExecutedFull = simRes.poses;
+                if ~isempty(baseExecutedFull)
+                    baseExecutedFull(1,:) = baseReference(1,:);
+                end
+                baseExecutedFull = resampleBasePath(baseExecutedFull, baseReference);
+                executedBase = baseExecutedFull(2:end, :);
                 fixedTrajectory = struct('Indices', baseIdx, 'Values', executedBase');
                 log = gik9dof.runTrajectoryControl(bundleFinal, trajStruct, ...
                     "InitialConfiguration", q0, ...
@@ -305,10 +329,6 @@ switch options.Mode
                 log.purePursuit.wheelSpeeds = simRes.wheelSpeeds;
                 log.purePursuit.status = simRes.status;
                 log.referenceInitialIk = logRef;
-                baseExecutedFull = simRes.poses;
-                if ~isempty(baseExecutedFull)
-                    baseExecutedFull(1,:) = baseReference(1,:);
-                end
                 log.execBaseStates = baseExecutedFull;
                 log.referenceBaseStates = baseReference;
                 dt = 1 / options.RateHz;
@@ -380,7 +400,9 @@ switch options.Mode
             'StageCPathBufferSize', options.StageCPathBufferSize, ...
             'StageCGoalTolerance', options.StageCGoalTolerance, ...
             'StageCInterpSpacing', options.StageCInterpSpacing, ...
-            'StageCReverseEnabled', options.StageCReverseEnabled);
+            'StageCReverseEnabled', options.StageCReverseEnabled, ...
+            'ChassisProfile', options.ChassisProfile, ...
+            'ChassisOverrides', options.ChassisOverrides);
         log = pipeline;
     otherwise
         error("gik9dof:trackReferenceTrajectory:UnknownMode", options.Mode);
@@ -390,6 +412,8 @@ log.floorDiscs = floorDiscInfo;
 log.distanceSpecs = distanceSpecs;
 log.environment = envConfig;
 log.footprintInfo = footprintInfo;
+log.chassisProfile = options.ChassisProfile;
+log.chassisParams = chassisParams;
 if options.Mode == "holistic"
     log.velocityLimits = struct('MaxLinearSpeed', options.RampMaxLinearSpeed, ...
         'MaxYawRate', options.RampMaxYawRate, ...
@@ -462,4 +486,26 @@ end
 
 traj.Poses = poses;
 traj.EndEffectorPositions = posXYZ;
+end
+
+function resampled = resampleBasePath(executed, reference)
+if isempty(executed)
+    resampled = reference;
+    return
+end
+
+refCount = size(reference,1);
+if size(executed,1) == refCount
+    resampled = executed;
+    return
+end
+
+sExec = linspace(0, 1, size(executed,1));
+sRef = linspace(0, 1, refCount);
+resampled = zeros(refCount, 3);
+resampled(:,1) = interp1(sExec, executed(:,1), sRef, 'linear', 'extrap');
+resampled(:,2) = interp1(sExec, executed(:,2), sRef, 'linear', 'extrap');
+yawExec = unwrap(executed(:,3));
+yawInterp = interp1(sExec, yawExec, sRef, 'linear', 'extrap');
+resampled(:,3) = wrapToPi(yawInterp);
 end

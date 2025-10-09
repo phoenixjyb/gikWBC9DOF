@@ -55,6 +55,11 @@ arguments
     options.ArmMeshDirectory string = ""
     options.ArmMeshColor (1,3) double = [0.78 0.82 0.93]
     options.FigureScale double = 1.0
+    options.ReferenceBasePath double = []
+    options.ReferenceBaseLabel (1,1) string = "Reference Base (GIK)"
+    options.ExecutedBaseLabel (1,1) string = "Executed Base (Log)"
+    options.StageBPath double = []
+    options.StageBLabel (1,1) string = "Stage B Executed Base"
 end
 
 if options.VisualAlpha < 0 || options.VisualAlpha > 1
@@ -202,9 +207,26 @@ view(axTop,   0, 90);
 title(axPersp, '3D Perspective', 'Color', [0.95 0.95 0.95]);
 title(axTop,   'Top View', 'Color', [0.95 0.95 0.95]);
 
-% Plot reference paths
-plot(axPersp, basePose(:,1), basePose(:,2), '--', 'Color', [0.85 0.7 0.1], 'LineWidth', 1.0, 'DisplayName', 'Chassis path');
-plot(axTop,   basePose(:,1), basePose(:,2), '--', 'Color', [0.85 0.7 0.1], 'LineWidth', 1.0, 'DisplayName', 'Chassis path');
+% Plot base paths
+executedColor = [0.10 0.45 0.90];
+referenceColor = [0.85 0.70 0.10];
+stageBColor = [0.60 0.60 0.60];
+
+plot(axPersp, basePose(:,1), basePose(:,2), '-', 'Color', executedColor, 'LineWidth', 1.5, 'DisplayName', char(options.ExecutedBaseLabel));
+plot(axTop,   basePose(:,1), basePose(:,2), '-', 'Color', executedColor, 'LineWidth', 1.5, 'DisplayName', char(options.ExecutedBaseLabel));
+
+if ~isempty(options.ReferenceBasePath)
+    refPath = options.ReferenceBasePath;
+    plot(axPersp, refPath(:,1), refPath(:,2), '--', 'Color', referenceColor, 'LineWidth', 1.2, 'DisplayName', char(options.ReferenceBaseLabel));
+    plot(axTop,   refPath(:,1), refPath(:,2), '--', 'Color', referenceColor, 'LineWidth', 1.2, 'DisplayName', char(options.ReferenceBaseLabel));
+end
+
+if ~isempty(options.StageBPath)
+    sbPath = options.StageBPath;
+    plot(axPersp, sbPath(:,1), sbPath(:,2), ':', 'Color', stageBColor, 'LineWidth', 1.2, 'DisplayName', char(options.StageBLabel));
+    plot(axTop,   sbPath(:,1), sbPath(:,2), ':', 'Color', stageBColor, 'LineWidth', 1.2, 'DisplayName', char(options.StageBLabel));
+end
+
 if ~isempty(eePoses) && size(eePoses,2) >= 3
     plot3(axPersp, eePoses(:,1), eePoses(:,2), eePoses(:,3), 'r-.', 'LineWidth', 1.0, 'DisplayName', 'Desired EE path');
     plot(axTop,   eePoses(:,1), eePoses(:,2), 'r-.', 'LineWidth', 1.0, 'DisplayName', 'Desired EE path');
@@ -221,15 +243,15 @@ leg = legend(axPersp, 'Location', 'bestoutside');
 set(leg, 'TextColor', [0.95 0.95 0.95], 'Color', [0.2 0.2 0.2]);
 
 % Markers for current pose
-baseMarkerPersp = plot3(axPersp, baseX(1), baseY(1), 0, 'bo', 'MarkerFaceColor', 'b');
-baseMarkerTop   = plot(axTop,   baseX(1), baseY(1), 'bo', 'MarkerFaceColor', 'b');
+baseMarkerPersp = plot3(axPersp, baseX(1), baseY(1), 0, 'o', 'Color', executedColor, 'MarkerFaceColor', executedColor);
+baseMarkerTop   = plot(axTop,   baseX(1), baseY(1), 'o', 'Color', executedColor, 'MarkerFaceColor', executedColor);
 headingLen = options.ArrowLength;
 headingLinePersp = plot3(axPersp, [baseX(1), baseX(1)+headingLen*cos(baseYaw(1))], ...
                       [baseY(1), baseY(1)+headingLen*sin(baseYaw(1))], ...
-                      [0 0], 'b-', 'LineWidth', 2);
+                      [0 0], '-', 'Color', executedColor, 'LineWidth', 2);
 headingLineTop = plot(axTop, [baseX(1), baseX(1)+headingLen*cos(baseYaw(1))], ...
                          [baseY(1), baseY(1)+headingLen*sin(baseYaw(1))], ...
-                         'b-', 'LineWidth', 2);
+                         '-', 'Color', executedColor, 'LineWidth', 2);
 if ~isempty(eePoses) && size(eePoses,2) >= 3
     eeMarkerPersp = plot3(axPersp, eePoses(1,1), eePoses(1,2), eePoses(1,3), 'ro', 'MarkerFaceColor', 'r', 'DisplayName', 'Desired EE waypoint');
     eeMarkerTop   = plot(axTop,   eePoses(1,1), eePoses(1,2), 'ro', 'MarkerFaceColor', 'r');

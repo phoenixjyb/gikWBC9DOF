@@ -55,6 +55,28 @@ elseif isfield(logStaged, 'targetPositions') && ~isempty(logStaged.targetPositio
     helperOptions.TargetPath = logStaged.targetPositions.';
 end
 
+if isfield(logStaged, 'stageLogs') && isstruct(logStaged.stageLogs)
+    if isfield(logStaged.stageLogs, 'stageC') && isstruct(logStaged.stageLogs.stageC)
+        stageC = logStaged.stageLogs.stageC;
+        if isfield(stageC, 'referenceBaseStates') && ~isempty(stageC.referenceBaseStates)
+            helperOptions.ReferenceBasePath = stageC.referenceBaseStates;
+            helperOptions.ReferenceBaseLabel = "Stage C Reference (GIK)";
+        end
+        if isfield(stageC, 'execBaseStates') && ~isempty(stageC.execBaseStates)
+            helperOptions.ExecutedBaseLabel = "Stage C Executed Base";
+        end
+    end
+    if isfield(logStaged.stageLogs, 'stageB') && isstruct(logStaged.stageLogs.stageB)
+        stageB = logStaged.stageLogs.stageB;
+        if isfield(stageB, 'execBaseStates') && ~isempty(stageB.execBaseStates)
+            helperOptions.StageBPath = stageB.execBaseStates;
+            helperOptions.StageBLabel = "Stage B Executed Base";
+        end
+    end
+elseif isfield(logStaged, 'referenceBaseStates') && ~isempty(logStaged.referenceBaseStates)
+    helperOptions.ReferenceBasePath = logStaged.referenceBaseStates;
+end
+
 fields = fieldnames(helperOptions);
 for i = 1:numel(fields)
     helperArgs = [helperArgs, {fields{i}, helperOptions.(fields{i})}]; %#ok<AGROW>

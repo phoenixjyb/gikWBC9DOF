@@ -177,12 +177,18 @@ end
 
 **Pure Pursuit**
 ```matlab
+params = gik9dof.control.loadChassisProfile("wide_track");
 pp = gik9dof.control.purePursuitFollower(pathStates, ...
-    'LookaheadDistance', 0.6, ...
-    'DesiredLinearVelocity', 0.6, ...
-    'MaxAngularVelocity', 2.5);
+    'ChassisParams', params, ...
+    'ControllerMode', "blended", ...
+    'SampleTime', 0.1, ...
+    'LookaheadBase', 0.60, ...
+    'LookaheadVelGain', 0.30, ...
+    'GoalTolerance', 0.10, ...
+    'ReverseEnabled', false);
 
-[v, w, status] = pp.step(currentPose);
+dt = 0.1;
+[v, w, status] = pp.step(currentPose, dt);
 refB = struct('v', v, 'w', w, 't', now_t, 'pose', currentPose);
 [cmd, st] = gik9dof.control.unifiedChassisCtrl("staged-B", refB, currentPose, st, Params);
 Drive_Motor(cmd.base.Vx, 0, cmd.base.Wz);
@@ -203,22 +209,33 @@ Drive_Motor(cmd.base.Vx, 0, cmd.base.Wz);
 
 The Stage‑B log now records `pathStates` populated from the Hybrid A* plan,
 making it trivial to replay or drive the follower offline via
-`gik9dof.control.purePursuitFollower` and the unified chassis interface.
+`gik9dof.control.purePursuitFollower` (with the same YAML-loaded profile) and the unified chassis interface.
 
 ---
 
 ## 7) Parameters (seed values)
 
-| Parameter | Compact (track=0.329 m) | Wide (track=0.573 m) | Notes |
-|---|---:|---:|---|
-| `P.track` | 0.329 | 0.573 | set per chassis |
-| `P.Vwheel_max` | 1.5 m/s (example) | 1.5 m/s | wheel linear speed ceiling |
-| `P.Vx_max` | 0.8–1.0 m/s | 0.8–1.0 m/s | under firmware clamp initially |
-| `P.W_max` | 2.5–3.0 rad/s | 2.5–3.0 rad/s | below wheel-limit envelope |
-| `P.yawKp` | 2.0 | 2.0 | heading regulator |
-| `P.yawKff` | 0.2 | 0.2 | feed‑forward from GIK rate |
+Canonical presets now live in `config/chassis_profiles.yaml`. Load them in
+MATLAB (and later in C++ codegen) with
 
-> Raise `P.Vx_max` only after field verification; firmware still applies its own global clamps and 10 ms ramp.
+```matlab
+params = gik9dof.control.loadChassisProfile("wide_track");
+```
+
+| Field | `wide_track` | `compact_track` | Notes |
+|---|---:|---:|---|
+| `track` (m) | 0.573 | 0.329 | wheel separation |
+| `vx_max` (m/s) | 1.5 | 1.0 | forward clamp (firmware cap) |
+| `vx_min` (m/s) | –0.4 | –0.3 | reverse clamp (set 0 to disable) |
+| `wz_max` (rad/s) | 2.5 | 2.8 | yaw clamp before wheel limit |
+| `wheel_speed_max` (m/s) | 3.3 | 3.3 | keep <3.5 to match firmware |
+| `accel_limit` / `decel_limit` (m/s²) | 1.2 / 1.8 | 1.0 / 1.4 | trapezoidal profile |
+| `lookahead_base` (m) | 0.60 | 0.45 | tuned for 1.5 m/s / 1.0 m/s |
+| `heading_kp, kd` | 1.2, 0.1 | 1.4, 0.12 | blended controller gains |
+| `curvature_slowdown.vx_reduction` | 0.60 | 0.55 | scale when |κ| > threshold |
+
+Override any field at runtime by supplying `ChassisOverrides` when calling
+`trackReferenceTrajectory` / `runStagedTrajectory`.
 
 ---
 

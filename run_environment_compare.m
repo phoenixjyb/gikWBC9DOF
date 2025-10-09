@@ -13,6 +13,7 @@ stagedMode = "ppForIk";          % staged execution mode: "ppForIk" or "pureIk"
 useStageBHybridAStar = true;     % toggle Stage B hybrid A* for staged run
 stageBMode = "pureHyb";          % staged pipeline base-alignment mode
 maxIterations = 1500;            % solver iteration cap for both runs
+chassisProfile = "wide_track";  % chassis preset defined in config/chassis_profiles.yaml
 
 scriptDir = fileparts(mfilename("fullpath"));
 addpath(genpath(fullfile(scriptDir, "matlab")));
@@ -27,7 +28,8 @@ summary = gik9dof.runEnvironmentCompare( ...
     "HolisticExecutionMode", holisticMode, ...
     "StagedExecutionMode", stagedMode, ...
     "UseStageBHybridAStar", useStageBHybridAStar, ...
-    "StageBMode", stageBMode);
+    "StageBMode", stageBMode, ...
+    "ChassisProfile", chassisProfile);
 
 summaryPath = fullfile(summary.resultsDir, "summary.mat");
 save(summaryPath, "summary");
