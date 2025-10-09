@@ -33,7 +33,7 @@ GIK9DOFSolverNode::GIK9DOFSolverNode() : Node("gik9dof_solver_node")
         this->declare_parameter("control_mode", "holistic");  // "holistic" or "staged"
         this->declare_parameter("control_rate", 10.0);  // Hz
         this->declare_parameter("max_solve_time", 0.05);  // 50ms
-        this->declare_parameter("max_solver_iterations", 50);  // Max solver iterations
+        this->declare_parameter("max_solver_iterations", 1000);  // Max solver iterations (matches MATLAB wrapper hardcoded value)
         
         // Distance constraints (20 total) - NEW 7-parameter interface
         // Default: 5 active constraints matching MATLAB validation tests

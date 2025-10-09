@@ -9,6 +9,9 @@ gik9dof_solver_node:
     # Maximum solve time per iteration (seconds)
     max_solve_time: 0.05
     
+    # Maximum solver iterations (matches MATLAB wrapper hardcoded value)
+    max_solver_iterations: 1000
+    
     # IK solver parameters
     distance_lower_bound: 0.1
     distance_weight: 1.0
