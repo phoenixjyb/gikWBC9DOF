@@ -1,8 +1,8 @@
 //
 // File: main.h
 //
-// MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 19:31:57
+// MATLAB Coder version            : 24.1
+// C/C++ source code generated on  : 09-Oct-2025 13:46:29
 //
 
 /*************************************************************************/
@@ -43,7 +43,7 @@
 extern int main(int argc, char **argv);
 
 extern void
-main_gik9dof_planHybridAStarCodegen(gik9dof::HybridAStarPlanner *instancePtr);
+main_planHybridAStarCodegen(gik9dof::HybridAStarPlanner *instancePtr);
 
 #endif
 //

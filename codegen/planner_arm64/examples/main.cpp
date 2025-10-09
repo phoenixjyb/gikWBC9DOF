@@ -1,8 +1,8 @@
 //
 // File: main.cpp
 //
-// MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 19:31:57
+// MATLAB Coder version            : 24.1
+// C/C++ source code generated on  : 09-Oct-2025 13:46:29
 //
 
 /*************************************************************************/
@@ -34,7 +34,7 @@
 #include "main.h"
 #include "HybridAStarPlanner.h"
 #include "OccupancyGrid2D.h"
-#include "gik9dof_planHybridAStarCodegen_types.h"
+#include "planHybridAStarCodegen_types.h"
 #include "rt_nonfinite.h"
 
 // Function Declarations
@@ -121,11 +121,9 @@ static void argInit_struct0_T(gik9dof::struct0_T &result)
   // Set the value of each structure field.
   // Change this value to the value that the application requires.
   result_tmp = argInit_real_T();
-  b_result_tmp = argInit_int32_T();
-  result.x = result_tmp;
   result.y = result_tmp;
   result.theta = result_tmp;
-  result.grid_x = b_result_tmp;
+  b_result_tmp = argInit_int32_T();
   result.grid_y = b_result_tmp;
   result.theta_bin = b_result_tmp;
   result.Vx = result_tmp;
@@ -135,6 +133,8 @@ static void argInit_struct0_T(gik9dof::struct0_T &result)
   result.h = result_tmp;
   result.f = result_tmp;
   result.parent_idx = b_result_tmp;
+  result.x = result_tmp;
+  result.grid_x = b_result_tmp;
   result.is_valid = argInit_boolean_T();
 }
 
@@ -149,7 +149,7 @@ int main(int, char **)
   classInstance = new gik9dof::HybridAStarPlanner;
   // Invoke the entry-point functions.
   // You can call entry-point functions multiple times.
-  main_gik9dof_planHybridAStarCodegen(classInstance);
+  main_planHybridAStarCodegen(classInstance);
   delete classInstance;
   return 0;
 }
@@ -158,23 +158,24 @@ int main(int, char **)
 // Arguments    : gik9dof::HybridAStarPlanner *instancePtr
 // Return Type  : void
 //
-void main_gik9dof_planHybridAStarCodegen(
-    gik9dof::HybridAStarPlanner *instancePtr)
+void main_planHybridAStarCodegen(gik9dof::HybridAStarPlanner *instancePtr)
 {
   gik9dof::OccupancyGrid2D r;
+  gik9dof::struct0_T b_start_state_tmp;
   gik9dof::struct0_T start_state_tmp;
   gik9dof::struct1_T path[500];
   gik9dof::struct2_T search_stats;
-  // Initialize function 'gik9dof_planHybridAStarCodegen' input arguments.
+  // Initialize function 'planHybridAStarCodegen' input arguments.
   // Initialize function input argument 'start_state'.
   argInit_struct0_T(start_state_tmp);
   // Initialize function input argument 'goal_state'.
   // Initialize function input argument 'occupancy_grid'.
   // Initialize function input argument 'options'.
-  // Call the entry-point 'gik9dof_planHybridAStarCodegen'.
+  // Call the entry-point 'planHybridAStarCodegen'.
   argInit_OccupancyGrid2D(r);
-  instancePtr->b_gik9dof_planHybridAStarCodegen(
-      &start_state_tmp, &start_state_tmp, &r, path, &search_stats);
+  b_start_state_tmp = start_state_tmp;
+  instancePtr->b_planHybridAStarCodegen(&b_start_state_tmp, &start_state_tmp,
+                                        &r, path, &search_stats);
 }
 
 //

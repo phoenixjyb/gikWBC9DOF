@@ -1,14 +1,14 @@
 //
 // File: toc.cpp
 //
-// MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 19:31:57
+// MATLAB Coder version            : 24.1
+// C/C++ source code generated on  : 09-Oct-2025 13:46:29
 //
 
 // Include Files
 #include "toc.h"
 #include "HybridAStarPlanner.h"
-#include "gik9dof_planHybridAStarCodegen_types.h"
+#include "planHybridAStarCodegen_types.h"
 #include "rt_nonfinite.h"
 #include "timeKeeper.h"
 #include "coder_posix_time.h"
@@ -24,17 +24,17 @@ namespace coder {
 double toc(HybridAStarPlanner *aInstancePtr, const coderTimespec &savedTime)
 {
   coderTimespec b_timespec;
-  gik9dof_planHybridAStarCodegenStackData *localSD;
-  double t;
+  planHybridAStarCodegenStackData *localSD;
   double tstart_tv_nsec;
+  double tstart_tv_sec;
   localSD = aInstancePtr->getStackData();
-  t = internal::b_time::impl::timeKeeper(savedTime, tstart_tv_nsec);
+  tstart_tv_sec = internal::b_time::impl::timeKeeper(savedTime, tstart_tv_nsec);
   if (!localSD->pd->freq_not_empty) {
     localSD->pd->freq_not_empty = true;
     coderInitTimeFunctions(&localSD->pd->freq);
   }
   coderTimeClockGettimeMonotonic(&b_timespec, localSD->pd->freq);
-  return (b_timespec.tv_sec - t) +
+  return (b_timespec.tv_sec - tstart_tv_sec) +
          (b_timespec.tv_nsec - tstart_tv_nsec) / 1.0E+9;
 }
 

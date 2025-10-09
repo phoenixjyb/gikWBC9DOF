@@ -1,14 +1,13 @@
 //
 // File: checkArcCollision.cpp
 //
-// MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 19:31:57
+// MATLAB Coder version            : 24.1
+// C/C++ source code generated on  : 09-Oct-2025 13:46:29
 //
 
 // Include Files
 #include "checkArcCollision.h"
 #include "OccupancyGrid2D.h"
-#include "linspace.h"
 #include "rt_nonfinite.h"
 #include <cmath>
 
@@ -62,40 +61,49 @@ bool checkArcCollision(double x_start, double y_start, double theta_start,
                        const OccupancyGrid2D *grid)
 {
   double t_samples_data[13];
-  double num_samples;
-  int t_samples_size[2];
-  int i;
+  double delta1;
+  int k;
+  int t_samples_size_idx_1;
   bool has_collision;
   //  Validate inputs
   //  Sampling resolution: check every 0.1m along arc
   //  [m] Check every 10cm
-  num_samples = std::fmax(2.0, std::ceil(std::abs(Vx) * dt / 0.1));
   //  At least start + end
   //  Time samples
-  coder::linspace(dt, num_samples, t_samples_data, t_samples_size);
+  t_samples_size_idx_1 =
+      static_cast<int>(std::fmax(2.0, std::ceil(std::abs(Vx) * dt / 0.1)));
+  t_samples_data[t_samples_size_idx_1 - 1] = dt;
+  t_samples_data[0] = 0.0;
+  if (t_samples_size_idx_1 >= 3) {
+    delta1 = dt / (static_cast<double>(t_samples_size_idx_1) - 1.0);
+    for (k = 0; k <= t_samples_size_idx_1 - 3; k++) {
+      t_samples_data[k + 1] = (static_cast<double>(k) + 1.0) * delta1;
+    }
+  }
   //  Check each sample point along arc
-  i = 0;
+  k = 0;
   int exitg1;
   do {
     exitg1 = 0;
-    if (i <= static_cast<int>(num_samples) - 1) {
-      double R;
+    if (k <= t_samples_size_idx_1 - 1) {
       double x;
       int grid_x;
       int grid_y;
       //  Compute position at this point along arc
       if (std::abs(Wz) < 0.0001) {
         //  Straight line
-        R = Vx * t_samples_data[i];
-        x = x_start + R * std::cos(theta_start);
-        R = y_start + R * std::sin(theta_start);
+        delta1 = Vx * t_samples_data[k];
+        x = x_start + delta1 * std::cos(theta_start);
+        delta1 = y_start + delta1 * std::sin(theta_start);
       } else {
         double theta_t;
         //  Circular arc
-        R = Vx / Wz;
-        theta_t = theta_start + Wz * t_samples_data[i];
-        x = (x_start - R * std::sin(theta_start)) + R * std::sin(theta_t);
-        R = (y_start + R * std::cos(theta_start)) - R * std::cos(theta_t);
+        delta1 = Vx / Wz;
+        theta_t = theta_start + Wz * t_samples_data[k];
+        x = (x_start - delta1 * std::sin(theta_start)) +
+            delta1 * std::sin(theta_t);
+        delta1 = (y_start + delta1 * std::cos(theta_start)) -
+                 delta1 * std::cos(theta_t);
       }
       //  Convert world position to grid indices
       // WORLDTOGRIDX Convert world x coordinate to grid index
@@ -104,7 +112,7 @@ bool checkArcCollision(double x_start, double y_start, double theta_start,
                1;
       // WORLDTOGRADY Convert world y coordinate to grid index
       grid_y = static_cast<int>(
-                   std::floor((R - grid->origin_y) / grid->resolution)) +
+                   std::floor((delta1 - grid->origin_y) / grid->resolution)) +
                1;
       //  Check if position is within grid bounds
       if ((grid_x < 1) || (grid_x > grid->size_x) || (grid_y < 1) ||
@@ -122,7 +130,7 @@ bool checkArcCollision(double x_start, double y_start, double theta_start,
         has_collision = true;
         exitg1 = 1;
       } else {
-        i++;
+        k++;
       }
     } else {
       //  All samples clear

@@ -1,14 +1,14 @@
 //
 // File: tic.cpp
 //
-// MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 19:31:57
+// MATLAB Coder version            : 24.1
+// C/C++ source code generated on  : 09-Oct-2025 13:46:29
 //
 
 // Include Files
 #include "tic.h"
 #include "HybridAStarPlanner.h"
-#include "gik9dof_planHybridAStarCodegen_types.h"
+#include "planHybridAStarCodegen_types.h"
 #include "rt_nonfinite.h"
 #include "timeKeeper.h"
 #include "coder_posix_time.h"
@@ -24,7 +24,7 @@ namespace coder {
 void tic(HybridAStarPlanner *aInstancePtr, coderTimespec &savedTime)
 {
   coderTimespec b_timespec;
-  gik9dof_planHybridAStarCodegenStackData *localSD;
+  planHybridAStarCodegenStackData *localSD;
   localSD = aInstancePtr->getStackData();
   if (!localSD->pd->freq_not_empty) {
     localSD->pd->freq_not_empty = true;

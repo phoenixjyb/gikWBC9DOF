@@ -1,8 +1,8 @@
 //
 // File: HybridAStarPlanner.cpp
 //
-// MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 19:31:57
+// MATLAB Coder version            : 24.1
+// C/C++ source code generated on  : 09-Oct-2025 13:46:29
 //
 
 // Include Files
@@ -10,20 +10,20 @@
 #include "CoderTimeAPI.h"
 #include "OccupancyGrid2D.h"
 #include "angdiff.h"
-#include "atan2.h"
 #include "checkArcCollision.h"
 #include "generateMotionPrimitives.h"
-#include "gik9dof_planHybridAStarCodegen_internal_types.h"
-#include "gik9dof_planHybridAStarCodegen_types.h"
+#include "getChassisParams.h"
 #include "mod.h"
+#include "planHybridAStarCodegen_internal_types.h"
+#include "planHybridAStarCodegen_types.h"
 #include "rt_nonfinite.h"
 #include "tic.h"
 #include "timeKeeper.h"
 #include "toc.h"
 #include "coder_array.h"
 #include "coder_posix_time.h"
+#include "rt_defines.h"
 #include <cmath>
-#include <cstdio>
 #include <cstring>
 
 // Function Declarations
@@ -32,7 +32,9 @@ static void reconstructPathFixed(int final_idx, const int parent_indices[50000],
                                  const struct0_T state_list[50000],
                                  struct1_T path[500]);
 
-}
+static double rt_atan2d_snf(double u0, double u1);
+
+} // namespace gik9dof
 
 // Function Definitions
 //
@@ -75,6 +77,44 @@ static void reconstructPathFixed(int final_idx, const int parent_indices[50000],
     path[current_idx].Wz = state_list[idx].Wz;
     path[current_idx].dt = state_list[idx].dt;
   }
+}
+
+//
+// Arguments    : double u0
+//                double u1
+// Return Type  : double
+//
+static double rt_atan2d_snf(double u0, double u1)
+{
+  double y;
+  if (std::isnan(u0) || std::isnan(u1)) {
+    y = rtNaN;
+  } else if (std::isinf(u0) && std::isinf(u1)) {
+    int i;
+    int i1;
+    if (u0 > 0.0) {
+      i = 1;
+    } else {
+      i = -1;
+    }
+    if (u1 > 0.0) {
+      i1 = 1;
+    } else {
+      i1 = -1;
+    }
+    y = std::atan2(static_cast<double>(i), static_cast<double>(i1));
+  } else if (u1 == 0.0) {
+    if (u0 > 0.0) {
+      y = RT_PI / 2.0;
+    } else if (u0 < 0.0) {
+      y = -(RT_PI / 2.0);
+    } else {
+      y = 0.0;
+    }
+  } else {
+    y = std::atan2(u0, u1);
+  }
+  return y;
 }
 
 //
@@ -132,7 +172,7 @@ HybridAStarPlanner::~HybridAStarPlanner() = default;
 //                struct2_T *search_stats
 // Return Type  : void
 //
-void HybridAStarPlanner::b_gik9dof_planHybridAStarCodegen(
+void HybridAStarPlanner::b_planHybridAStarCodegen(
     struct0_T *start_state, const struct0_T *goal_state,
     const OccupancyGrid2D *occupancy_grid, struct1_T path[500],
     struct2_T *search_stats)
@@ -146,129 +186,13 @@ void HybridAStarPlanner::b_gik9dof_planHybridAStarCodegen(
   double h_tmp;
   double theta_goal_tmp;
   double theta_start;
-  int grid_size_x;
-  int grid_size_y;
   int grid_x;
   int grid_y;
   bool goal_reached;
   //  Parse options with defaults
   //  Fixed-size limits for code generation
   //  Get chassis parameters
-  // GETCHASSISPARAMS Return WHEELTEC chassis parameters for path planning
-  //    params = getChassisParams() returns default "fourwheel" platform
-  //    params = getChassisParams('compact') - Top diff chassis (0.329m track)
-  //    params = getChassisParams('fourwheel') - Four-wheel platform (0.573m
-  //    track) ← DEFAULT
-  //
-  //    YOUR PLATFORM: WHEELTEC Four-Wheel Drive with Passive Rear
-  //    - Front axle: Differential drive (two powered wheels)
-  //    - Rear axle: Passive omni-wheels (lateral rolling rollers)
-  //    - Wheelbase: 0.36 m (front-to-rear distance)
-  //    - Track width: 0.573 m (left-to-right at front wheels)
-  //    - Wheel radius: 0.1075 m (107.5mm, 215mm diameter drive wheels)
-  //    - Kinematics: Simplified Ackermann (front-wheel steer via differential)
-  //
-  //    This is a HYBRID kinematic model:
-  //    - Driven like differential drive (front axle, left/right speeds)
-  //    - Constrained like Ackermann (passive rear creates ICR)
-  //    - Minimum turning radius exists (NOT zero radius!)
-  //
-  //    Based on firmware analysis in docs/chassis-summary.txt
-  //
-  //    Returns struct with fields:
-  //        .chassis_type    - 'front_diff_rear_passive' (unique hybrid)
-  //        .wheelbase       - Front-to-rear distance [m] ← KEY PARAMETER
-  //        .track           - Front wheel track width [m]
-  //        .wheel_radius    - Drive wheel radius [m]
-  //        .robot_length    - Front-to-back dimension [m]
-  //        .robot_width     - Side-to-side dimension [m]
-  //        .robot_radius    - Conservative bounding circle [m]
-  //        .Vwheel_max      - Max wheel speed [m/s]
-  //        .Vx_max          - Max forward speed [m/s]
-  //        .Wz_max          - Max yaw rate [rad/s]
-  //        .min_turning_radius - Minimum turn radius [m] ← IMPORTANT
-  //        .accel_max       - Max acceleration [m/s^2]
-  //
-  //    See also gik9dof.control.defaultUnifiedParams
-  //  Pre-allocate ALL struct fields for MATLAB Coder compatibility
-  //  Four-wheel platform: Front diff + Rear passive omni
-  //  [m] Front-to-rear axle distance ← YOUR SPEC
-  //  [m] Front track width
-  //  [m] 215mm diameter drive wheels
-  //  [m] Including bumpers (wheelbase + clearance)
-  //  [m] Track + side clearance
-  //  Conservative bounding circle (for collision checking)
-  //  Velocity limits (from firmware + existing controller)
-  //  [m/s] Per-wheel limit (verified in defaultUnifiedParams)
-  //  [m/s] Conservative forward speed (existing)
-  //  KINEMATICS: Front diff + passive rear creates Instantaneous Center of
-  //  Rotation (ICR) The passive rear wheels with lateral rollers allow the
-  //  robot to pivot, but the ICR is constrained by geometry (NOT zero radius
-  //  like pure diff-drive) Yaw rate limits (differential constraints at front
-  //  axle) Front axle differential: |Wz| <= 2 * (Vwheel_max - |Vx|) / track
-  //  [rad/s] Pure spin
-  //  Conservative yaw limit for mixed motion (Vx = Vx_max)
-  //  Use firmware limit (2.5 rad/s) as ultimate cap
-  //  [rad/s]
-  //  Acceleration limit (from firmware ramp: 0.02 m/s per 10ms = 2 m/s^2)
-  //  [m/s^2]
-  //  MINIMUM TURNING RADIUS (KEY for Hybrid A*)
-  //  With passive rear, the robot pivots around a point related to wheelbase
-  //  Approximation: R_min ≈ wheelbase / tan(max_virtual_steer_angle)
-  //
-  //  For front diff + passive rear, the effective steering angle is:
-  //    tan(delta) = (v_R - v_L) / (Vx * track) * wheelbase
-  //
-  //  At max differential (v_R - v_L = 2*Vwheel_max), assuming Vx ≈ Vwheel_max:
-  //    tan(delta_max) ≈ 2 * Vwheel_max / (Vwheel_max * track) * wheelbase
-  //                   = 2 * wheelbase / track
-  //
-  //  Minimum radius: R_min = wheelbase / tan(delta_max)
-  //                        = wheelbase / (2 * wheelbase / track)
-  //                        = track / 2
-  //
-  //  This is a SIMPLIFIED estimate. Actual min radius depends on tire slip,
-  //  omni-wheel rolling resistance, and speed-dependent effects.
-  //  [m] Geometric minimum
-  //  Conservative estimate (add 20% margin for real-world effects)
-  //  [m]
-  //  Alternative calculation based on velocity limits
-  //  [m]
-  //  Use the larger (more conservative) of the two estimates
-  //  Safety margins
-  //  [m] Extra clearance (5cm)
-  //  Planning parameters
-  //  Use conservative forward speed
-  //  [m/s] Typical cruising speed
-  std::printf("WHEELTEC Chassis Parameters (%s variant):\n", "fourwheel");
-  std::fflush(stdout);
-  std::printf("  Chassis type:       %s\n", "front_diff_rear_passive");
-  std::fflush(stdout);
-  std::printf("  Wheelbase:          %.3f m (front-to-rear)\n", 0.36);
-  std::fflush(stdout);
-  std::printf("  Track width:        %.3f m (front wheels)\n", 0.573);
-  std::fflush(stdout);
-  std::printf("  Wheel radius:       %.3f m\n", 0.1075);
-  std::fflush(stdout);
-  std::printf("  Robot radius:       %.3f m (bounding circle)\n",
-              0.46097722286464432);
-  std::fflush(stdout);
-  std::printf("  Inflation radius:   %.3f m (with safety margin)\n",
-              0.51097722286464431);
-  std::fflush(stdout);
-  std::printf("  Max forward speed:  %.2f m/s\n", 0.8);
-  std::fflush(stdout);
-  std::printf("  Max yaw rate:       %.2f rad/s (%.1f deg/s)\n", 2.5,
-              143.23944878270581);
-  std::fflush(stdout);
-  std::printf("  Yaw (at max speed): %.2f rad/s (%.1f deg/s)\n",
-              2.4432809773123911, 139.98968816459904);
-  std::fflush(stdout);
-  std::printf("  Min turn radius:    %.3f m (passive rear constraint!)\n",
-              0.34379999999999994);
-  std::fflush(stdout);
-  std::printf("  Max acceleration:   %.2f m/s^2\n", 2.0);
-  std::fflush(stdout);
+  getChassisParams();
   //  Generate motion primitives (returns fixed-size array)
   generateMotionPrimitives(primitives_all);
   //  Filter valid primitives (dt > 0)
@@ -276,8 +200,6 @@ void HybridAStarPlanner::b_gik9dof_planHybridAStarCodegen(
   //  Use full array
   //  Angular discretization (matches design: 16 bins)
   //  Grid size
-  grid_size_x = occupancy_grid->size_x;
-  grid_size_y = occupancy_grid->size_y;
   //  Discretize start and goal states
   // WORLDTOGRIDX Convert world x coordinate to grid index
   start_state->grid_x =
@@ -295,7 +217,10 @@ void HybridAStarPlanner::b_gik9dof_planHybridAStarCodegen(
                                        0.39269908169872414)) +
            1;
   if (grid_x >= 16) {
-    start_state->theta_bin = 16;
+    grid_x = 16;
+  }
+  if (grid_x <= 1) {
+    start_state->theta_bin = 1;
   } else {
     start_state->theta_bin = grid_x;
   }
@@ -344,10 +269,10 @@ void HybridAStarPlanner::b_gik9dof_planHybridAStarCodegen(
   //        on Average Curvature, and with Prescribed Initial and Terminal
   //        Positions and Tangents"
   //  Normalize angles to [-pi, pi]
-  theta_start = coder::b_atan2(std::sin(start_state->theta),
-                               std::cos(start_state->theta));
+  theta_start =
+      rt_atan2d_snf(std::sin(start_state->theta), std::cos(start_state->theta));
   theta_goal_tmp =
-      coder::b_atan2(std::sin(goal_state->theta), std::cos(goal_state->theta));
+      rt_atan2d_snf(std::sin(goal_state->theta), std::cos(goal_state->theta));
   //  Straight-line distance (Euclidean)
   dx = goal_state->x - start_state->x;
   dy = goal_state->y - start_state->y;
@@ -357,11 +282,11 @@ void HybridAStarPlanner::b_gik9dof_planHybridAStarCodegen(
     //  Only heading difference matters
     h_tmp = theta_goal_tmp - theta_start;
     dy = 0.34379999999999994 *
-         std::abs(coder::b_atan2(std::sin(h_tmp), std::cos(h_tmp)));
+         std::abs(rt_atan2d_snf(std::sin(h_tmp), std::cos(h_tmp)));
     //  Arc length to align heading
   } else {
     //  Heading to goal (straight-line direction)
-    dx = coder::b_atan2(dy, dx);
+    dx = rt_atan2d_snf(dy, dx);
     //  Heading differences
     //  Simplified Dubins approximation:
     //  Path ≈ (turn to align) + (straight segment) + (turn to goal heading)
@@ -380,9 +305,9 @@ void HybridAStarPlanner::b_gik9dof_planHybridAStarCodegen(
     dy = std::fmax(
         0.0, (d_euclidean +
               0.17189999999999997 *
-                  std::abs(coder::b_atan2(std::sin(h_tmp), std::cos(h_tmp)))) +
+                  std::abs(rt_atan2d_snf(std::sin(h_tmp), std::cos(h_tmp)))) +
                  0.17189999999999997 *
-                     std::abs(coder::b_atan2(std::sin(dy), std::cos(dy))));
+                     std::abs(rt_atan2d_snf(std::sin(dy), std::cos(dy))));
   }
   start_state->h = dy;
   start_state->f = dy;
@@ -472,7 +397,6 @@ void HybridAStarPlanner::b_gik9dof_planHybridAStarCodegen(
       SD_.f0.state_list[i].f = 0.0;
       SD_.f0.state_list[i].parent_idx = 0;
       SD_.f0.state_list[i].is_valid = true;
-      SD_.f0.parent_indices[i] = 0;
       SD_.f0.heap_indices[i] = 0;
     }
     SD_.f0.state_list[0] = *start_state;
@@ -486,6 +410,7 @@ void HybridAStarPlanner::b_gik9dof_planHybridAStarCodegen(
       visited[next_grid_y] = false;
     }
     //  Parent map: Fixed-size array indexed by state index
+    std::memset(&SD_.f0.parent_indices[0], 0, 50000U * sizeof(int));
     //  Search loop
     coder::tic(this, savedTime);
     iterations = 0;
@@ -662,7 +587,7 @@ void HybridAStarPlanner::b_gik9dof_planHybridAStarCodegen(
                               dx * std::cos(dy);
                     }
                     //  Normalize theta to [-pi, pi]
-                    dy = coder::b_atan2(std::sin(dy), std::cos(dy));
+                    dy = rt_atan2d_snf(std::sin(dy), std::cos(dy));
                     //  Discretize next state
                     // WORLDTOGRIDX Convert world x coordinate to grid index
                     grid_y = static_cast<int>(std::floor(
@@ -682,9 +607,13 @@ void HybridAStarPlanner::b_gik9dof_planHybridAStarCodegen(
                     if (grid_x >= 16) {
                       grid_x = 16;
                     }
+                    if (grid_x <= 1) {
+                      grid_x = 1;
+                    }
                     //  Check bounds
-                    if ((grid_y >= 1) && (grid_y <= grid_size_x) &&
-                        (next_grid_y >= 1) && (next_grid_y <= grid_size_y) &&
+                    if ((grid_y >= 1) && (grid_y <= occupancy_grid->size_x) &&
+                        (next_grid_y >= 1) &&
+                        (next_grid_y <= occupancy_grid->size_y) &&
                         (!visited[((grid_y +
                                     visited.size(0) * (next_grid_y - 1)) +
                                    visited.size(0) * visited.size(1) *
@@ -771,7 +700,7 @@ void HybridAStarPlanner::b_gik9dof_planHybridAStarCodegen(
                       //        and with Prescribed Initial and Terminal
                       //        Positions and Tangents"
                       //  Normalize angles to [-pi, pi]
-                      theta_start = coder::b_atan2(std::sin(dy), std::cos(dy));
+                      theta_start = rt_atan2d_snf(std::sin(dy), std::cos(dy));
                       //  Straight-line distance (Euclidean)
                       dx = goal_state->x - d_euclidean;
                       dy = goal_state->y - h_tmp;
@@ -781,12 +710,12 @@ void HybridAStarPlanner::b_gik9dof_planHybridAStarCodegen(
                         //  Only heading difference matters
                         h_tmp = theta_goal_tmp - theta_start;
                         dy = 0.34379999999999994 *
-                             std::abs(coder::b_atan2(std::sin(h_tmp),
-                                                     std::cos(h_tmp)));
+                             std::abs(rt_atan2d_snf(std::sin(h_tmp),
+                                                    std::cos(h_tmp)));
                         //  Arc length to align heading
                       } else {
                         //  Heading to goal (straight-line direction)
-                        dx = coder::b_atan2(dy, dx);
+                        dx = rt_atan2d_snf(dy, dx);
                         //  Heading differences
                         //  Simplified Dubins approximation:
                         //  Path ≈ (turn to align) + (straight segment) + (turn
@@ -805,11 +734,11 @@ void HybridAStarPlanner::b_gik9dof_planHybridAStarCodegen(
                         dy = std::fmax(
                             0.0, (d_euclidean +
                                   0.17189999999999997 *
-                                      std::abs(coder::b_atan2(
+                                      std::abs(rt_atan2d_snf(
                                           std::sin(h_tmp), std::cos(h_tmp)))) +
                                      0.17189999999999997 *
-                                         std::abs(coder::b_atan2(
-                                             std::sin(dy), std::cos(dy))));
+                                         std::abs(rt_atan2d_snf(std::sin(dy),
+                                                                std::cos(dy))));
                       }
                       next_state.h = dy;
                       next_state.f = next_state_tmp + dy;
@@ -890,9 +819,9 @@ void HybridAStarPlanner::b_gik9dof_planHybridAStarCodegen(
 
 //
 // Arguments    : void
-// Return Type  : gik9dof_planHybridAStarCodegenStackData *
+// Return Type  : planHybridAStarCodegenStackData *
 //
-gik9dof_planHybridAStarCodegenStackData *HybridAStarPlanner::getStackData()
+planHybridAStarCodegenStackData *HybridAStarPlanner::getStackData()
 {
   return &SD_;
 }

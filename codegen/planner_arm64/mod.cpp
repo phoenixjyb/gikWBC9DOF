@@ -1,8 +1,8 @@
 //
 // File: mod.cpp
 //
-// MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 07-Oct-2025 19:31:57
+// MATLAB Coder version            : 24.1
+// C/C++ source code generated on  : 09-Oct-2025 13:46:29
 //
 
 // Include Files
@@ -35,7 +35,7 @@ double b_mod(double x)
     }
     if (rEQ0) {
       r = 0.0;
-    } else if (r < 0.0) {
+    } else if (x < 0.0) {
       r += 6.2831853071795862;
     }
   }
