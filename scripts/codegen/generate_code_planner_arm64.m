@@ -15,12 +15,12 @@ clear; clc;
 try
 %% Configuration
 projectRoot = fileparts(mfilename('fullpath'));
-if ~contains(projectRoot, 'matlab')
-    projectRoot = fullfile(projectRoot, 'matlab');
-end
-addpath(genpath(projectRoot));
+% Go up two levels: scripts/codegen -> scripts -> root
+workspaceRoot = fileparts(fileparts(projectRoot));
+matlabRoot = fullfile(workspaceRoot, 'matlab');
+addpath(genpath(matlabRoot));
 
-CODEGEN_OUTPUT = fullfile(fileparts(projectRoot), 'codegen', 'planner_arm64');
+CODEGEN_OUTPUT = fullfile(workspaceRoot, 'codegen', 'planner_arm64');
 
 % Clean previous build
 if exist(CODEGEN_OUTPUT, 'dir')
@@ -130,8 +130,12 @@ fprintf('This may take 2-3 minutes...\n\n');
 
 try
     tic;
+    % Use full file path instead of namespace syntax for WSL compatibility
+    planner_file = fullfile(matlabRoot, '+gik9dof', 'planHybridAStarCodegen.m');
+    fprintf('Target file: %s\n', planner_file);
+    
     codegen('-config', cfg, ...
-        'gik9dof.planHybridAStarCodegen', ...
+        planner_file, ...
         '-args', {start_state, goal_state, grid, coder.typeof(opts)}, ...
         '-d', CODEGEN_OUTPUT, ...
         '-report');
