@@ -61,6 +61,7 @@ sv.ValidationDistance = getFieldWithDefault(params, 'validationDistance', 0.05);
 
 conn = reedsSheppConnection('MinTurningRadius', params.Rmin);
 conn.ReverseCost = getFieldWithDefault(params, 'reverseCost', 2.0);
+allowReverse = getFieldWithDefault(params, 'allowReverse', false);
 
 maxIter = int32(getFieldWithDefault(params, 'iters', int32(200)));
 maxSpan = int32(getFieldWithDefault(params, 'maxSpan', int32(80)));
@@ -73,7 +74,7 @@ improvementCount = int32(0);
 initialSampleCount = int32(N);
 lastIter = int32(0);
 
-initialMetrics = computePathMetrics(conn, pathOut, lambdaCusp);
+initialMetrics = computePathMetrics(pathOut, lambdaCusp);
 
 for iter = int32(1):maxIter
     if N < 3
@@ -95,11 +96,15 @@ for iter = int32(1):maxIter
         continue
     end
 
+    if ~allowReverse && any(segNew.MotionDirections < 0)
+        continue
+    end
+
     if ~isRSConnectionValid(sv, segNew, step)
         continue
     end
 
-    [oldCost, feasibleOld] = evaluatePathSegment(conn, sv, pathOut, i, j, lambdaCusp, step);
+    [oldCost, feasibleOld] = evaluatePathSegment(conn, sv, pathOut, i, j, lambdaCusp, step, allowReverse);
     if ~feasibleOld
         continue
     end
@@ -118,7 +123,7 @@ for iter = int32(1):maxIter
     end
 end
 
-finalMetrics = computePathMetrics(conn, pathOut, lambdaCusp);
+finalMetrics = computePathMetrics(pathOut, lambdaCusp);
 finalSampleCount = int32(size(pathOut,1));
 
 if nargout > 1
@@ -177,12 +182,12 @@ s = linspace(0, L, numSamples);
 poses = interpolate(seg, s);
 end
 
-function [cost, feasible] = evaluatePathSegment(conn, validator, path, i, j, lambdaCusp, step)
+function [cost, feasible] = evaluatePathSegment(conn, validator, path, i, j, lambdaCusp, step, allowReverse)
 cost = 0.0;
 feasible = true;
 for k = i:(j-1)
     seg = bestRS(conn, path(k,:), path(k+1,:));
-    if isempty(seg) || ~isRSConnectionValid(validator, seg, step)
+    if isempty(seg) || ~isRSConnectionValid(validator, seg, step) || (~allowReverse && any(seg.MotionDirections < 0))
         feasible = false;
         cost = inf;
         return
@@ -191,19 +196,22 @@ for k = i:(j-1)
 end
 end
 
-function metrics = computePathMetrics(conn, path, lambdaCusp)
-lengthSum = 0.0;
-cuspSum = 0;
-for k = 1:(size(path,1)-1)
-    seg = bestRS(conn, path(k,:), path(k+1,:));
-    if isempty(seg)
-        % fallback: straight-line estimate
-        lengthSum = lengthSum + norm(path(k+1,1:2) - path(k,1:2));
-    else
-        lengthSum = lengthSum + seg.Length;
-        cuspSum = cuspSum + countCusps(seg);
-    end
+function metrics = computePathMetrics(path, lambdaCusp)
+if nargin < 2
+    lambdaCusp = 0;
 end
+if size(path,1) < 2
+    metrics = struct('length', 0.0, 'cusps', 0, 'cost', 0.0);
+    return
+end
+
+diffXY = diff(path(:,1:2),1,1);
+segmentLengths = sqrt(sum(diffXY.^2, 2));
+lengthSum = sum(segmentLengths);
+
+directions = estimatePathDirections(path);
+cuspSum = countDirectionChanges(directions);
+
 metrics = struct('length', lengthSum, ...
     'cusps', cuspSum, ...
     'cost', lengthSum + lambdaCusp * double(cuspSum));
@@ -232,6 +240,44 @@ if isfield(s, name) && ~isempty(s.(name))
 else
     val = defaultValue;
 end
+end
+
+function dirs = estimatePathDirections(path)
+nSteps = size(path,1) - 1;
+dirs = zeros(nSteps,1);
+for idx = 1:nSteps
+    theta = path(idx,3);
+    delta = path(idx+1,1:2) - path(idx,1:2);
+    projection = delta(1) * cos(theta) + delta(2) * sin(theta);
+    if abs(projection) < 1e-6
+        dirs(idx) = 0;
+    else
+        dirs(idx) = sign(projection);
+    end
+end
+
+% Forward fill zeros then backward in case of pure rotational moves.
+for idx = 2:nSteps
+    if dirs(idx) == 0
+        dirs(idx) = dirs(idx-1);
+    end
+end
+for idx = nSteps-1:-1:1
+    if dirs(idx) == 0
+        dirs(idx) = dirs(idx+1);
+    end
+end
+dirs(dirs == 0) = 1;
+end
+
+function count = countDirectionChanges(directions)
+if isempty(directions)
+    count = 0;
+    return
+end
+signs = sign(directions(:).');
+signs(signs == 0) = 1;
+count = sum(abs(diff(signs)) > 0);
 end
 
 function info = defaultInfoStruct()
