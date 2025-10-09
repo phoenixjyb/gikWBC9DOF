@@ -2,7 +2,7 @@
 // File: rigidBodyTree1.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 #ifndef RIGIDBODYTREE1_H
@@ -16,6 +16,9 @@
 #include <cstdlib>
 
 // Type Declarations
+namespace gik9dof {
+class GIKSolver;
+
 namespace coder {
 class rigidBody;
 
@@ -30,18 +33,15 @@ class RigidBody;
 } // namespace manip
 } // namespace robotics
 } // namespace coder
+} // namespace gik9dof
 
 // Type Definitions
+namespace gik9dof {
 namespace coder {
 class rigidBodyTree {
 public:
-  rigidBodyTree *init();
+  rigidBodyTree *init(GIKSolver *aInstancePtr);
   void get_BaseName(char basename_data[], int basename_size[2]) const;
-  void addBody(rigidBody &bodyin, const char parentName_data[],
-               const int parentName_size[2],
-               robotics::manip::internal::CollisionSet &iobj_0,
-               rigidBodyJoint &iobj_1,
-               robotics::manip::internal::RigidBody &iobj_2);
   void addBody(rigidBody &bodyin,
                robotics::manip::internal::CollisionSet &iobj_0,
                rigidBodyJoint &iobj_1,
@@ -82,12 +82,15 @@ public:
                  robotics::manip::internal::CollisionSet &iobj_0,
                  rigidBodyJoint &iobj_1,
                  robotics::manip::internal::RigidBody &iobj_2);
-  boolean_T matlabCodegenIsDeleted;
-  robotics::manip::internal::RigidBodyTree TreeInternal;
+  rigidBodyTree();
+  ~rigidBodyTree();
+  bool matlabCodegenIsDeleted;
+  robotics::manip::internal::b_RigidBodyTree TreeInternal;
   robotics::manip::internal::CollisionSet _pobj0;
 };
 
 } // namespace coder
+} // namespace gik9dof
 
 #endif
 //

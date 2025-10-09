@@ -2,7 +2,7 @@
 // File: eye.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 // Include Files
@@ -14,11 +14,12 @@
 // Function Definitions
 //
 // Arguments    : double varargin_1
-//                array<double, 2U> &b_I
+//                ::coder::array<double, 2U> &b_I
 // Return Type  : void
 //
+namespace gik9dof {
 namespace coder {
-void eye(double varargin_1, array<double, 2U> &b_I)
+void eye(double varargin_1, ::coder::array<double, 2U> &b_I)
 {
   double t;
   int loop_ub_tmp;
@@ -42,6 +43,7 @@ void eye(double varargin_1, array<double, 2U> &b_I)
 }
 
 } // namespace coder
+} // namespace gik9dof
 
 //
 // File trailer for eye.cpp

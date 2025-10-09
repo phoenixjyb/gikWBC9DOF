@@ -2,7 +2,7 @@
 // File: JointPositionBounds.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 #ifndef JOINTPOSITIONBOUNDS_H
@@ -15,37 +15,43 @@
 #include <cstdlib>
 
 // Type Declarations
+namespace gik9dof {
 namespace coder {
 namespace robotics {
 namespace manip {
 namespace internal {
-class RigidBodyTree;
+class b_RigidBodyTree;
 
 }
 } // namespace manip
 } // namespace robotics
 } // namespace coder
+} // namespace gik9dof
 
 // Type Definitions
+namespace gik9dof {
 namespace coder {
 namespace robotics {
 namespace manip {
 namespace internal {
 class JointPositionBounds {
 public:
-  JointPositionBounds *init(RigidBodyTree *tree);
-  void get_KinematicPath(array<double, 2U> &b_value) const;
-  boolean_T matlabCodegenIsDeleted;
+  JointPositionBounds *init(b_RigidBodyTree *tree);
+  void get_KinematicPath(::coder::array<double, 2U> &b_value) const;
+  JointPositionBounds();
+  ~JointPositionBounds();
+  bool matlabCodegenIsDeleted;
   double NumElements;
-  RigidBodyTree *Tree;
-  array<double, 2U> BoundsInternal;
-  array<double, 2U> Weights;
+  b_RigidBodyTree *Tree;
+  ::coder::array<double, 2U> BoundsInternal;
+  ::coder::array<double, 2U> Weights;
 };
 
 } // namespace internal
 } // namespace manip
 } // namespace robotics
 } // namespace coder
+} // namespace gik9dof
 
 #endif
 //

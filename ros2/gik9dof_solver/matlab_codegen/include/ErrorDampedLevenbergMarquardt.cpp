@@ -2,15 +2,16 @@
 // File: ErrorDampedLevenbergMarquardt.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 // Include Files
 #include "ErrorDampedLevenbergMarquardt.h"
 #include "GIKProblem.h"
+#include "GIKSolver.h"
 #include "SystemTimeProvider.h"
 #include "gik9dof_codegen_inuse_solveGIKStepWrapper_data.h"
-#include "gik9dof_codegen_inuse_solveGIKStepWrapper_internal_types.h"
+#include "gik9dof_codegen_inuse_solveGIKStepWrapper_types1.h"
 #include "ixfun.h"
 #include "mldivide.h"
 #include "norm.h"
@@ -21,36 +22,41 @@
 #include "coder_posix_time.h"
 #include <cmath>
 #include <cstring>
-#include <emmintrin.h>
 
 // Function Declarations
-static void binary_expand_op_3(const coder::array<double, 2U> &in1, double in2,
-                               const coder::array<double, 2U> &in3,
-                               coder::array<double, 1U> &in4);
+namespace gik9dof {
+static void binary_expand_op_3(const ::coder::array<double, 2U> &in1,
+                               double in2,
+                               const ::coder::array<double, 2U> &in3,
+                               ::coder::array<double, 1U> &in4);
 
-static void minus(coder::array<double, 1U> &in1,
-                  const coder::array<double, 1U> &in2);
+static void minus(::coder::array<double, 1U> &in1,
+                  const ::coder::array<double, 1U> &in2);
 
-static void plus(coder::array<double, 1U> &in1,
-                 const coder::array<double, 1U> &in2);
+static void plus(::coder::array<double, 1U> &in1,
+                 const ::coder::array<double, 1U> &in2);
 
-static void plus(coder::array<double, 1U> &in1,
-                 const coder::array<double, 1U> &in2,
-                 const coder::array<double, 1U> &in3);
+static void plus(::coder::array<double, 1U> &in1,
+                 const ::coder::array<double, 1U> &in2,
+                 const ::coder::array<double, 1U> &in3);
+
+} // namespace gik9dof
 
 // Function Definitions
 //
-// Arguments    : const coder::array<double, 2U> &in1
+// Arguments    : const ::coder::array<double, 2U> &in1
 //                double in2
-//                const coder::array<double, 2U> &in3
-//                coder::array<double, 1U> &in4
+//                const ::coder::array<double, 2U> &in3
+//                ::coder::array<double, 1U> &in4
 // Return Type  : void
 //
-static void binary_expand_op_3(const coder::array<double, 2U> &in1, double in2,
-                               const coder::array<double, 2U> &in3,
-                               coder::array<double, 1U> &in4)
+namespace gik9dof {
+static void binary_expand_op_3(const ::coder::array<double, 2U> &in1,
+                               double in2,
+                               const ::coder::array<double, 2U> &in3,
+                               ::coder::array<double, 1U> &in4)
 {
-  coder::array<double, 2U> b_in1;
+  ::coder::array<double, 2U> b_in1;
   int aux_0_1;
   int aux_1_1;
   int b_loop_ub;
@@ -89,14 +95,14 @@ static void binary_expand_op_3(const coder::array<double, 2U> &in1, double in2,
 }
 
 //
-// Arguments    : coder::array<double, 1U> &in1
-//                const coder::array<double, 1U> &in2
+// Arguments    : ::coder::array<double, 1U> &in1
+//                const ::coder::array<double, 1U> &in2
 // Return Type  : void
 //
-static void minus(coder::array<double, 1U> &in1,
-                  const coder::array<double, 1U> &in2)
+static void minus(::coder::array<double, 1U> &in1,
+                  const ::coder::array<double, 1U> &in2)
 {
-  coder::array<double, 1U> b_in2;
+  ::coder::array<double, 1U> b_in2;
   int loop_ub;
   int stride_0_0;
   int stride_1_0;
@@ -118,14 +124,14 @@ static void minus(coder::array<double, 1U> &in1,
 }
 
 //
-// Arguments    : coder::array<double, 1U> &in1
-//                const coder::array<double, 1U> &in2
+// Arguments    : ::coder::array<double, 1U> &in1
+//                const ::coder::array<double, 1U> &in2
 // Return Type  : void
 //
-static void plus(coder::array<double, 1U> &in1,
-                 const coder::array<double, 1U> &in2)
+static void plus(::coder::array<double, 1U> &in1,
+                 const ::coder::array<double, 1U> &in2)
 {
-  coder::array<double, 1U> b_in1;
+  ::coder::array<double, 1U> b_in1;
   int loop_ub;
   int stride_0_0;
   int stride_1_0;
@@ -147,14 +153,14 @@ static void plus(coder::array<double, 1U> &in1,
 }
 
 //
-// Arguments    : coder::array<double, 1U> &in1
-//                const coder::array<double, 1U> &in2
-//                const coder::array<double, 1U> &in3
+// Arguments    : ::coder::array<double, 1U> &in1
+//                const ::coder::array<double, 1U> &in2
+//                const ::coder::array<double, 1U> &in3
 // Return Type  : void
 //
-static void plus(coder::array<double, 1U> &in1,
-                 const coder::array<double, 1U> &in2,
-                 const coder::array<double, 1U> &in3)
+static void plus(::coder::array<double, 1U> &in1,
+                 const ::coder::array<double, 1U> &in2,
+                 const ::coder::array<double, 1U> &in3)
 {
   int loop_ub;
   int stride_0_0;
@@ -173,28 +179,40 @@ static void plus(coder::array<double, 1U> &in1,
 }
 
 //
-// Arguments    : char params_Name[18]
-//                double &params_MaxTime
-//                double &params_GradientTolerance
-//                double &params_SolutionTolerance
-//                boolean_T &params_ConstraintsOn
-//                boolean_T &params_RandomRestart
-//                double &params_StepTolerance
-//                double &params_ErrorChangeTolerance
-//                double &params_DampingBias
-//                boolean_T &params_UseErrorDamping
-// Return Type  : double
+// Arguments    : void
+// Return Type  : ErrorDampedLevenbergMarquardt
 //
 namespace coder {
 namespace robotics {
 namespace core {
 namespace internal {
+ErrorDampedLevenbergMarquardt::ErrorDampedLevenbergMarquardt() = default;
+
+//
+// Arguments    : void
+// Return Type  : void
+//
+ErrorDampedLevenbergMarquardt::~ErrorDampedLevenbergMarquardt() = default;
+
+//
+// Arguments    : char params_Name[18]
+//                double &params_MaxTime
+//                double &params_GradientTolerance
+//                double &params_SolutionTolerance
+//                bool &params_ConstraintsOn
+//                bool &params_RandomRestart
+//                double &params_StepTolerance
+//                double &params_ErrorChangeTolerance
+//                double &params_DampingBias
+//                bool &params_UseErrorDamping
+// Return Type  : double
+//
 double ErrorDampedLevenbergMarquardt::getSolverParams(
     char params_Name[18], double &params_MaxTime,
     double &params_GradientTolerance, double &params_SolutionTolerance,
-    boolean_T &params_ConstraintsOn, boolean_T &params_RandomRestart,
+    bool &params_ConstraintsOn, bool &params_RandomRestart,
     double &params_StepTolerance, double &params_ErrorChangeTolerance,
-    double &params_DampingBias, boolean_T &params_UseErrorDamping) const
+    double &params_DampingBias, bool &params_UseErrorDamping) const
 {
   double params_MaxNumIteration;
   for (int i{0}; i < 18; i++) {
@@ -214,38 +232,40 @@ double ErrorDampedLevenbergMarquardt::getSolverParams(
 }
 
 //
-// Arguments    : array<double, 1U> &xSol
+// Arguments    : GIKSolver *aInstancePtr
+//                ::coder::array<double, 1U> &xSol
 //                double &en
 //                double &iter
 // Return Type  : NLPSolverExitFlags
 //
 NLPSolverExitFlags
-ErrorDampedLevenbergMarquardt::solveInternal(array<double, 1U> &xSol,
+ErrorDampedLevenbergMarquardt::solveInternal(GIKSolver *aInstancePtr,
+                                             ::coder::array<double, 1U> &xSol,
                                              double &en, double &iter)
 {
   manip::internal::GIKProblem *problem;
-  array<double, 2U> A;
-  array<double, 2U> C;
-  array<double, 2U> H0;
-  array<double, 2U> Jac;
-  array<double, 2U> W;
-  array<double, 2U> b_W;
-  array<double, 2U> b_problem;
-  array<double, 2U> d_problem;
-  array<double, 2U> e_problem;
-  array<double, 2U> f_problem;
-  array<double, 2U> r2;
-  array<double, 2U> r3;
-  array<double, 1U> a__1;
-  array<double, 1U> c_problem;
-  array<double, 1U> c_x;
-  array<double, 1U> evprev;
-  array<double, 1U> f;
-  array<double, 1U> grad;
-  array<double, 1U> step;
-  array<double, 1U> x;
-  array<double, 1U> xprev;
-  array<boolean_T, 1U> b_x;
+  ::coder::array<double, 2U> A;
+  ::coder::array<double, 2U> C;
+  ::coder::array<double, 2U> H0;
+  ::coder::array<double, 2U> Jac;
+  ::coder::array<double, 2U> W;
+  ::coder::array<double, 2U> b_W;
+  ::coder::array<double, 2U> b_problem;
+  ::coder::array<double, 2U> d_problem;
+  ::coder::array<double, 2U> e_problem;
+  ::coder::array<double, 2U> f_problem;
+  ::coder::array<double, 2U> r;
+  ::coder::array<double, 2U> r1;
+  ::coder::array<double, 1U> a__1;
+  ::coder::array<double, 1U> c_problem;
+  ::coder::array<double, 1U> c_x;
+  ::coder::array<double, 1U> evprev;
+  ::coder::array<double, 1U> f;
+  ::coder::array<double, 1U> grad;
+  ::coder::array<double, 1U> step;
+  ::coder::array<double, 1U> x;
+  ::coder::array<double, 1U> xprev;
+  ::coder::array<bool, 1U> b_x;
   double newcost;
   int b_i;
   int i;
@@ -258,7 +278,8 @@ ErrorDampedLevenbergMarquardt::solveInternal(array<double, 1U> &xSol,
   for (i = 0; i < loop_ub; i++) {
     x[i] = SeedInternal[i];
   }
-  TimeObjInternal.StartTime.tv_sec = tic(TimeObjInternal.StartTime.tv_nsec);
+  TimeObjInternal.StartTime.tv_sec =
+      tic(aInstancePtr, TimeObjInternal.StartTime.tv_nsec);
   xSol.set_size(n);
   xprev.set_size(n);
   for (i = 0; i < n; i++) {
@@ -280,38 +301,28 @@ ErrorDampedLevenbergMarquardt::solveInternal(array<double, 1U> &xSol,
   do {
     exitg1 = 0;
     if (b_i <= i - 1) {
-      __m128d r;
       double b_C;
-      int aoffset;
       int b_nc_tmp;
       int boffset;
       int i1;
+      int inner;
       int nc_tmp;
-      int scalarLB;
-      int vectorUB;
-      boolean_T flag;
+      bool flag;
       problem = ExtraArgs;
       problem->residuals(x, a__1, Jac);
       problem->get_WeightMatrix(W);
       problem->residuals(x, f);
       loop_ub = f.size(0);
       A.set_size(1, f.size(0));
-      scalarLB = (f.size(0) / 2) << 1;
-      vectorUB = scalarLB - 2;
-      for (i1 = 0; i1 <= vectorUB; i1 += 2) {
-        r = _mm_loadu_pd(&f[i1]);
-        _mm_storeu_pd(&A[i1], _mm_mul_pd(_mm_set1_pd(0.5), r));
-      }
-      for (i1 = scalarLB; i1 < loop_ub; i1++) {
+      for (i1 = 0; i1 < loop_ub; i1++) {
         A[i1] = 0.5 * f[i1];
       }
-      aoffset = A.size(1);
       nc_tmp = W.size(1);
       C.set_size(1, W.size(1));
       for (int j{0}; j < nc_tmp; j++) {
         boffset = j * W.size(0);
         C[j] = 0.0;
-        for (int k{0}; k < aoffset; k++) {
+        for (int k{0}; k < loop_ub; k++) {
           C[j] = C[j] + A[k] * W[boffset + k];
         }
       }
@@ -324,13 +335,13 @@ ErrorDampedLevenbergMarquardt::solveInternal(array<double, 1U> &xSol,
       problem = ExtraArgs;
       problem->get_WeightMatrix(b_W);
       problem->residuals(x, f, H0);
-      aoffset = f.size(0);
+      inner = f.size(0);
       nc_tmp = b_W.size(1);
       A.set_size(1, b_W.size(1));
       for (int j{0}; j < nc_tmp; j++) {
         boffset = j * b_W.size(0);
         A[j] = 0.0;
-        for (int k{0}; k < aoffset; k++) {
+        for (int k{0}; k < inner; k++) {
           A[j] = A[j] + f[k] * b_W[boffset + k];
         }
       }
@@ -360,46 +371,38 @@ ErrorDampedLevenbergMarquardt::solveInternal(array<double, 1U> &xSol,
         exitFlag = NLPSolverExitFlags::LocalMinimumFound;
         exitg1 = 1;
       } else {
-        __m128d r1;
-        boolean_T exitg2;
-        boolean_T guard1;
-        boolean_T guard2;
+        bool exitg2;
+        bool guard1;
+        bool guard2;
         guard1 = false;
         guard2 = false;
         if (static_cast<double>(b_i) + 1.0 > 1.0) {
           if (x.size(0) == xprev.size(0)) {
             xprev.set_size(x.size(0));
-            scalarLB = (x.size(0) / 2) << 1;
-            vectorUB = scalarLB - 2;
-            for (i1 = 0; i1 <= vectorUB; i1 += 2) {
-              r = _mm_loadu_pd(&x[i1]);
-              r1 = _mm_loadu_pd(&xprev[i1]);
-              _mm_storeu_pd(&xprev[i1], _mm_sub_pd(r, r1));
-            }
-            for (i1 = scalarLB; i1 < loop_ub; i1++) {
+            for (i1 = 0; i1 < loop_ub; i1++) {
               xprev[i1] = x[i1] - xprev[i1];
             }
           } else {
             minus(xprev, x);
           }
-          aoffset = xprev.size(0);
+          inner = xprev.size(0);
           f.set_size(xprev.size(0));
-          for (int k{0}; k < aoffset; k++) {
+          for (int k{0}; k < inner; k++) {
             f[k] = std::abs(xprev[k]);
           }
           b_x.set_size(xprev.size(0));
-          for (i1 = 0; i1 < aoffset; i1++) {
+          for (i1 = 0; i1 < inner; i1++) {
             b_x[i1] = (f[i1] < StepTolerance);
           }
           flag = true;
-          aoffset = 1;
+          inner = 1;
           exitg2 = false;
-          while ((!exitg2) && (aoffset <= b_x.size(0))) {
-            if (!b_x[aoffset - 1]) {
+          while ((!exitg2) && (inner <= b_x.size(0))) {
+            if (!b_x[inner - 1]) {
               flag = false;
               exitg2 = true;
             } else {
-              aoffset++;
+              inner++;
             }
           }
           if (flag) {
@@ -416,37 +419,30 @@ ErrorDampedLevenbergMarquardt::solveInternal(array<double, 1U> &xSol,
             if (a__1.size(0) == evprev.size(0)) {
               loop_ub = a__1.size(0);
               evprev.set_size(a__1.size(0));
-              scalarLB = (a__1.size(0) / 2) << 1;
-              vectorUB = scalarLB - 2;
-              for (i1 = 0; i1 <= vectorUB; i1 += 2) {
-                r = _mm_loadu_pd(&a__1[i1]);
-                r1 = _mm_loadu_pd(&evprev[i1]);
-                _mm_storeu_pd(&evprev[i1], _mm_sub_pd(r, r1));
-              }
-              for (i1 = scalarLB; i1 < loop_ub; i1++) {
+              for (i1 = 0; i1 < loop_ub; i1++) {
                 evprev[i1] = a__1[i1] - evprev[i1];
               }
             } else {
               minus(evprev, a__1);
             }
-            aoffset = evprev.size(0);
+            inner = evprev.size(0);
             f.set_size(evprev.size(0));
-            for (int k{0}; k < aoffset; k++) {
+            for (int k{0}; k < inner; k++) {
               f[k] = std::abs(evprev[k]);
             }
             b_x.set_size(evprev.size(0));
-            for (i1 = 0; i1 < aoffset; i1++) {
+            for (i1 = 0; i1 < inner; i1++) {
               b_x[i1] = (f[i1] < ErrorChangeTolerance);
             }
             flag = true;
-            aoffset = 1;
+            inner = 1;
             exitg2 = false;
-            while ((!exitg2) && (aoffset <= b_x.size(0))) {
-              if (!b_x[aoffset - 1]) {
+            while ((!exitg2) && (inner <= b_x.size(0))) {
+              if (!b_x[inner - 1]) {
                 flag = false;
                 exitg2 = true;
               } else {
-                aoffset++;
+                inner++;
               }
             }
             if (flag) {
@@ -460,7 +456,7 @@ ErrorDampedLevenbergMarquardt::solveInternal(array<double, 1U> &xSol,
           }
         }
         if (guard1) {
-          newcost = toc(TimeObjInternal.StartTime.tv_sec,
+          newcost = toc(aInstancePtr, TimeObjInternal.StartTime.tv_sec,
                         TimeObjInternal.StartTime.tv_nsec);
           flag = (newcost > MaxTimeInternal);
           if (flag) {
@@ -469,6 +465,7 @@ ErrorDampedLevenbergMarquardt::solveInternal(array<double, 1U> &xSol,
           } else {
             double bkj;
             double cc;
+            int aoffset;
             int coffset;
             int mc_tmp;
             loop_ub = a__1.size(0);
@@ -485,7 +482,7 @@ ErrorDampedLevenbergMarquardt::solveInternal(array<double, 1U> &xSol,
             cc = static_cast<double>(flag) * b_C;
             newcost = cc + DampingBias;
             mc_tmp = Jac.size(1);
-            aoffset = Jac.size(0);
+            inner = Jac.size(0);
             nc_tmp = W.size(1);
             b_W.set_size(Jac.size(1), W.size(1));
             for (int j{0}; j < nc_tmp; j++) {
@@ -494,7 +491,7 @@ ErrorDampedLevenbergMarquardt::solveInternal(array<double, 1U> &xSol,
               for (int c_i{0}; c_i < mc_tmp; c_i++) {
                 b_W[coffset + c_i] = 0.0;
               }
-              for (int k{0}; k < aoffset; k++) {
+              for (int k{0}; k < inner; k++) {
                 bkj = W[boffset + k];
                 for (int c_i{0}; c_i < mc_tmp; c_i++) {
                   i1 = coffset + c_i;
@@ -512,24 +509,15 @@ ErrorDampedLevenbergMarquardt::solveInternal(array<double, 1U> &xSol,
               for (int k{0}; k < nc_tmp; k++) {
                 aoffset = k * b_W.size(0);
                 bkj = Jac[boffset + k];
-                scalarLB = (mc_tmp / 2) << 1;
-                vectorUB = scalarLB - 2;
-                for (int c_i{0}; c_i <= vectorUB; c_i += 2) {
-                  r = _mm_loadu_pd(&b_W[aoffset + c_i]);
-                  i1 = coffset + c_i;
-                  r1 = _mm_loadu_pd(&H0[i1]);
-                  _mm_storeu_pd(
-                      &H0[i1], _mm_add_pd(r1, _mm_mul_pd(r, _mm_set1_pd(bkj))));
-                }
-                for (int c_i{scalarLB}; c_i < mc_tmp; c_i++) {
+                for (int c_i{0}; c_i < mc_tmp; c_i++) {
                   i1 = coffset + c_i;
                   H0[i1] = H0[i1] + b_W[aoffset + c_i] * bkj;
                 }
               }
             }
             b_W.set_size(n, n);
-            mc_tmp = n * n;
-            for (i1 = 0; i1 < mc_tmp; i1++) {
+            aoffset = n * n;
+            for (i1 = 0; i1 < aoffset; i1++) {
               b_W[i1] = 0.0;
             }
             if (n > 0) {
@@ -542,20 +530,9 @@ ErrorDampedLevenbergMarquardt::solveInternal(array<double, 1U> &xSol,
               step[i1] = grad[i1];
             }
             if ((H0.size(0) == b_W.size(0)) && (H0.size(1) == b_W.size(1))) {
-              Jac.set_size(H0.size(0), H0.size(1));
-              aoffset = H0.size(0) * H0.size(1);
-              scalarLB = (aoffset / 2) << 1;
-              vectorUB = scalarLB - 2;
-              for (i1 = 0; i1 <= vectorUB; i1 += 2) {
-                r = _mm_loadu_pd(&b_W[i1]);
-                r1 = _mm_loadu_pd(&H0[i1]);
-                _mm_storeu_pd(
-                    &Jac[i1],
-                    _mm_mul_pd(
-                        _mm_add_pd(r1, _mm_mul_pd(_mm_set1_pd(newcost), r)),
-                        _mm_set1_pd(-1.0)));
-              }
-              for (i1 = scalarLB; i1 < aoffset; i1++) {
+              Jac.set_size(mc_tmp, mc_tmp);
+              inner = H0.size(0) * H0.size(1);
+              for (i1 = 0; i1 < inner; i1++) {
                 Jac[i1] = -(H0[i1] + newcost * b_W[i1]);
               }
               mldivide(Jac, step);
@@ -564,14 +541,7 @@ ErrorDampedLevenbergMarquardt::solveInternal(array<double, 1U> &xSol,
             }
             if (x.size(0) == step.size(0)) {
               c_x.set_size(x.size(0));
-              scalarLB = (x.size(0) / 2) << 1;
-              vectorUB = scalarLB - 2;
-              for (i1 = 0; i1 <= vectorUB; i1 += 2) {
-                r = _mm_loadu_pd(&x[i1]);
-                r1 = _mm_loadu_pd(&step[i1]);
-                _mm_storeu_pd(&c_x[i1], _mm_add_pd(r, r1));
-              }
-              for (i1 = scalarLB; i1 < loop_ub; i1++) {
+              for (i1 = 0; i1 < loop_ub; i1++) {
                 c_x[i1] = x[i1] + step[i1];
               }
             } else {
@@ -583,22 +553,15 @@ ErrorDampedLevenbergMarquardt::solveInternal(array<double, 1U> &xSol,
             problem->residuals(c_x, f);
             loop_ub = f.size(0);
             A.set_size(1, f.size(0));
-            scalarLB = (f.size(0) / 2) << 1;
-            vectorUB = scalarLB - 2;
-            for (i1 = 0; i1 <= vectorUB; i1 += 2) {
-              r = _mm_loadu_pd(&f[i1]);
-              _mm_storeu_pd(&A[i1], _mm_mul_pd(_mm_set1_pd(0.5), r));
-            }
-            for (i1 = scalarLB; i1 < loop_ub; i1++) {
+            for (i1 = 0; i1 < loop_ub; i1++) {
               A[i1] = 0.5 * f[i1];
             }
-            aoffset = A.size(1);
             nc_tmp = W.size(1);
             C.set_size(1, W.size(1));
             for (int j{0}; j < nc_tmp; j++) {
               boffset = j * W.size(0);
               C[j] = 0.0;
-              for (int k{0}; k < aoffset; k++) {
+              for (int k{0}; k < loop_ub; k++) {
                 C[j] = C[j] + A[k] * W[boffset + k];
               }
             }
@@ -612,7 +575,7 @@ ErrorDampedLevenbergMarquardt::solveInternal(array<double, 1U> &xSol,
               bkj *= 2.5;
               newcost = cc + bkj * DampingBias;
               b_W.set_size(n, n);
-              for (i1 = 0; i1 < mc_tmp; i1++) {
+              for (i1 = 0; i1 < aoffset; i1++) {
                 b_W[i1] = 0.0;
               }
               if (n > 0) {
@@ -626,19 +589,8 @@ ErrorDampedLevenbergMarquardt::solveInternal(array<double, 1U> &xSol,
               }
               if ((H0.size(0) == b_W.size(0)) && (H0.size(1) == b_W.size(1))) {
                 Jac.set_size(H0.size(0), H0.size(1));
-                aoffset = H0.size(0) * H0.size(1);
-                scalarLB = (aoffset / 2) << 1;
-                vectorUB = scalarLB - 2;
-                for (i1 = 0; i1 <= vectorUB; i1 += 2) {
-                  r = _mm_loadu_pd(&b_W[i1]);
-                  r1 = _mm_loadu_pd(&H0[i1]);
-                  _mm_storeu_pd(
-                      &Jac[i1],
-                      _mm_mul_pd(
-                          _mm_add_pd(r1, _mm_mul_pd(_mm_set1_pd(newcost), r)),
-                          _mm_set1_pd(-1.0)));
-                }
-                for (i1 = scalarLB; i1 < aoffset; i1++) {
+                inner = H0.size(0) * H0.size(1);
+                for (i1 = 0; i1 < inner; i1++) {
                   Jac[i1] = -(H0[i1] + newcost * b_W[i1]);
                 }
                 mldivide(Jac, step);
@@ -648,14 +600,7 @@ ErrorDampedLevenbergMarquardt::solveInternal(array<double, 1U> &xSol,
               if (x.size(0) == step.size(0)) {
                 loop_ub = x.size(0);
                 c_x.set_size(x.size(0));
-                scalarLB = (x.size(0) / 2) << 1;
-                vectorUB = scalarLB - 2;
-                for (i1 = 0; i1 <= vectorUB; i1 += 2) {
-                  r = _mm_loadu_pd(&x[i1]);
-                  r1 = _mm_loadu_pd(&step[i1]);
-                  _mm_storeu_pd(&c_x[i1], _mm_add_pd(r, r1));
-                }
-                for (i1 = scalarLB; i1 < loop_ub; i1++) {
+                for (i1 = 0; i1 < loop_ub; i1++) {
                   c_x[i1] = x[i1] + step[i1];
                 }
               } else {
@@ -667,22 +612,15 @@ ErrorDampedLevenbergMarquardt::solveInternal(array<double, 1U> &xSol,
               problem->residuals(c_x, f);
               loop_ub = f.size(0);
               A.set_size(1, f.size(0));
-              scalarLB = (f.size(0) / 2) << 1;
-              vectorUB = scalarLB - 2;
-              for (i1 = 0; i1 <= vectorUB; i1 += 2) {
-                r = _mm_loadu_pd(&f[i1]);
-                _mm_storeu_pd(&A[i1], _mm_mul_pd(_mm_set1_pd(0.5), r));
-              }
-              for (i1 = scalarLB; i1 < loop_ub; i1++) {
+              for (i1 = 0; i1 < loop_ub; i1++) {
                 A[i1] = 0.5 * f[i1];
               }
-              aoffset = A.size(1);
               nc_tmp = W.size(1);
               C.set_size(1, W.size(1));
               for (int j{0}; j < nc_tmp; j++) {
                 boffset = j * W.size(0);
                 C[j] = 0.0;
-                for (int k{0}; k < aoffset; k++) {
+                for (int k{0}; k < loop_ub; k++) {
                   C[j] = C[j] + A[k] * W[boffset + k];
                 }
               }
@@ -694,14 +632,7 @@ ErrorDampedLevenbergMarquardt::solveInternal(array<double, 1U> &xSol,
             }
             if (x.size(0) == step.size(0)) {
               loop_ub = x.size(0);
-              scalarLB = (x.size(0) / 2) << 1;
-              vectorUB = scalarLB - 2;
-              for (i1 = 0; i1 <= vectorUB; i1 += 2) {
-                r = _mm_loadu_pd(&x[i1]);
-                r1 = _mm_loadu_pd(&step[i1]);
-                _mm_storeu_pd(&x[i1], _mm_add_pd(r, r1));
-              }
-              for (i1 = scalarLB; i1 < loop_ub; i1++) {
+              for (i1 = 0; i1 < loop_ub; i1++) {
                 x[i1] = x[i1] + step[i1];
               }
             } else {
@@ -710,44 +641,44 @@ ErrorDampedLevenbergMarquardt::solveInternal(array<double, 1U> &xSol,
             if (ConstraintsOn) {
               problem = ExtraArgs;
               loop_ub = problem->DesignVariableBoundsInternal.size(0);
-              r2.set_size(loop_ub, 2);
+              r.set_size(loop_ub, 2);
+              inner = problem->DesignVariableBoundsInternal.size(0) << 1;
+              for (i1 = 0; i1 < inner; i1++) {
+                r[i1] = problem->DesignVariableBoundsInternal[i1];
+              }
+              inner = problem->DesignVariableBoundsInternal.size(0);
+              r1.set_size(inner, 2);
               aoffset = problem->DesignVariableBoundsInternal.size(0) << 1;
               for (i1 = 0; i1 < aoffset; i1++) {
-                r2[i1] = problem->DesignVariableBoundsInternal[i1];
+                r1[i1] = problem->DesignVariableBoundsInternal[i1];
               }
-              aoffset = problem->DesignVariableBoundsInternal.size(0);
-              r3.set_size(aoffset, 2);
-              mc_tmp = problem->DesignVariableBoundsInternal.size(0) << 1;
-              for (i1 = 0; i1 < mc_tmp; i1++) {
-                r3[i1] = problem->DesignVariableBoundsInternal[i1];
-              }
-              if (r3.size(0) == x.size(0)) {
-                a__1.set_size(aoffset);
-                for (i1 = 0; i1 < aoffset; i1++) {
-                  newcost = r3[i1];
+              if (r1.size(0) == x.size(0)) {
+                a__1.set_size(inner);
+                for (i1 = 0; i1 < inner; i1++) {
+                  newcost = r1[i1];
                   bkj = x[i1];
                   a__1[i1] = std::fmax(newcost, bkj);
                 }
               } else {
-                f.set_size(aoffset);
-                for (i1 = 0; i1 < aoffset; i1++) {
-                  f[i1] = r3[i1];
+                f.set_size(inner);
+                for (i1 = 0; i1 < inner; i1++) {
+                  f[i1] = r1[i1];
                 }
-                ::coder::internal::expand_max(f, x, a__1);
+                ::gik9dof::coder::internal::expand_max(f, x, a__1);
               }
-              if (r2.size(0) == a__1.size(0)) {
+              if (r.size(0) == a__1.size(0)) {
                 x.set_size(loop_ub);
                 for (i1 = 0; i1 < loop_ub; i1++) {
-                  newcost = r2[i1 + r2.size(0)];
+                  newcost = r[i1 + r.size(0)];
                   bkj = a__1[i1];
                   x[i1] = std::fmin(newcost, bkj);
                 }
               } else {
                 f.set_size(loop_ub);
                 for (i1 = 0; i1 < loop_ub; i1++) {
-                  f[i1] = r2[i1 + r2.size(0)];
+                  f[i1] = r[i1 + r.size(0)];
                 }
-                ::coder::internal::expand_min(f, a__1, x);
+                ::gik9dof::coder::internal::expand_min(f, a__1, x);
               }
             }
             b_i++;
@@ -774,6 +705,7 @@ ErrorDampedLevenbergMarquardt::solveInternal(array<double, 1U> &xSol,
 } // namespace core
 } // namespace robotics
 } // namespace coder
+} // namespace gik9dof
 
 //
 // File trailer for ErrorDampedLevenbergMarquardt.cpp

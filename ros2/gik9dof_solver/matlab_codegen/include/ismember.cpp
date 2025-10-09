@@ -2,7 +2,7 @@
 // File: ismember.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 // Include Files
@@ -16,26 +16,31 @@
 #include <cstring>
 
 // Function Declarations
+namespace gik9dof {
 namespace coder {
-static int bsearchni(int k, const array<double, 1U> &x, const double s[22]);
+static int bsearchni(int k, const ::coder::array<double, 1U> &x,
+                     const double s[22]);
 
 }
+} // namespace gik9dof
 
 // Function Definitions
 //
 // Arguments    : int k
-//                const array<double, 1U> &x
+//                const ::coder::array<double, 1U> &x
 //                const double s[22]
 // Return Type  : int
 //
+namespace gik9dof {
 namespace coder {
-static int bsearchni(int k, const array<double, 1U> &x, const double s[22])
+static int bsearchni(int k, const ::coder::array<double, 1U> &x,
+                     const double s[22])
 {
   double b_x;
   int idx;
   int ihi;
   int ilo;
-  boolean_T exitg1;
+  bool exitg1;
   b_x = x[k - 1];
   idx = 0;
   ilo = 1;
@@ -52,7 +57,7 @@ static int bsearchni(int k, const array<double, 1U> &x, const double s[22])
       idx = imid + 1;
       exitg1 = true;
     } else {
-      boolean_T p;
+      bool p;
       if (std::isnan(s[imid])) {
         p = !std::isnan(b_x);
       } else if (std::isnan(b_x)) {
@@ -78,14 +83,14 @@ static int bsearchni(int k, const array<double, 1U> &x, const double s[22])
 }
 
 //
-// Arguments    : const array<double, 1U> &a
+// Arguments    : const ::coder::array<double, 1U> &a
 //                const double s[22]
-//                array<boolean_T, 1U> &tf
-//                array<int, 1U> &loc
+//                ::coder::array<bool, 1U> &tf
+//                ::coder::array<int, 1U> &loc
 // Return Type  : void
 //
-void isMember(const array<double, 1U> &a, const double s[22],
-              array<boolean_T, 1U> &tf, array<int, 1U> &loc)
+void isMember(const ::coder::array<double, 1U> &a, const double s[22],
+              ::coder::array<bool, 1U> &tf, ::coder::array<int, 1U> &loc)
 {
   double ss[22];
   int k;
@@ -100,7 +105,7 @@ void isMember(const array<double, 1U> &a, const double s[22],
   }
   if (a.size(0) <= 9) {
     for (int j{0}; j < na_tmp; j++) {
-      boolean_T exitg1;
+      bool exitg1;
       k = 0;
       exitg1 = false;
       while ((!exitg1) && (k < 22)) {
@@ -114,8 +119,8 @@ void isMember(const array<double, 1U> &a, const double s[22],
       }
     }
   } else {
-    boolean_T exitg1;
-    boolean_T y;
+    bool exitg1;
+    bool y;
     y = true;
     k = 0;
     exitg1 = false;
@@ -159,6 +164,7 @@ void isMember(const array<double, 1U> &a, const double s[22],
 }
 
 } // namespace coder
+} // namespace gik9dof
 
 //
 // File trailer for ismember.cpp

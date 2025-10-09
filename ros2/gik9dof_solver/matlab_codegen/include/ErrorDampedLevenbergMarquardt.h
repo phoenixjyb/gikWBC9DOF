@@ -2,7 +2,7 @@
 // File: ErrorDampedLevenbergMarquardt.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 #ifndef ERRORDAMPEDLEVENBERGMARQUARDT_H
@@ -10,13 +10,14 @@
 
 // Include Files
 #include "SystemTimeProvider.h"
-#include "gik9dof_codegen_inuse_solveGIKStepWrapper_internal_types.h"
+#include "gik9dof_codegen_inuse_solveGIKStepWrapper_types1.h"
 #include "rtwtypes.h"
 #include "coder_array.h"
 #include <cstddef>
 #include <cstdlib>
 
 // Type Declarations
+namespace gik9dof {
 namespace coder {
 namespace robotics {
 namespace manip {
@@ -27,31 +28,40 @@ class GIKProblem;
 } // namespace manip
 } // namespace robotics
 } // namespace coder
+class GIKSolver;
+
+} // namespace gik9dof
 
 // Type Definitions
+namespace gik9dof {
 namespace coder {
 namespace robotics {
 namespace core {
 namespace internal {
 class ErrorDampedLevenbergMarquardt {
 public:
-  double getSolverParams(
-      char params_Name[18], double &params_MaxTime,
-      double &params_GradientTolerance, double &params_SolutionTolerance,
-      boolean_T &params_ConstraintsOn, boolean_T &params_RandomRestart,
-      double &params_StepTolerance, double &params_ErrorChangeTolerance,
-      double &params_DampingBias, boolean_T &params_UseErrorDamping) const;
-  NLPSolverExitFlags solveInternal(array<double, 1U> &xSol, double &en,
+  double getSolverParams(char params_Name[18], double &params_MaxTime,
+                         double &params_GradientTolerance,
+                         double &params_SolutionTolerance,
+                         bool &params_ConstraintsOn, bool &params_RandomRestart,
+                         double &params_StepTolerance,
+                         double &params_ErrorChangeTolerance,
+                         double &params_DampingBias,
+                         bool &params_UseErrorDamping) const;
+  NLPSolverExitFlags solveInternal(GIKSolver *aInstancePtr,
+                                   ::coder::array<double, 1U> &xSol, double &en,
                                    double &iter);
-  boolean_T matlabCodegenIsDeleted;
+  ErrorDampedLevenbergMarquardt();
+  ~ErrorDampedLevenbergMarquardt();
+  bool matlabCodegenIsDeleted;
   char Name[18];
-  boolean_T ConstraintsOn;
+  bool ConstraintsOn;
   double SolutionTolerance;
-  boolean_T RandomRestart;
+  bool RandomRestart;
   manip::internal::GIKProblem *ExtraArgs;
   double MaxNumIteration;
   double MaxTime;
-  array<double, 1U> SeedInternal;
+  ::coder::array<double, 1U> SeedInternal;
   double MaxTimeInternal;
   double MaxNumIterationInternal;
   double StepTolerance;
@@ -59,7 +69,7 @@ public:
   double GradientTolerance;
   double ErrorChangeTolerance;
   double DampingBias;
-  boolean_T UseErrorDamping;
+  bool UseErrorDamping;
   SystemTimeProvider TimeObjInternal;
 };
 
@@ -67,6 +77,7 @@ public:
 } // namespace core
 } // namespace robotics
 } // namespace coder
+} // namespace gik9dof
 
 #endif
 //

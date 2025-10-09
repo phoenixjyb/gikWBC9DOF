@@ -2,7 +2,7 @@
 // File: sortIdx.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 // Include Files
@@ -12,16 +12,19 @@
 #include <cstring>
 
 // Function Declarations
+namespace gik9dof {
 namespace coder {
 namespace internal {
 static void b_merge(int idx_data[], double x_data[], int offset, int np, int nq,
                     int iwork_data[], double xwork_data[]);
 
-static void merge(array<int, 1U> &idx, array<double, 1U> &x, int offset, int np,
-                  int nq, array<int, 1U> &iwork, array<double, 1U> &xwork);
+static void merge(::coder::array<int, 1U> &idx, ::coder::array<double, 1U> &x,
+                  int offset, int np, int nq, ::coder::array<int, 1U> &iwork,
+                  ::coder::array<double, 1U> &xwork);
 
 } // namespace internal
 } // namespace coder
+} // namespace gik9dof
 
 // Function Definitions
 //
@@ -34,6 +37,7 @@ static void merge(array<int, 1U> &idx, array<double, 1U> &x, int offset, int np,
 //                double xwork_data[]
 // Return Type  : void
 //
+namespace gik9dof {
 namespace coder {
 namespace internal {
 static void b_merge(int idx_data[], double x_data[], int offset, int np, int nq,
@@ -85,17 +89,18 @@ static void b_merge(int idx_data[], double x_data[], int offset, int np, int nq,
 }
 
 //
-// Arguments    : array<int, 1U> &idx
-//                array<double, 1U> &x
+// Arguments    : ::coder::array<int, 1U> &idx
+//                ::coder::array<double, 1U> &x
 //                int offset
 //                int np
 //                int nq
-//                array<int, 1U> &iwork
-//                array<double, 1U> &xwork
+//                ::coder::array<int, 1U> &iwork
+//                ::coder::array<double, 1U> &xwork
 // Return Type  : void
 //
-static void merge(array<int, 1U> &idx, array<double, 1U> &x, int offset, int np,
-                  int nq, array<int, 1U> &iwork, array<double, 1U> &xwork)
+static void merge(::coder::array<int, 1U> &idx, ::coder::array<double, 1U> &x,
+                  int offset, int np, int nq, ::coder::array<int, 1U> &iwork,
+                  ::coder::array<double, 1U> &xwork)
 {
   if (nq != 0) {
     int iout;
@@ -243,18 +248,19 @@ void merge_block(int idx_data[], double x_data[], int offset, int n,
 }
 
 //
-// Arguments    : array<int, 1U> &idx
-//                array<double, 1U> &x
+// Arguments    : ::coder::array<int, 1U> &idx
+//                ::coder::array<double, 1U> &x
 //                int offset
 //                int n
 //                int preSortLevel
-//                array<int, 1U> &iwork
-//                array<double, 1U> &xwork
+//                ::coder::array<int, 1U> &iwork
+//                ::coder::array<double, 1U> &xwork
 // Return Type  : void
 //
-void merge_block(array<int, 1U> &idx, array<double, 1U> &x, int offset, int n,
-                 int preSortLevel, array<int, 1U> &iwork,
-                 array<double, 1U> &xwork)
+void merge_block(::coder::array<int, 1U> &idx, ::coder::array<double, 1U> &x,
+                 int offset, int n, int preSortLevel,
+                 ::coder::array<int, 1U> &iwork,
+                 ::coder::array<double, 1U> &xwork)
 {
   int bLen;
   int nPairs;
@@ -285,6 +291,7 @@ void merge_block(array<int, 1U> &idx, array<double, 1U> &x, int offset, int n,
 
 } // namespace internal
 } // namespace coder
+} // namespace gik9dof
 
 //
 // File trailer for sortIdx.cpp

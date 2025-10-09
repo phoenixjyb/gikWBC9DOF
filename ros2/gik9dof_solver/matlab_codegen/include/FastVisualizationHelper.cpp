@@ -2,12 +2,13 @@
 // File: FastVisualizationHelper.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 06-Oct-2025 17:03:24
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 // Include Files
 #include "FastVisualizationHelper.h"
 #include "rt_nonfinite.h"
+#include <cstring>
 
 // Function Definitions
 //

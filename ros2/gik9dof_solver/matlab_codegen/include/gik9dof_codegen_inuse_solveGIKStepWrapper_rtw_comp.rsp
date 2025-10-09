@@ -1,0 +1,6 @@
+﻿-IH:\wSpace\codegenGIKsample\Trial\gikWBC9DOF\codegen\arm64_realtime
+-IH:\wSpace\codegenGIKsample\Trial\gikWBC9DOF\scripts\codegen
+-I"D:\Program Files\MATLAB\R2024b\extern\include\shared_robotics"
+-I"D:\Program Files\MATLAB\R2024b\toolbox\shared\robotics\externalDependency\libccd\src"
+-I"D:\Program Files\MATLAB\R2024b\toolbox\shared\robotics\externalDependency\libccd\src\ccd"
+-I"D:\Program Files\MATLAB\R2024b\extern\include"

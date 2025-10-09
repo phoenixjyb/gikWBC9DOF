@@ -2,24 +2,29 @@
 // File: rand.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 // Include Files
 #include "rand.h"
+#include "GIKSolver.h"
 #include "eml_rand_mt19937ar.h"
-#include "gik9dof_codegen_inuse_solveGIKStepWrapper_data.h"
+#include "gik9dof_codegen_inuse_solveGIKStepWrapper_types.h"
 #include "rt_nonfinite.h"
 #include <cstring>
 
 // Function Definitions
 //
-// Arguments    : double r[5]
+// Arguments    : GIKSolver *aInstancePtr
+//                double r[5]
 // Return Type  : void
 //
+namespace gik9dof {
 namespace coder {
-void b_rand(double r[5])
+void b_rand(GIKSolver *aInstancePtr, double r[5])
 {
+  gik9dof_codegen_inuse_solveGIKStepWrapperStackData *localSD;
+  localSD = aInstancePtr->getStackData();
   for (int k{0}; k < 5; k++) {
     unsigned int u[2];
     // ========================= COPYRIGHT NOTICE ============================
@@ -61,7 +66,7 @@ void b_rand(double r[5])
     //
     // =============================   END   =================================
     do {
-      internal::randfun::genrand_uint32_vector(state, u);
+      internal::randfun::genrand_uint32_vector(localSD->pd->state, u);
       u[0] >>= 5U;
       u[1] >>= 6U;
     } while ((u[0] == 0U) && (u[1] == 0U));
@@ -71,14 +76,17 @@ void b_rand(double r[5])
 }
 
 //
-// Arguments    : double varargin_1
+// Arguments    : GIKSolver *aInstancePtr
+//                double varargin_1
 //                double r_data[]
 // Return Type  : int
 //
-int b_rand(double varargin_1, double r_data[])
+int b_rand(GIKSolver *aInstancePtr, double varargin_1, double r_data[])
 {
+  gik9dof_codegen_inuse_solveGIKStepWrapperStackData *localSD;
   int i;
   int r_size;
+  localSD = aInstancePtr->getStackData();
   i = static_cast<int>(varargin_1);
   r_size = static_cast<int>(varargin_1);
   for (int k{0}; k < i; k++) {
@@ -122,7 +130,7 @@ int b_rand(double varargin_1, double r_data[])
     //
     // =============================   END   =================================
     do {
-      internal::randfun::genrand_uint32_vector(state, u);
+      internal::randfun::genrand_uint32_vector(localSD->pd->state, u);
       u[0] >>= 5U;
       u[1] >>= 6U;
     } while ((u[0] == 0U) && (u[1] == 0U));
@@ -134,11 +142,14 @@ int b_rand(double varargin_1, double r_data[])
 }
 
 //
-// Arguments    : double r[3]
+// Arguments    : GIKSolver *aInstancePtr
+//                double r[3]
 // Return Type  : void
 //
-void c_rand(double r[3])
+void c_rand(GIKSolver *aInstancePtr, double r[3])
 {
+  gik9dof_codegen_inuse_solveGIKStepWrapperStackData *localSD;
+  localSD = aInstancePtr->getStackData();
   for (int k{0}; k < 3; k++) {
     unsigned int u[2];
     // ========================= COPYRIGHT NOTICE ============================
@@ -180,7 +191,7 @@ void c_rand(double r[3])
     //
     // =============================   END   =================================
     do {
-      internal::randfun::genrand_uint32_vector(state, u);
+      internal::randfun::genrand_uint32_vector(localSD->pd->state, u);
       u[0] >>= 5U;
       u[1] >>= 6U;
     } while ((u[0] == 0U) && (u[1] == 0U));
@@ -190,6 +201,7 @@ void c_rand(double r[3])
 }
 
 } // namespace coder
+} // namespace gik9dof
 
 //
 // File trailer for rand.cpp

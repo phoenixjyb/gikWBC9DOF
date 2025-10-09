@@ -2,7 +2,7 @@
 // File: xrotg.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 // Include Files
@@ -18,6 +18,7 @@
 //                double &s
 // Return Type  : double
 //
+namespace gik9dof {
 namespace coder {
 namespace internal {
 namespace blas {
@@ -65,6 +66,7 @@ double xrotg(double &a, double &b, double &s)
 } // namespace blas
 } // namespace internal
 } // namespace coder
+} // namespace gik9dof
 
 //
 // File trailer for xrotg.cpp

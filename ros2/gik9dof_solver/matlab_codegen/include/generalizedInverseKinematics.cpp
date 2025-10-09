@@ -2,7 +2,7 @@
 // File: generalizedInverseKinematics.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 // Include Files
@@ -10,20 +10,19 @@
 #include "CharacterVector.h"
 #include "CollisionGeometry.h"
 #include "CollisionSet.h"
-#include "DistanceBoundsConstraint.h"
 #include "ErrorDampedLevenbergMarquardt.h"
 #include "GIKProblem.h"
-#include "JointPositionBounds.h"
-#include "PoseTarget.h"
+#include "GIKSolver.h"
 #include "RigidBody.h"
 #include "RigidBodyTree.h"
 #include "SystemTimeProvider.h"
 #include "constraintDistanceBounds.h"
 #include "constraintJointBounds.h"
 #include "constraintPoseTarget.h"
+#include "find.h"
 #include "gik9dof_codegen_inuse_solveGIKStepWrapper_data.h"
-#include "gik9dof_codegen_inuse_solveGIKStepWrapper_internal_types.h"
 #include "gik9dof_codegen_inuse_solveGIKStepWrapper_types.h"
+#include "gik9dof_codegen_inuse_solveGIKStepWrapper_types1.h"
 #include "ixfun.h"
 #include "rigidBodyJoint.h"
 #include "rigidBodyTree1.h"
@@ -39,14 +38,18 @@
 #include <cstring>
 
 // Variable Definitions
+namespace gik9dof {
 static const char cv13[18]{'L', 'e', 'v', 'e', 'n', 'b', 'e', 'r', 'g',
                            'M', 'a', 'r', 'q', 'u', 'a', 'r', 'd', 't'};
+
+}
 
 // Function Definitions
 //
 // Arguments    : void
 // Return Type  : generalizedInverseKinematics
 //
+namespace gik9dof {
 namespace coder {
 generalizedInverseKinematics::generalizedInverseKinematics()
 {
@@ -63,11 +66,13 @@ generalizedInverseKinematics::~generalizedInverseKinematics()
 }
 
 //
-// Arguments    : rigidBodyTree &varargin_2
+// Arguments    : GIKSolver *aInstancePtr
+//                rigidBodyTree &varargin_2
 // Return Type  : generalizedInverseKinematics *
 //
 generalizedInverseKinematics *
-generalizedInverseKinematics::init(rigidBodyTree &varargin_2)
+generalizedInverseKinematics::init(GIKSolver *aInstancePtr,
+                                   rigidBodyTree &varargin_2)
 {
   void *copyGeometryInternal;
   generalizedInverseKinematics *obj;
@@ -79,7 +84,8 @@ generalizedInverseKinematics::init(rigidBodyTree &varargin_2)
   robotics::manip::internal::CollisionSet *newObj;
   robotics::manip::internal::RigidBody *body;
   robotics::manip::internal::RigidBody *parent;
-  robotics::manip::internal::RigidBodyTree *newrobot;
+  robotics::manip::internal::b_RigidBodyTree *newrobot;
+  ::coder::array<char, 2U> b_obj_data;
   double bid;
   int obj_size[2];
   int loop_ub;
@@ -87,19 +93,18 @@ generalizedInverseKinematics::init(rigidBodyTree &varargin_2)
   obj = this;
   obj->EnforceJointLimits = true;
   obj->isInitialized = 0;
-  newrobot = obj->_pobj3.init();
+  newrobot = obj->_pobj3.init(aInstancePtr);
   b_obj = varargin_2.TreeInternal.Base.NameInternal;
   if (b_obj.Length < 1.0) {
     loop_ub = 0;
   } else {
     loop_ub = static_cast<int>(b_obj.Length);
   }
-  obj_size[0] = 1;
-  obj_size[1] = loop_ub;
   if (loop_ub - 1 >= 0) {
     ::std::copy(&b_obj.Vector[0], &b_obj.Vector[loop_ub], &obj_data[0]);
   }
-  bid = newrobot->findBodyIndexByName(obj_data, obj_size);
+  b_obj_data.set(&obj_data[0], 1, loop_ub);
+  bid = newrobot->findBodyIndexByName(b_obj_data);
   if ((!(bid == 0.0)) && (bid < 0.0)) {
     c_obj = newrobot->Base.NameInternal;
     c_obj.Length = loop_ub;
@@ -425,22 +430,21 @@ void generalizedInverseKinematics::matlabCodegenDestructor()
 //                double solverparams_MaxTime
 //                double solverparams_GradientTolerance
 //                double solverparams_SolutionTolerance
-//                boolean_T solverparams_EnforceJointLimits
-//                boolean_T solverparams_AllowRandomRestart
+//                bool solverparams_EnforceJointLimits
+//                bool solverparams_AllowRandomRestart
 //                double solverparams_StepTolerance
 //                double solverparams_ErrorChangeTolerance
 //                double solverparams_DampingBias
-//                boolean_T solverparams_UseErrorDamping
+//                bool solverparams_UseErrorDamping
 // Return Type  : void
 //
 void generalizedInverseKinematics::set_SolverParameters(
     double solverparams_MaxIterations, double solverparams_MaxTime,
     double solverparams_GradientTolerance,
-    double solverparams_SolutionTolerance,
-    boolean_T solverparams_EnforceJointLimits,
-    boolean_T solverparams_AllowRandomRestart,
-    double solverparams_StepTolerance, double solverparams_ErrorChangeTolerance,
-    double solverparams_DampingBias, boolean_T solverparams_UseErrorDamping)
+    double solverparams_SolutionTolerance, bool solverparams_EnforceJointLimits,
+    bool solverparams_AllowRandomRestart, double solverparams_StepTolerance,
+    double solverparams_ErrorChangeTolerance, double solverparams_DampingBias,
+    bool solverparams_UseErrorDamping)
 {
   robotics::core::internal::ErrorDampedLevenbergMarquardt *obj;
   double b_expl_temp;
@@ -451,9 +455,9 @@ void generalizedInverseKinematics::set_SolverParameters(
   double params_ErrorChangeTolerance;
   int ret;
   char expl_temp[18];
-  boolean_T e_expl_temp;
-  boolean_T f_expl_temp;
-  boolean_T params_UseErrorDamping;
+  bool e_expl_temp;
+  bool f_expl_temp;
+  bool params_UseErrorDamping;
   Solver->getSolverParams(expl_temp, b_expl_temp, c_expl_temp, d_expl_temp,
                           e_expl_temp, f_expl_temp, g_expl_temp,
                           params_ErrorChangeTolerance, params_DampingBias,
@@ -491,75 +495,69 @@ void generalizedInverseKinematics::set_SolverParameters(
 }
 
 //
-// Arguments    : const double varargin_1[9]
+// Arguments    : GIKSolver *aInstancePtr
+//                double varargin_1[9]
 //                const constraintPoseTarget &varargin_2
 //                const constraintJointBounds &varargin_3
-//                const constraintDistanceBounds *varargin_4
-//                const constraintDistanceBounds *varargin_5
-//                const constraintDistanceBounds *varargin_6
-//                const constraintDistanceBounds *varargin_7
-//                const constraintDistanceBounds *varargin_8
-//                const constraintDistanceBounds *varargin_9
-//                const constraintDistanceBounds *varargin_10
-//                const constraintDistanceBounds *varargin_11
-//                const constraintDistanceBounds *varargin_12
-//                const constraintDistanceBounds *varargin_13
-//                const constraintDistanceBounds *varargin_14
-//                const constraintDistanceBounds *varargin_15
-//                const constraintDistanceBounds *varargin_16
-//                const constraintDistanceBounds *varargin_17
-//                const constraintDistanceBounds *varargin_18
-//                const constraintDistanceBounds *varargin_19
-//                const constraintDistanceBounds *varargin_20
-//                const constraintDistanceBounds *varargin_21
-//                const constraintDistanceBounds *varargin_22
-//                const constraintDistanceBounds *varargin_23
-//                double varargout_1[9]
+//                constraintDistanceBounds *varargin_4
+//                constraintDistanceBounds *varargin_5
+//                constraintDistanceBounds *varargin_6
+//                constraintDistanceBounds *varargin_7
+//                constraintDistanceBounds *varargin_8
+//                constraintDistanceBounds *varargin_9
+//                constraintDistanceBounds *varargin_10
+//                constraintDistanceBounds *varargin_11
+//                constraintDistanceBounds *varargin_12
+//                constraintDistanceBounds *varargin_13
+//                constraintDistanceBounds *varargin_14
+//                constraintDistanceBounds *varargin_15
+//                constraintDistanceBounds *varargin_16
+//                constraintDistanceBounds *varargin_17
+//                constraintDistanceBounds *varargin_18
+//                constraintDistanceBounds *varargin_19
+//                constraintDistanceBounds *varargin_20
+//                constraintDistanceBounds *varargin_21
+//                constraintDistanceBounds *varargin_22
+//                constraintDistanceBounds *varargin_23
 //                struct0_T *varargout_2
 // Return Type  : void
 //
 void generalizedInverseKinematics::step(
-    const double varargin_1[9], const constraintPoseTarget &varargin_2,
+    GIKSolver *aInstancePtr, double varargin_1[9],
+    const constraintPoseTarget &varargin_2,
     const constraintJointBounds &varargin_3,
-    const constraintDistanceBounds *varargin_4,
-    const constraintDistanceBounds *varargin_5,
-    const constraintDistanceBounds *varargin_6,
-    const constraintDistanceBounds *varargin_7,
-    const constraintDistanceBounds *varargin_8,
-    const constraintDistanceBounds *varargin_9,
-    const constraintDistanceBounds *varargin_10,
-    const constraintDistanceBounds *varargin_11,
-    const constraintDistanceBounds *varargin_12,
-    const constraintDistanceBounds *varargin_13,
-    const constraintDistanceBounds *varargin_14,
-    const constraintDistanceBounds *varargin_15,
-    const constraintDistanceBounds *varargin_16,
-    const constraintDistanceBounds *varargin_17,
-    const constraintDistanceBounds *varargin_18,
-    const constraintDistanceBounds *varargin_19,
-    const constraintDistanceBounds *varargin_20,
-    const constraintDistanceBounds *varargin_21,
-    const constraintDistanceBounds *varargin_22,
-    const constraintDistanceBounds *varargin_23, double varargout_1[9],
-    struct0_T *varargout_2)
+    constraintDistanceBounds *varargin_4, constraintDistanceBounds *varargin_5,
+    constraintDistanceBounds *varargin_6, constraintDistanceBounds *varargin_7,
+    constraintDistanceBounds *varargin_8, constraintDistanceBounds *varargin_9,
+    constraintDistanceBounds *varargin_10,
+    constraintDistanceBounds *varargin_11,
+    constraintDistanceBounds *varargin_12,
+    constraintDistanceBounds *varargin_13,
+    constraintDistanceBounds *varargin_14,
+    constraintDistanceBounds *varargin_15,
+    constraintDistanceBounds *varargin_16,
+    constraintDistanceBounds *varargin_17,
+    constraintDistanceBounds *varargin_18,
+    constraintDistanceBounds *varargin_19,
+    constraintDistanceBounds *varargin_20,
+    constraintDistanceBounds *varargin_21,
+    constraintDistanceBounds *varargin_22,
+    constraintDistanceBounds *varargin_23, struct0_T *varargout_2)
 {
   static const char b_cv[14]{'b', 'e', 's', 't', ' ', 'a', 'v',
                              'a', 'i', 'l', 'a', 'b', 'l', 'e'};
   static const char b_cv1[7]{'s', 'u', 'c', 'c', 'e', 's', 's'};
   generalizedInverseKinematics *obj;
-  robotics::core::internal::ErrorDampedLevenbergMarquardt *e_obj;
-  robotics::manip::internal::JointPositionBounds *c_obj;
-  robotics::manip::internal::PoseTarget *b_obj;
-  robotics::manip::internal::RigidBodyTree *f_obj;
-  array<double, 2U> b_value;
-  array<double, 2U> c_value;
-  array<double, 2U> positionIndices;
-  array<double, 2U> r;
-  array<double, 1U> d_obj;
-  array<double, 1U> maxval;
-  array<double, 1U> newseed;
-  array<double, 1U> xSolPrev;
-  array<int, 2U> r1;
+  robotics::core::internal::ErrorDampedLevenbergMarquardt *c_obj;
+  robotics::manip::internal::b_RigidBodyTree *b_obj;
+  ::coder::array<double, 2U> limits;
+  ::coder::array<double, 2U> positionIndices;
+  ::coder::array<double, 2U> y;
+  ::coder::array<double, 1U> b_varargin_1;
+  ::coder::array<double, 1U> maxval;
+  ::coder::array<double, 1U> newseed;
+  ::coder::array<double, 1U> xSolPrev;
+  ::coder::array<int, 2U> r;
   double positionMap_data[528];
   double kinematicPath_data[264];
   double d_expl_temp;
@@ -571,18 +569,21 @@ void generalizedInverseKinematics::step(
   double ndbl;
   double rrAttempts;
   double tol;
-  int a_size[2];
+  int indicesUpperBoundViolation_data[9];
+  int kinematicPath_size[2];
   int i;
+  int indicesUpperBoundViolation_size;
   int k;
-  int kstr;
   int nm1d2;
   int trueCount;
   short tmp_data[264];
-  char a_data[200];
-  boolean_T b_expl_temp;
-  boolean_T c_expl_temp;
-  boolean_T exitg2;
-  boolean_T f_expl_temp;
+  bool lbOK[9];
+  bool ubOK[9];
+  bool b_expl_temp;
+  bool c_expl_temp;
+  bool exitg1;
+  bool f_expl_temp;
+  bool guard1;
   robotics::core::internal::NLPSolverExitFlags exitFlag;
   robotics::core::internal::NLPSolverExitFlags exitFlagPrev;
   if (isInitialized != 1) {
@@ -599,185 +600,157 @@ void generalizedInverseKinematics::step(
     isSetupComplete = true;
   }
   obj = this;
-  ::std::copy(&varargin_1[0], &varargin_1[9], &varargout_1[0]);
-  Tree->validateConfigurationWithLimits(varargout_1);
-  b_obj = Problem.Constraints.f1;
-  b_obj->Weights.set_size(1, 2);
-  b_obj->Weights[0] = varargin_2.Weights[0];
-  b_obj->Weights[1] = varargin_2.Weights[1];
-  b_obj->get_EndEffector(a_data, a_size);
-  b_expl_temp = false;
-  if (a_size[1] == 17) {
-    kstr = 0;
-    int exitg1;
-    do {
-      exitg1 = 0;
-      if (kstr < 17) {
-        if (a_data[kstr] != varargin_2.EndEffector[kstr]) {
-          exitg1 = 1;
-        } else {
-          kstr++;
-        }
+  b_obj = Tree;
+  b_obj->get_JointPositionLimits(limits);
+  if (limits.size(0) == 9) {
+    for (i = 0; i < 9; i++) {
+      ubOK[i] = (varargin_1[i] <=
+                 limits[i + limits.size(0)] + 4.4408920985006262E-16);
+    }
+  } else {
+    binary_expand_op_30(ubOK, varargin_1, limits);
+  }
+  if (limits.size(0) == 9) {
+    for (i = 0; i < 9; i++) {
+      lbOK[i] = (varargin_1[i] >= limits[i] - 4.4408920985006262E-16);
+    }
+  } else {
+    binary_expand_op_29(lbOK, varargin_1, limits);
+  }
+  b_expl_temp = true;
+  k = 0;
+  exitg1 = false;
+  while ((!exitg1) && (k <= 8)) {
+    if (!ubOK[k]) {
+      b_expl_temp = false;
+      exitg1 = true;
+    } else {
+      k++;
+    }
+  }
+  guard1 = false;
+  if (b_expl_temp) {
+    b_expl_temp = true;
+    k = 0;
+    exitg1 = false;
+    while ((!exitg1) && (k <= 8)) {
+      if (!lbOK[k]) {
+        b_expl_temp = false;
+        exitg1 = true;
       } else {
-        b_expl_temp = true;
-        exitg1 = 1;
+        k++;
       }
-    } while (exitg1 == 0);
+    }
+    if (!b_expl_temp) {
+      guard1 = true;
+    }
+  } else {
+    guard1 = true;
   }
-  if (!b_expl_temp) {
-    b_obj->EndEffectorIndex =
-        b_obj->Tree->validateInputBodyName(varargin_2.EndEffector);
+  if (guard1) {
+    for (i = 0; i < 9; i++) {
+      ubOK[i] = !ubOK[i];
+    }
+    indicesUpperBoundViolation_size =
+        eml_find(ubOK, indicesUpperBoundViolation_data);
+    for (i = 0; i < indicesUpperBoundViolation_size; i++) {
+      k = indicesUpperBoundViolation_data[i];
+      varargin_1[k - 1] = limits[(k + limits.size(0)) - 1];
+    }
+    for (i = 0; i < 9; i++) {
+      lbOK[i] = !lbOK[i];
+    }
+    indicesUpperBoundViolation_size =
+        eml_find(lbOK, indicesUpperBoundViolation_data);
+    for (i = 0; i < indicesUpperBoundViolation_size; i++) {
+      k = indicesUpperBoundViolation_data[i];
+      varargin_1[k - 1] = limits[k - 1];
+    }
   }
-  b_obj->get_ReferenceBody(a_data, a_size);
-  if (static_cast<unsigned char>(a_size[1]) != 0) {
-    b_obj->ReferenceBodyIndex = 0.0;
-  }
-  for (i = 0; i < 16; i++) {
-    b_obj->TargetTransform[i] = varargin_2.TargetTransform[i];
-  }
-  b_obj->BoundsInternal[b_obj->BoundsInternal.size(0)] =
-      varargin_2.OrientationTolerance;
-  b_obj->BoundsInternal[b_obj->BoundsInternal.size(0) + 1] =
-      varargin_2.PositionTolerance;
-  c_obj = Problem.Constraints.f2;
-  kstr = varargin_3.WeightsInternal.size(1);
-  b_value.set_size(1, kstr);
-  for (i = 0; i < kstr; i++) {
-    b_value[i] = varargin_3.WeightsInternal[i];
-  }
-  c_obj->Weights.set_size(1, kstr);
-  for (i = 0; i < kstr; i++) {
-    c_obj->Weights[i] = b_value[i];
-  }
-  i = varargin_3.BoundsInternal.size(0);
-  c_value.set_size(i, 2);
-  kstr = varargin_3.BoundsInternal.size(0) << 1;
-  for (k = 0; k < kstr; k++) {
-    c_value[k] = varargin_3.BoundsInternal[k];
-  }
-  c_obj->BoundsInternal.set_size(i, 2);
-  for (i = 0; i < kstr; i++) {
-    c_obj->BoundsInternal[i] = c_value[i];
-  }
-  Problem.Constraints.f3->update(varargin_4);
-  Problem.Constraints.f4->update(varargin_5);
-  Problem.Constraints.f5->update(varargin_6);
-  Problem.Constraints.f6->update(varargin_7);
-  Problem.Constraints.f7->update(varargin_8);
-  Problem.Constraints.f8->update(varargin_9);
-  Problem.Constraints.f9->update(varargin_10);
-  Problem.Constraints.f10->update(varargin_11);
-  Problem.Constraints.f11->update(varargin_12);
-  Problem.Constraints.f12->update(varargin_13);
-  Problem.Constraints.f13->update(varargin_14);
-  Problem.Constraints.f14->update(varargin_15);
-  Problem.Constraints.f15->update(varargin_16);
-  Problem.Constraints.f16->update(varargin_17);
-  Problem.Constraints.f17->update(varargin_18);
-  Problem.Constraints.f18->update(varargin_19);
-  Problem.Constraints.f19->update(varargin_20);
-  Problem.Constraints.f20->update(varargin_21);
-  Problem.Constraints.f21->update(varargin_22);
-  Problem.Constraints.f22->update(varargin_23);
-  Problem.updateDesignVariableBounds();
-  kstr = static_cast<int>(Problem.NumVariables);
-  Problem.LastX.set_size(kstr);
-  for (i = 0; i < kstr; i++) {
-    Problem.LastX[i] = 0.0;
-  }
-  d_obj.set_size(Problem.LastX.size(0));
-  kstr = Problem.LastX.size(0) - 1;
-  for (i = 0; i <= kstr; i++) {
-    d_obj[i] = Problem.LastX[i];
-  }
-  Problem.residualsInternal(d_obj, newseed, r);
-  kstr = newseed.size(0);
-  Problem.LastF.set_size(newseed.size(0));
-  for (i = 0; i < kstr; i++) {
-    Problem.LastF[i] = newseed[i];
-  }
-  Problem.LastJ.set_size(r.size(0), r.size(1));
-  kstr = r.size(0) * r.size(1);
-  for (i = 0; i < kstr; i++) {
-    Problem.LastJ[i] = r[i];
-  }
+  Problem.update(varargin_2, varargin_3, varargin_4, varargin_5, varargin_6,
+                 varargin_7, varargin_8, varargin_9, varargin_10, varargin_11,
+                 varargin_12, varargin_13, varargin_14, varargin_15,
+                 varargin_16, varargin_17, varargin_18, varargin_19,
+                 varargin_20, varargin_21, varargin_22, varargin_23);
   Problem.set_EnforceJointLimits(EnforceJointLimits);
-  c_value.set_size(Problem.DesignVariableBoundsInternal.size(0), 2);
-  kstr = Problem.DesignVariableBoundsInternal.size(0) << 1;
-  for (i = 0; i < kstr; i++) {
-    c_value[i] = Problem.DesignVariableBoundsInternal[i];
+  limits.set_size(Problem.DesignVariableBoundsInternal.size(0), 2);
+  indicesUpperBoundViolation_size = Problem.DesignVariableBoundsInternal.size(0)
+                                    << 1;
+  for (i = 0; i < indicesUpperBoundViolation_size; i++) {
+    limits[i] = Problem.DesignVariableBoundsInternal[i];
   }
   err = Problem.NumPositions + 1.0;
-  if (err > c_value.size(0)) {
+  if (err > limits.size(0)) {
     i = 0;
     k = -1;
   } else {
     i = static_cast<int>(err) - 1;
-    k = c_value.size(0) - 1;
+    k = limits.size(0) - 1;
   }
-  kstr = static_cast<int>(Problem.NumSlacks);
-  d_obj.set_size(kstr + 9);
+  indicesUpperBoundViolation_size = static_cast<int>(Problem.NumSlacks);
+  b_varargin_1.set_size(indicesUpperBoundViolation_size + 9);
   for (nm1d2 = 0; nm1d2 < 9; nm1d2++) {
-    d_obj[nm1d2] = varargout_1[nm1d2];
+    b_varargin_1[nm1d2] = varargin_1[nm1d2];
   }
-  for (nm1d2 = 0; nm1d2 < kstr; nm1d2++) {
-    d_obj[nm1d2 + 9] = 0.0;
+  for (nm1d2 = 0; nm1d2 < indicesUpperBoundViolation_size; nm1d2++) {
+    b_varargin_1[nm1d2 + 9] = 0.0;
   }
-  Problem.residuals(d_obj, newseed);
-  kstr = k - i;
-  if (kstr + 1 == newseed.size(0)) {
-    maxval.set_size(kstr + 1);
-    for (k = 0; k <= kstr; k++) {
-      err = c_value[i + k];
+  Problem.residuals(b_varargin_1, newseed);
+  indicesUpperBoundViolation_size = k - i;
+  if (indicesUpperBoundViolation_size + 1 == newseed.size(0)) {
+    maxval.set_size(indicesUpperBoundViolation_size + 1);
+    for (k = 0; k <= indicesUpperBoundViolation_size; k++) {
+      err = limits[i + k];
       iter = newseed[k];
       maxval[k] = std::fmax(err, iter);
     }
   } else {
-    d_obj.set_size(kstr + 1);
-    for (k = 0; k <= kstr; k++) {
-      d_obj[k] = c_value[i + k];
+    b_varargin_1.set_size(indicesUpperBoundViolation_size + 1);
+    for (k = 0; k <= indicesUpperBoundViolation_size; k++) {
+      b_varargin_1[k] = limits[i + k];
     }
-    internal::expand_max(d_obj, newseed, maxval);
+    internal::expand_max(b_varargin_1, newseed, maxval);
   }
-  if (kstr + 1 == maxval.size(0)) {
-    newseed.set_size(kstr + 1);
-    for (k = 0; k <= kstr; k++) {
-      err = c_value[(i + k) + c_value.size(0)];
+  if (indicesUpperBoundViolation_size + 1 == maxval.size(0)) {
+    newseed.set_size(indicesUpperBoundViolation_size + 1);
+    for (k = 0; k <= indicesUpperBoundViolation_size; k++) {
+      err = limits[(i + k) + limits.size(0)];
       iter = maxval[k];
       newseed[k] = std::fmin(err, iter);
     }
   } else {
-    d_obj.set_size(kstr + 1);
-    for (k = 0; k <= kstr; k++) {
-      d_obj[k] = c_value[(i + k) + c_value.size(0)];
+    b_varargin_1.set_size(indicesUpperBoundViolation_size + 1);
+    for (k = 0; k <= indicesUpperBoundViolation_size; k++) {
+      b_varargin_1[k] = limits[(i + k) + limits.size(0)];
     }
-    internal::expand_min(d_obj, maxval, newseed);
+    internal::expand_min(b_varargin_1, maxval, newseed);
   }
-  e_obj = Solver;
-  e_obj->MaxNumIterationInternal = e_obj->MaxNumIteration;
-  e_obj->MaxTimeInternal = e_obj->MaxTime;
-  e_obj->SeedInternal.set_size(newseed.size(0) + 9);
+  c_obj = Solver;
+  c_obj->MaxNumIterationInternal = c_obj->MaxNumIteration;
+  c_obj->MaxTimeInternal = c_obj->MaxTime;
+  c_obj->SeedInternal.set_size(newseed.size(0) + 9);
   for (i = 0; i < 9; i++) {
-    e_obj->SeedInternal[i] = varargout_1[i];
+    c_obj->SeedInternal[i] = varargin_1[i];
   }
-  kstr = newseed.size(0);
-  for (i = 0; i < kstr; i++) {
-    e_obj->SeedInternal[i + 9] = newseed[i];
+  indicesUpperBoundViolation_size = newseed.size(0);
+  for (i = 0; i < indicesUpperBoundViolation_size; i++) {
+    c_obj->SeedInternal[i + 9] = newseed[i];
   }
-  tol = e_obj->SolutionTolerance;
-  e_obj->TimeObj.StartTime.tv_sec = tic(e_obj->TimeObj.StartTime.tv_nsec);
-  exitFlag = e_obj->solveInternal(xSolPrev, err, iter);
+  tol = c_obj->SolutionTolerance;
+  c_obj->TimeObj.StartTime.tv_sec =
+      tic(aInstancePtr, c_obj->TimeObj.StartTime.tv_nsec);
+  exitFlag = c_obj->solveInternal(aInstancePtr, xSolPrev, err, iter);
   rrAttempts = 0.0;
   iterations = iter;
   errPrev = err;
   exitFlagPrev = exitFlag;
-  exitg2 = false;
-  while ((!exitg2) && (e_obj->RandomRestart && (err > tol))) {
-    e_obj->MaxNumIterationInternal -= iter;
-    err =
-        toc(e_obj->TimeObj.StartTime.tv_sec, e_obj->TimeObj.StartTime.tv_nsec);
-    e_obj->MaxTimeInternal = e_obj->MaxTime - err;
-    if (e_obj->MaxNumIterationInternal <= 0.0) {
+  exitg1 = false;
+  while ((!exitg1) && (c_obj->RandomRestart && (err > tol))) {
+    c_obj->MaxNumIterationInternal -= iter;
+    err = toc(aInstancePtr, c_obj->TimeObj.StartTime.tv_sec,
+              c_obj->TimeObj.StartTime.tv_nsec);
+    c_obj->MaxTimeInternal = c_obj->MaxTime - err;
+    if (c_obj->MaxNumIterationInternal <= 0.0) {
       exitFlag =
           robotics::core::internal::NLPSolverExitFlags::IterationLimitExceeded;
     }
@@ -786,19 +759,19 @@ void generalizedInverseKinematics::step(
         (exitFlag ==
          robotics::core::internal::NLPSolverExitFlags::TimeLimitExceeded)) {
       exitFlagPrev = exitFlag;
-      exitg2 = true;
+      exitg1 = true;
     } else {
-      rigidBodyJoint::randomConfig(e_obj->ExtraArgs, newseed);
-      kstr = newseed.size(0);
-      e_obj->SeedInternal.set_size(newseed.size(0));
-      for (i = 0; i < kstr; i++) {
-        e_obj->SeedInternal[i] = newseed[i];
+      rigidBodyJoint::randomConfig(aInstancePtr, c_obj->ExtraArgs, newseed);
+      indicesUpperBoundViolation_size = newseed.size(0);
+      c_obj->SeedInternal.set_size(newseed.size(0));
+      for (i = 0; i < indicesUpperBoundViolation_size; i++) {
+        c_obj->SeedInternal[i] = newseed[i];
       }
-      exitFlag = e_obj->solveInternal(maxval, err, iter);
+      exitFlag = c_obj->solveInternal(aInstancePtr, maxval, err, iter);
       if (err < errPrev) {
-        kstr = maxval.size(0);
+        indicesUpperBoundViolation_size = maxval.size(0);
         xSolPrev.set_size(maxval.size(0));
-        for (i = 0; i < kstr; i++) {
+        for (i = 0; i < indicesUpperBoundViolation_size; i++) {
           xSolPrev[i] = maxval[i];
         }
         errPrev = err;
@@ -823,21 +796,22 @@ void generalizedInverseKinematics::step(
   }
   err = obj->Tree->PositionNumber;
   if (err < 1.0) {
-    kstr = 0;
+    indicesUpperBoundViolation_size = 0;
   } else {
-    kstr = static_cast<int>(err);
+    indicesUpperBoundViolation_size = static_cast<int>(err);
   }
-  obj->Problem.get_KinematicPath(kinematicPath_data, a_size);
-  d_obj.set_size(kstr);
-  for (i = 0; i < kstr; i++) {
-    d_obj[i] = xSolPrev[i];
+  obj->Problem.get_KinematicPath(kinematicPath_data, kinematicPath_size);
+  b_varargin_1.set_size(indicesUpperBoundViolation_size);
+  for (i = 0; i < indicesUpperBoundViolation_size; i++) {
+    b_varargin_1[i] = xSolPrev[i];
   }
-  obj->Problem.constraintViolations(d_obj, varargout_2->ConstraintViolations);
-  f_obj = obj->Tree;
-  kstr = a_size[1];
+  obj->Problem.constraintViolations(b_varargin_1,
+                                    varargout_2->ConstraintViolations);
+  b_obj = obj->Tree;
+  indicesUpperBoundViolation_size = kinematicPath_size[1];
   trueCount = 0;
   nm1d2 = 0;
-  for (int b_i{0}; b_i < kstr; b_i++) {
+  for (int b_i{0}; b_i < indicesUpperBoundViolation_size; b_i++) {
     if (kinematicPath_data[b_i] != 0.0) {
       trueCount++;
       tmp_data[nm1d2] = static_cast<short>(b_i);
@@ -847,14 +821,14 @@ void generalizedInverseKinematics::step(
   for (i = 0; i < 2; i++) {
     for (k = 0; k < trueCount; k++) {
       positionMap_data[k + trueCount * i] =
-          f_obj->PositionDoFMap
+          b_obj->PositionDoFMap
               [(static_cast<int>(kinematicPath_data[tmp_data[k]]) + 11 * i) -
                1];
     }
   }
-  positionIndices.set_size(1, static_cast<int>(f_obj->PositionNumber));
-  kstr = static_cast<int>(f_obj->PositionNumber);
-  for (i = 0; i < kstr; i++) {
+  positionIndices.set_size(1, static_cast<int>(b_obj->PositionNumber));
+  indicesUpperBoundViolation_size = static_cast<int>(b_obj->PositionNumber);
+  for (i = 0; i < indicesUpperBoundViolation_size; i++) {
     positionIndices[i] = 0.0;
   }
   err = 0.0;
@@ -863,34 +837,35 @@ void generalizedInverseKinematics::step(
     d_expl_temp = iter - positionMap_data[b_i];
     if (d_expl_temp + 1.0 > 0.0) {
       if (d_expl_temp + 1.0 < 1.0) {
-        b_value.set_size(1, 0);
+        y.set_size(1, 0);
       } else {
-        b_value.set_size(1, static_cast<int>((d_expl_temp + 1.0) - 1.0) + 1);
-        kstr = static_cast<int>((d_expl_temp + 1.0) - 1.0);
-        for (i = 0; i <= kstr; i++) {
-          b_value[i] = static_cast<double>(i) + 1.0;
+        y.set_size(1, static_cast<int>((d_expl_temp + 1.0) - 1.0) + 1);
+        indicesUpperBoundViolation_size =
+            static_cast<int>((d_expl_temp + 1.0) - 1.0);
+        for (i = 0; i <= indicesUpperBoundViolation_size; i++) {
+          y[i] = static_cast<double>(i) + 1.0;
         }
       }
-      kstr = b_value.size(1);
-      r1.set_size(1, b_value.size(1));
-      for (i = 0; i < kstr; i++) {
-        r1[i] = static_cast<int>(err + b_value[i]);
+      indicesUpperBoundViolation_size = y.size(1);
+      r.set_size(1, y.size(1));
+      for (i = 0; i < indicesUpperBoundViolation_size; i++) {
+        r[i] = static_cast<int>(err + y[i]);
       }
       e_expl_temp = positionMap_data[b_i];
       if (std::isnan(e_expl_temp) || std::isnan(iter)) {
-        b_value.set_size(1, 1);
-        b_value[0] = rtNaN;
+        y.set_size(1, 1);
+        y[0] = rtNaN;
       } else if (iter < e_expl_temp) {
-        b_value.set_size(1, 0);
+        y.set_size(1, 0);
       } else if ((std::isinf(e_expl_temp) || std::isinf(iter)) &&
                  (e_expl_temp == iter)) {
-        b_value.set_size(1, 1);
-        b_value[0] = rtNaN;
+        y.set_size(1, 1);
+        y[0] = rtNaN;
       } else if (std::floor(e_expl_temp) == e_expl_temp) {
-        kstr = static_cast<int>(d_expl_temp);
-        b_value.set_size(1, static_cast<int>(d_expl_temp) + 1);
-        for (i = 0; i <= kstr; i++) {
-          b_value[i] = e_expl_temp + static_cast<double>(i);
+        indicesUpperBoundViolation_size = static_cast<int>(d_expl_temp);
+        y.set_size(1, static_cast<int>(d_expl_temp) + 1);
+        for (i = 0; i <= indicesUpperBoundViolation_size; i++) {
+          y[i] = e_expl_temp + static_cast<double>(i);
         }
       } else {
         ndbl = std::floor(d_expl_temp + 0.5);
@@ -907,47 +882,47 @@ void generalizedInverseKinematics::step(
           ndbl++;
         }
         if (ndbl >= 0.0) {
-          kstr = static_cast<int>(ndbl);
+          indicesUpperBoundViolation_size = static_cast<int>(ndbl);
         } else {
-          kstr = 0;
+          indicesUpperBoundViolation_size = 0;
         }
-        b_value.set_size(1, kstr);
-        if (kstr > 0) {
-          b_value[0] = e_expl_temp;
-          if (kstr > 1) {
-            b_value[kstr - 1] = tol;
-            nm1d2 = (kstr - 1) / 2;
+        y.set_size(1, indicesUpperBoundViolation_size);
+        if (indicesUpperBoundViolation_size > 0) {
+          y[0] = e_expl_temp;
+          if (indicesUpperBoundViolation_size > 1) {
+            y[indicesUpperBoundViolation_size - 1] = tol;
+            nm1d2 = (indicesUpperBoundViolation_size - 1) / 2;
             for (k = 0; k <= nm1d2 - 2; k++) {
-              b_value[k + 1] = e_expl_temp + (static_cast<double>(k) + 1.0);
-              b_value[(kstr - k) - 2] = tol - (static_cast<double>(k) + 1.0);
+              y[k + 1] = e_expl_temp + (static_cast<double>(k) + 1.0);
+              y[(indicesUpperBoundViolation_size - k) - 2] =
+                  tol - (static_cast<double>(k) + 1.0);
             }
-            if (nm1d2 << 1 == kstr - 1) {
-              b_value[nm1d2] = (positionMap_data[b_i] + tol) / 2.0;
+            if (nm1d2 << 1 == indicesUpperBoundViolation_size - 1) {
+              y[nm1d2] = (positionMap_data[b_i] + tol) / 2.0;
             } else {
-              b_value[nm1d2] =
-                  positionMap_data[b_i] + static_cast<double>(nm1d2);
-              b_value[nm1d2 + 1] = tol - static_cast<double>(nm1d2);
+              y[nm1d2] = positionMap_data[b_i] + static_cast<double>(nm1d2);
+              y[nm1d2 + 1] = tol - static_cast<double>(nm1d2);
             }
           }
         }
       }
-      kstr = b_value.size(1) - 1;
-      for (i = 0; i <= kstr; i++) {
-        positionIndices[r1[i] - 1] = b_value[i];
+      indicesUpperBoundViolation_size = y.size(1) - 1;
+      for (i = 0; i <= indicesUpperBoundViolation_size; i++) {
+        positionIndices[r[i] - 1] = y[i];
       }
       err += d_expl_temp + 1.0;
     }
   }
   if (err < 1.0) {
-    kstr = 0;
+    indicesUpperBoundViolation_size = 0;
   } else {
-    kstr = static_cast<int>(err);
+    indicesUpperBoundViolation_size = static_cast<int>(err);
   }
-  positionIndices.set_size(positionIndices.size(0), kstr);
-  for (i = 0; i < kstr; i++) {
+  positionIndices.set_size(positionIndices.size(0),
+                           indicesUpperBoundViolation_size);
+  for (i = 0; i < indicesUpperBoundViolation_size; i++) {
     err = positionIndices[i];
-    varargout_1[static_cast<int>(err) - 1] =
-        xSolPrev[static_cast<int>(err) - 1];
+    varargin_1[static_cast<int>(err) - 1] = xSolPrev[static_cast<int>(err) - 1];
   }
   varargout_2->Iterations = iterations;
   varargout_2->NumRandomRestarts = rrAttempts;
@@ -955,6 +930,7 @@ void generalizedInverseKinematics::step(
 }
 
 } // namespace coder
+} // namespace gik9dof
 
 //
 // File trailer for generalizedInverseKinematics.cpp

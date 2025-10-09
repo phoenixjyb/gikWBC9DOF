@@ -2,7 +2,7 @@
 // File: sort.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 #ifndef SORT_H
@@ -15,16 +15,18 @@
 #include <cstdlib>
 
 // Function Declarations
+namespace gik9dof {
 namespace coder {
 namespace internal {
 void b_sort(double x_data[], const int x_size[2]);
 
 void sort(double x[22], int idx[22]);
 
-void sort(array<double, 1U> &x);
+void sort(::coder::array<double, 1U> &x);
 
 } // namespace internal
 } // namespace coder
+} // namespace gik9dof
 
 #endif
 //

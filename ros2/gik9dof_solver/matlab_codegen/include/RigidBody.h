@@ -2,7 +2,7 @@
 // File: RigidBody.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 #ifndef RIGIDBODY_H
@@ -17,6 +17,7 @@
 #include <cstdlib>
 
 // Type Definitions
+namespace gik9dof {
 namespace coder {
 namespace robotics {
 namespace manip {
@@ -31,7 +32,7 @@ public:
   void matlabCodegenDestructor();
   ~RigidBody();
   RigidBody();
-  boolean_T matlabCodegenIsDeleted;
+  bool matlabCodegenIsDeleted;
   CharacterVector NameInternal;
   double Index;
   rigidBodyJoint *JointInternal;
@@ -50,7 +51,7 @@ public:
   void matlabCodegenDestructor();
   ~b_RigidBody();
   b_RigidBody();
-  boolean_T matlabCodegenIsDeleted;
+  bool matlabCodegenIsDeleted;
   CharacterVector NameInternal;
   rigidBodyJoint JointInternal;
   CollisionSet CollisionsInternal;
@@ -60,6 +61,7 @@ public:
 } // namespace manip
 } // namespace robotics
 } // namespace coder
+} // namespace gik9dof
 
 #endif
 //

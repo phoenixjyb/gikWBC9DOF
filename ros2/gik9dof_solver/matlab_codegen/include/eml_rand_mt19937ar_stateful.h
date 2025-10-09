@@ -2,7 +2,7 @@
 // File: eml_rand_mt19937ar_stateful.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 #ifndef EML_RAND_MT19937AR_STATEFUL_H
@@ -13,8 +13,17 @@
 #include <cstddef>
 #include <cstdlib>
 
+// Type Declarations
+namespace gik9dof {
+class GIKSolver;
+
+}
+
 // Function Declarations
-void eml_rand_mt19937ar_stateful_init();
+namespace gik9dof {
+void eml_rand_mt19937ar_stateful_init(GIKSolver *aInstancePtr);
+
+}
 
 #endif
 //

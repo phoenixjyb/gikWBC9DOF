@@ -2,7 +2,7 @@
 // File: svd.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 #ifndef SVD_H
@@ -14,12 +14,14 @@
 #include <cstdlib>
 
 // Function Declarations
+namespace gik9dof {
 namespace coder {
 namespace internal {
 void svd(const double A[9], double U[9], double s[3], double V[9]);
 
 }
 } // namespace coder
+} // namespace gik9dof
 
 #endif
 //

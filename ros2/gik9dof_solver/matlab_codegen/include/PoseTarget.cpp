@@ -2,7 +2,7 @@
 // File: PoseTarget.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 // Include Files
@@ -19,25 +19,37 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
-#include <emmintrin.h>
 
 // Function Definitions
 //
-// Arguments    : const array<double, 1U> &q
+// Arguments    : void
+// Return Type  : PoseTarget
+//
+namespace gik9dof {
+namespace coder {
+namespace robotics {
+namespace manip {
+namespace internal {
+PoseTarget::PoseTarget() = default;
+
+//
+// Arguments    : void
+// Return Type  : void
+//
+PoseTarget::~PoseTarget() = default;
+
+//
+// Arguments    : const ::coder::array<double, 1U> &q
 //                double g[2]
 //                double J_data[]
 //                int J_size[2]
 // Return Type  : void
 //
-namespace coder {
-namespace robotics {
-namespace manip {
-namespace internal {
-void PoseTarget::evaluate(const array<double, 1U> &q, double g[2],
+void PoseTarget::evaluate(const ::coder::array<double, 1U> &q, double g[2],
                           double J_data[], int J_size[2])
 {
-  array<double, 2U> C;
-  array<double, 2U> Jrobot;
+  ::coder::array<double, 2U> C;
+  ::coder::array<double, 2U> Jrobot;
   double T_data[16];
   double JTwist[12];
   int T_size[2];
@@ -80,13 +92,9 @@ void PoseTarget::evaluateFromTransform(const double T_data[],
                                        const int T_size[2], double g[2],
                                        double JTwist[12]) const
 {
-  __m128d r;
   creal_T u;
   double T[9];
   double y[9];
-  double c_v[4];
-  double b_v[3];
-  double s[3];
   double vspecial_data[3];
   double b_err;
   double d;
@@ -100,8 +108,8 @@ void PoseTarget::evaluateFromTransform(const double T_data[],
   int i;
   int i1;
   signed char R_tmp[3];
-  boolean_T exitg1;
-  boolean_T rEQ0;
+  bool exitg1;
+  bool rEQ0;
   i = T_size[0];
   for (i1 = 0; i1 < 3; i1++) {
     R_tmp[i1] = static_cast<signed char>(i1 + 1);
@@ -123,13 +131,13 @@ void PoseTarget::evaluateFromTransform(const double T_data[],
     u.re = std::acos(u_tmp);
   } else {
     creal_T v;
-    boolean_T b;
+    bool b;
     v.re = u_tmp + 1.0;
     v.im = 0.0;
-    ::coder::internal::scalar::b_sqrt(v);
+    ::gik9dof::coder::internal::scalar::b_sqrt(v);
     u.re = 1.0 - u_tmp;
     u.im = 0.0;
-    ::coder::internal::scalar::b_sqrt(u);
+    ::gik9dof::coder::internal::scalar::b_sqrt(u);
     rEQ0 = std::isnan(v.re);
     b = std::isnan(u.re);
     if (b || rEQ0) {
@@ -160,9 +168,9 @@ void PoseTarget::evaluateFromTransform(const double T_data[],
     u.re = 2.0 * u_tmp;
   }
   u_tmp = 2.0 * std::sin(u.re);
-  b_v[0] = (y[5] - y[7]) / u_tmp;
-  b_v[1] = (y[6] - y[2]) / u_tmp;
-  b_v[2] = (y[1] - y[3]) / u_tmp;
+  vspecial_data[0] = (y[5] - y[7]) / u_tmp;
+  vspecial_data[1] = (y[6] - y[2]) / u_tmp;
+  vspecial_data[2] = (y[1] - y[3]) / u_tmp;
   if (std::isnan(u.re) || std::isinf(u.re)) {
     u_tmp = rtNaN;
   } else if (u.re == 0.0) {
@@ -184,7 +192,7 @@ void PoseTarget::evaluateFromTransform(const double T_data[],
   i1 = 0;
   exitg1 = false;
   while ((!exitg1) && (i1 < 3)) {
-    if (!(b_v[i1] == 0.0)) {
+    if (!(vspecial_data[i1] == 0.0)) {
       rEQ0 = false;
       exitg1 = true;
     } else {
@@ -196,39 +204,22 @@ void PoseTarget::evaluateFromTransform(const double T_data[],
       vspecial_data[i] = 0.0;
     }
     for (int b_i{0}; b_i < 1; b_i++) {
-      __m128d r1;
       double V[9];
       std::memset(&T[0], 0, 9U * sizeof(double));
       T[0] = 1.0;
       T[4] = 1.0;
       T[8] = 1.0;
-      r = _mm_loadu_pd(&T[0]);
-      r1 = _mm_loadu_pd(&y[0]);
-      _mm_storeu_pd(&T[0], _mm_sub_pd(r, r1));
-      r = _mm_loadu_pd(&T[2]);
-      r1 = _mm_loadu_pd(&y[2]);
-      _mm_storeu_pd(&T[2], _mm_sub_pd(r, r1));
-      r = _mm_loadu_pd(&T[4]);
-      r1 = _mm_loadu_pd(&y[4]);
-      _mm_storeu_pd(&T[4], _mm_sub_pd(r, r1));
-      r = _mm_loadu_pd(&T[6]);
-      r1 = _mm_loadu_pd(&y[6]);
-      _mm_storeu_pd(&T[6], _mm_sub_pd(r, r1));
-      T[8] -= y[8];
       rEQ0 = true;
       for (i1 = 0; i1 < 9; i1++) {
-        if (rEQ0) {
-          d = T[i1];
-          if (std::isinf(d) || std::isnan(d)) {
-            rEQ0 = false;
-          }
-        } else {
+        d = T[i1] - y[i1];
+        T[i1] = d;
+        if ((!rEQ0) || (std::isinf(d) || std::isnan(d))) {
           rEQ0 = false;
         }
       }
       if (rEQ0) {
         double U[9];
-        ::coder::internal::svd(T, U, s, V);
+        ::gik9dof::coder::internal::svd(T, U, vspecial_data, V);
       } else {
         for (i = 0; i < 9; i++) {
           V[i] = rtNaN;
@@ -238,38 +229,28 @@ void PoseTarget::evaluateFromTransform(const double T_data[],
       vspecial_data[1] = V[7];
       vspecial_data[2] = V[8];
     }
-    b_v[0] = vspecial_data[0];
-    b_v[1] = vspecial_data[1];
-    b_v[2] = vspecial_data[2];
   }
-  r = _mm_loadu_pd(&b_v[0]);
-  _mm_storeu_pd(&s[0], r);
-  _mm_storeu_pd(&vspecial_data[0], _mm_mul_pd(r, r));
-  s[2] = b_v[2];
-  u_tmp =
-      1.0 / std::sqrt((vspecial_data[0] + vspecial_data[1]) + b_v[2] * b_v[2]);
-  r = _mm_loadu_pd(&s[0]);
-  _mm_storeu_pd(&c_v[0], _mm_mul_pd(r, _mm_set1_pd(u_tmp)));
-  d = u.re * c_v[0];
+  u_tmp = 1.0 / std::sqrt((vspecial_data[0] * vspecial_data[0] +
+                           vspecial_data[1] * vspecial_data[1]) +
+                          vspecial_data[2] * vspecial_data[2]);
+  d = u.re * (vspecial_data[0] * u_tmp);
   q = d;
   d1 = TargetTransform[12] - T_data[(R_tmp[0] + T_size[0] * 3) - 1];
   err_idx_3 = d1;
   err = d * d;
   b_err = d1 * d1;
-  d = u.re * c_v[1];
+  d = u.re * (vspecial_data[1] * u_tmp);
   err_idx_1 = d;
   d1 = TargetTransform[13] - T_data[(R_tmp[1] + T_size[0] * 3) - 1];
   err_idx_4 = d1;
   err += d * d;
   b_err += d1 * d1;
-  d = u.re * (s[2] * u_tmp);
+  d = u.re * (vspecial_data[2] * u_tmp);
   d1 = TargetTransform[14] - T_data[(R_tmp[2] + T_size[0] * 3) - 1];
   err += d * d;
   b_err += d1 * d1;
-  g[0] = err + 2.2204460492503131E-16;
-  g[1] = b_err + 2.2204460492503131E-16;
-  r = _mm_loadu_pd(&g[0]);
-  _mm_storeu_pd(&g[0], _mm_sqrt_pd(r));
+  g[0] = std::sqrt(err + 2.2204460492503131E-16);
+  g[1] = std::sqrt(b_err + 2.2204460492503131E-16);
   JTwist[0] = -(q / g[0]);
   JTwist[6] = -0.0;
   JTwist[1] = -0.0;
@@ -293,7 +274,7 @@ void PoseTarget::get_EndEffector(char value_data[], int value_size[2])
 {
   CharacterVector c_obj;
   RigidBody *b_obj;
-  RigidBodyTree *obj;
+  b_RigidBodyTree *obj;
   if (EndEffectorIndex > 0.0) {
     int loop_ub;
     b_obj = Tree->Bodies[static_cast<int>(EndEffectorIndex) - 1];
@@ -334,7 +315,7 @@ void PoseTarget::get_ReferenceBody(char value_data[], int value_size[2])
 {
   CharacterVector c_obj;
   RigidBody *b_obj;
-  RigidBodyTree *obj;
+  b_RigidBodyTree *obj;
   if (ReferenceBodyIndex > 0.0) {
     int loop_ub;
     b_obj = Tree->Bodies[static_cast<int>(ReferenceBodyIndex) - 1];
@@ -367,10 +348,10 @@ void PoseTarget::get_ReferenceBody(char value_data[], int value_size[2])
 }
 
 //
-// Arguments    : RigidBodyTree *tree
+// Arguments    : b_RigidBodyTree *tree
 // Return Type  : PoseTarget *
 //
-PoseTarget *PoseTarget::init(RigidBodyTree *tree)
+PoseTarget *PoseTarget::init(b_RigidBodyTree *tree)
 {
   PoseTarget *obj;
   int obj_idx_0;
@@ -401,6 +382,7 @@ PoseTarget *PoseTarget::init(RigidBodyTree *tree)
 } // namespace manip
 } // namespace robotics
 } // namespace coder
+} // namespace gik9dof
 
 //
 // File trailer for PoseTarget.cpp

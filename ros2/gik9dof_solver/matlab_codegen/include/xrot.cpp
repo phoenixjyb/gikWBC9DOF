@@ -2,7 +2,7 @@
 // File: xrot.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 // Include Files
@@ -19,6 +19,7 @@
 //                double s
 // Return Type  : void
 //
+namespace gik9dof {
 namespace coder {
 namespace internal {
 namespace blas {
@@ -42,6 +43,7 @@ void xrot(double x[9], int ix0, int iy0, double c, double s)
 } // namespace blas
 } // namespace internal
 } // namespace coder
+} // namespace gik9dof
 
 //
 // File trailer for xrot.cpp

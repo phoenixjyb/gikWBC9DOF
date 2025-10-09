@@ -2,7 +2,7 @@
 // File: GIKProblem.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 #ifndef GIKPROBLEM_H
@@ -12,83 +12,117 @@
 #include "DistanceBoundsConstraint.h"
 #include "JointPositionBounds.h"
 #include "PoseTarget.h"
-#include "gik9dof_codegen_inuse_solveGIKStepWrapper_internal_types.h"
+#include "gik9dof_codegen_inuse_solveGIKStepWrapper_types1.h"
 #include "rtwtypes.h"
 #include "coder_array.h"
 #include <cstddef>
 #include <cstdlib>
 
 // Type Declarations
+namespace gik9dof {
 namespace coder {
 namespace robotics {
 namespace manip {
 namespace internal {
-class RigidBodyTree;
+class b_RigidBodyTree;
 
 }
 } // namespace manip
 } // namespace robotics
+class constraintPoseTarget;
+
+class constraintJointBounds;
+
+class constraintDistanceBounds;
+
 } // namespace coder
 struct struct1_T;
 
+} // namespace gik9dof
+
 // Type Definitions
-struct cell_wrap_8 {
-  coder::array<double, 2U> f1;
-};
-
-struct cell_wrap_9 {
-  coder::array<boolean_T, 2U> f1;
-};
-
+namespace gik9dof {
 namespace coder {
 namespace robotics {
 namespace manip {
 namespace internal {
 class GIKProblem {
 public:
-  GIKProblem *init(RigidBodyTree *tree);
-  void set_DesignVariableBounds(const array<double, 2U> &b_value);
-  void updateDesignVariableBounds();
-  void residualsInternal(const array<double, 1U> &x, array<double, 1U> &f,
-                         array<double, 2U> &J);
-  void set_EnforceJointLimits(boolean_T b_value);
-  void residuals(const array<double, 1U> &x, array<double, 1U> &f);
-  void residuals(const array<double, 1U> &x, array<double, 1U> &f,
-                 array<double, 2U> &J);
-  void get_WeightMatrix(array<double, 2U> &b_value) const;
-  double evaluateSolution(const array<double, 1U> &x, array<double, 1U> &ev);
+  GIKProblem *init(b_RigidBodyTree *tree);
+  void set_DesignVariableBounds(const ::coder::array<double, 2U> &b_value);
+  void set_EnforceJointLimits(bool b_value);
+  void update(const constraintPoseTarget &varargin_1,
+              const constraintJointBounds &varargin_2,
+              const constraintDistanceBounds *varargin_3,
+              const constraintDistanceBounds *varargin_4,
+              const constraintDistanceBounds *varargin_5,
+              const constraintDistanceBounds *varargin_6,
+              const constraintDistanceBounds *varargin_7,
+              const constraintDistanceBounds *varargin_8,
+              const constraintDistanceBounds *varargin_9,
+              const constraintDistanceBounds *varargin_10,
+              const constraintDistanceBounds *varargin_11,
+              const constraintDistanceBounds *varargin_12,
+              const constraintDistanceBounds *varargin_13,
+              const constraintDistanceBounds *varargin_14,
+              const constraintDistanceBounds *varargin_15,
+              const constraintDistanceBounds *varargin_16,
+              const constraintDistanceBounds *varargin_17,
+              const constraintDistanceBounds *varargin_18,
+              const constraintDistanceBounds *varargin_19,
+              const constraintDistanceBounds *varargin_20,
+              const constraintDistanceBounds *varargin_21,
+              const constraintDistanceBounds *varargin_22);
+  void residuals(const ::coder::array<double, 1U> &x,
+                 ::coder::array<double, 1U> &f);
+  void residuals(const ::coder::array<double, 1U> &x,
+                 ::coder::array<double, 1U> &f, ::coder::array<double, 2U> &J);
+  void get_WeightMatrix(::coder::array<double, 2U> &b_value) const;
+  double evaluateSolution(const ::coder::array<double, 1U> &x,
+                          ::coder::array<double, 1U> &ev);
   void get_KinematicPath(double value_data[], int value_size[2]);
-  void constraintViolations(const array<double, 1U> &x,
+  void constraintViolations(const ::coder::array<double, 1U> &x,
                             struct1_T violations[22]);
   void b_set_EnforceJointLimits();
-  boolean_T matlabCodegenIsDeleted;
-  array<double, 2U> DesignVariableBoundsInternal;
-  RigidBodyTree *Tree;
-  cell_7 Constraints;
+  GIKProblem();
+  ~GIKProblem();
+
+private:
+  void updateDesignVariableBounds();
+  void residualsInternal(const ::coder::array<double, 1U> &x,
+                         ::coder::array<double, 1U> &f,
+                         ::coder::array<double, 2U> &J);
+
+public:
+  bool matlabCodegenIsDeleted;
+  ::coder::array<double, 2U> DesignVariableBoundsInternal;
+  b_RigidBodyTree *Tree;
+  cell_6 Constraints;
   double NumResiduals;
   double NumSlacks;
   double NumPositions;
   double NumVariables;
-  cell_wrap_8 ResidualIndices[22];
-  cell_wrap_8 SlackIndices[22];
-  array<double, 1U> LastX;
-  array<double, 1U> LastF;
-  array<double, 2U> LastJ;
+  cell_wrap_7 ResidualIndices[22];
+  cell_wrap_7 SlackIndices[22];
   DistanceBoundsConstraint _pobj0[20];
   JointPositionBounds _pobj1;
   PoseTarget _pobj2;
 
 private:
-  array<double, 2U> ConstraintMatrixInternal;
-  array<double, 1U> ConstraintBoundInternal;
-  boolean_T EnforceJointLimitsInternal;
-  cell_wrap_9 EqualityFlags[22];
+  ::coder::array<double, 2U> ConstraintMatrixInternal;
+  ::coder::array<double, 1U> ConstraintBoundInternal;
+  bool EnforceJointLimitsInternal;
+  cell_wrap_8 EqualityFlags[22];
+  ::coder::array<double, 1U> LastX;
+  ::coder::array<double, 1U> LastF;
+  ::coder::array<double, 2U> LastJ;
 };
 
 } // namespace internal
 } // namespace manip
 } // namespace robotics
 } // namespace coder
+} // namespace gik9dof
 
 #endif
 //

@@ -2,13 +2,14 @@
 // File: rigidBody1.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 // Include Files
 #include "rigidBody1.h"
 #include "CharacterVector.h"
 #include "CollisionSet.h"
+#include "GIKSolver.h"
 #include "RigidBody.h"
 #include "RigidBodyTree.h"
 #include "gik9dof_codegen_inuse_solveGIKStepWrapper_data.h"
@@ -17,18 +18,24 @@
 #include <cstring>
 
 // Variable Definitions
+namespace gik9dof {
 static const signed char iv1[9]{1, 0, 0, 0, 1, 0, 0, 0, 1};
+
+}
 
 // Function Definitions
 //
-// Arguments    : robotics::manip::internal::b_RigidBodyTree &iobj_0
+// Arguments    : GIKSolver *aInstancePtr
+//                robotics::manip::internal::RigidBodyTree &iobj_0
 //                robotics::manip::internal::CollisionSet &iobj_1
 //                rigidBodyJoint &iobj_2
 //                robotics::manip::internal::RigidBody &iobj_3
 // Return Type  : rigidBody *
 //
+namespace gik9dof {
 namespace coder {
-rigidBody *rigidBody::b_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
+rigidBody *rigidBody::b_init(GIKSolver *aInstancePtr,
+                             robotics::manip::internal::RigidBodyTree &iobj_0,
                              robotics::manip::internal::CollisionSet &iobj_1,
                              rigidBodyJoint &iobj_2,
                              robotics::manip::internal::RigidBody &iobj_3)
@@ -44,7 +51,7 @@ rigidBody *rigidBody::b_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   static const char b_cv4[5]{'f', 'i', 'x', 'e', 'd'};
   rigidBody *obj;
   robotics::manip::internal::CharacterVector s;
-  robotics::manip::internal::b_RigidBodyTree *b_default;
+  robotics::manip::internal::RigidBodyTree *b_default;
   double msubspace_data[36];
   double poslim_data[14];
   int exitg1;
@@ -56,7 +63,7 @@ rigidBody *rigidBody::b_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   signed char b_I[36];
   signed char c_I[9];
   signed char homepos_data[7];
-  boolean_T result;
+  bool result;
   obj = this;
   s.Length = 200.0;
   for (i = 0; i < 200; i++) {
@@ -66,7 +73,7 @@ rigidBody *rigidBody::b_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   s = iobj_3.NameInternal;
   s.Length = 11.0;
   for (i = 0; i < 11; i++) {
-    s.Vector[i] = cv3[i];
+    s.Vector[i] = cv5[i];
   }
   iobj_3.NameInternal = s;
   iobj_2.InTree = false;
@@ -138,7 +145,7 @@ rigidBody *rigidBody::b_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -335,7 +342,7 @@ rigidBody *rigidBody::b_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   }
   iobj_3.CollisionsInternal = iobj_1.init(static_cast<double>(0.0));
   iobj_3.matlabCodegenIsDeleted = false;
-  b_default = iobj_0.init();
+  b_default = iobj_0.init(aInstancePtr);
   obj->BodyInternal = &iobj_3;
   obj->TreeInternal = b_default;
   obj->matlabCodegenIsDeleted = false;
@@ -518,13 +525,15 @@ void rigidBody::b_set_Mass()
 }
 
 //
-// Arguments    : robotics::manip::internal::b_RigidBodyTree &iobj_0
+// Arguments    : GIKSolver *aInstancePtr
+//                robotics::manip::internal::RigidBodyTree &iobj_0
 //                robotics::manip::internal::CollisionSet &iobj_1
 //                rigidBodyJoint &iobj_2
 //                robotics::manip::internal::RigidBody &iobj_3
 // Return Type  : rigidBody *
 //
-rigidBody *rigidBody::c_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
+rigidBody *rigidBody::c_init(GIKSolver *aInstancePtr,
+                             robotics::manip::internal::RigidBodyTree &iobj_0,
                              robotics::manip::internal::CollisionSet &iobj_1,
                              rigidBodyJoint &iobj_2,
                              robotics::manip::internal::RigidBody &iobj_3)
@@ -541,7 +550,7 @@ rigidBody *rigidBody::c_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   static const char b_cv4[5]{'f', 'i', 'x', 'e', 'd'};
   rigidBody *obj;
   robotics::manip::internal::CharacterVector s;
-  robotics::manip::internal::b_RigidBodyTree *b_default;
+  robotics::manip::internal::RigidBodyTree *b_default;
   double msubspace_data[36];
   double poslim_data[14];
   int exitg1;
@@ -553,7 +562,7 @@ rigidBody *rigidBody::c_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   signed char b_I[36];
   signed char c_I[9];
   signed char homepos_data[7];
-  boolean_T result;
+  bool result;
   obj = this;
   s.Length = 200.0;
   for (i = 0; i < 200; i++) {
@@ -563,7 +572,7 @@ rigidBody *rigidBody::c_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   s = iobj_3.NameInternal;
   s.Length = 21.0;
   for (i = 0; i < 21; i++) {
-    s.Vector[i] = cv4[i];
+    s.Vector[i] = cv[i];
   }
   iobj_3.NameInternal = s;
   iobj_2.InTree = false;
@@ -635,7 +644,7 @@ rigidBody *rigidBody::c_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -832,7 +841,7 @@ rigidBody *rigidBody::c_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   }
   iobj_3.CollisionsInternal = iobj_1.init(static_cast<double>(0.0));
   iobj_3.matlabCodegenIsDeleted = false;
-  b_default = iobj_0.init();
+  b_default = iobj_0.init(aInstancePtr);
   obj->BodyInternal = &iobj_3;
   obj->TreeInternal = b_default;
   obj->matlabCodegenIsDeleted = false;
@@ -1024,13 +1033,15 @@ rigidBody::rigidBody()
 }
 
 //
-// Arguments    : robotics::manip::internal::b_RigidBodyTree &iobj_0
+// Arguments    : GIKSolver *aInstancePtr
+//                robotics::manip::internal::RigidBodyTree &iobj_0
 //                robotics::manip::internal::CollisionSet &iobj_1
 //                rigidBodyJoint &iobj_2
 //                robotics::manip::internal::RigidBody &iobj_3
 // Return Type  : rigidBody *
 //
-rigidBody *rigidBody::d_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
+rigidBody *rigidBody::d_init(GIKSolver *aInstancePtr,
+                             robotics::manip::internal::RigidBodyTree &iobj_0,
                              robotics::manip::internal::CollisionSet &iobj_1,
                              rigidBodyJoint &iobj_2,
                              robotics::manip::internal::RigidBody &iobj_3)
@@ -1047,7 +1058,7 @@ rigidBody *rigidBody::d_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   static const char b_cv4[5]{'f', 'i', 'x', 'e', 'd'};
   rigidBody *obj;
   robotics::manip::internal::CharacterVector s;
-  robotics::manip::internal::b_RigidBodyTree *b_default;
+  robotics::manip::internal::RigidBodyTree *b_default;
   double msubspace_data[36];
   double poslim_data[14];
   int exitg1;
@@ -1059,7 +1070,7 @@ rigidBody *rigidBody::d_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   signed char b_I[36];
   signed char c_I[9];
   signed char homepos_data[7];
-  boolean_T result;
+  bool result;
   obj = this;
   s.Length = 200.0;
   for (i = 0; i < 200; i++) {
@@ -1069,7 +1080,7 @@ rigidBody *rigidBody::d_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   s = iobj_3.NameInternal;
   s.Length = 18.0;
   for (i = 0; i < 18; i++) {
-    s.Vector[i] = cv5[i];
+    s.Vector[i] = cv1[i];
   }
   iobj_3.NameInternal = s;
   iobj_2.InTree = false;
@@ -1141,7 +1152,7 @@ rigidBody *rigidBody::d_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -1338,7 +1349,7 @@ rigidBody *rigidBody::d_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   }
   iobj_3.CollisionsInternal = iobj_1.init(static_cast<double>(0.0));
   iobj_3.matlabCodegenIsDeleted = false;
-  b_default = iobj_0.init();
+  b_default = iobj_0.init(aInstancePtr);
   obj->BodyInternal = &iobj_3;
   obj->TreeInternal = b_default;
   obj->matlabCodegenIsDeleted = false;
@@ -1529,13 +1540,15 @@ rigidBody::~rigidBody()
 }
 
 //
-// Arguments    : robotics::manip::internal::b_RigidBodyTree &iobj_0
+// Arguments    : GIKSolver *aInstancePtr
+//                robotics::manip::internal::RigidBodyTree &iobj_0
 //                robotics::manip::internal::CollisionSet &iobj_1
 //                rigidBodyJoint &iobj_2
 //                robotics::manip::internal::RigidBody &iobj_3
 // Return Type  : rigidBody *
 //
-rigidBody *rigidBody::e_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
+rigidBody *rigidBody::e_init(GIKSolver *aInstancePtr,
+                             robotics::manip::internal::RigidBodyTree &iobj_0,
                              robotics::manip::internal::CollisionSet &iobj_1,
                              rigidBodyJoint &iobj_2,
                              robotics::manip::internal::RigidBody &iobj_3)
@@ -1551,7 +1564,7 @@ rigidBody *rigidBody::e_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   static const char b_cv4[5]{'f', 'i', 'x', 'e', 'd'};
   rigidBody *obj;
   robotics::manip::internal::CharacterVector s;
-  robotics::manip::internal::b_RigidBodyTree *b_default;
+  robotics::manip::internal::RigidBodyTree *b_default;
   double msubspace_data[36];
   double poslim_data[14];
   int exitg1;
@@ -1563,7 +1576,7 @@ rigidBody *rigidBody::e_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   signed char b_I[36];
   signed char c_I[9];
   signed char homepos_data[7];
-  boolean_T result;
+  bool result;
   obj = this;
   s.Length = 200.0;
   for (i = 0; i < 200; i++) {
@@ -1645,7 +1658,7 @@ rigidBody *rigidBody::e_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -1842,7 +1855,7 @@ rigidBody *rigidBody::e_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   }
   iobj_3.CollisionsInternal = iobj_1.init(static_cast<double>(0.0));
   iobj_3.matlabCodegenIsDeleted = false;
-  b_default = iobj_0.init();
+  b_default = iobj_0.init(aInstancePtr);
   obj->BodyInternal = &iobj_3;
   obj->TreeInternal = b_default;
   obj->matlabCodegenIsDeleted = false;
@@ -2025,13 +2038,15 @@ void rigidBody::e_set_Mass()
 }
 
 //
-// Arguments    : robotics::manip::internal::b_RigidBodyTree &iobj_0
+// Arguments    : GIKSolver *aInstancePtr
+//                robotics::manip::internal::RigidBodyTree &iobj_0
 //                robotics::manip::internal::CollisionSet &iobj_1
 //                rigidBodyJoint &iobj_2
 //                robotics::manip::internal::RigidBody &iobj_3
 // Return Type  : rigidBody *
 //
-rigidBody *rigidBody::f_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
+rigidBody *rigidBody::f_init(GIKSolver *aInstancePtr,
+                             robotics::manip::internal::RigidBodyTree &iobj_0,
                              robotics::manip::internal::CollisionSet &iobj_1,
                              rigidBodyJoint &iobj_2,
                              robotics::manip::internal::RigidBody &iobj_3)
@@ -2047,7 +2062,7 @@ rigidBody *rigidBody::f_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   static const char b_cv4[5]{'f', 'i', 'x', 'e', 'd'};
   rigidBody *obj;
   robotics::manip::internal::CharacterVector s;
-  robotics::manip::internal::b_RigidBodyTree *b_default;
+  robotics::manip::internal::RigidBodyTree *b_default;
   double msubspace_data[36];
   double poslim_data[14];
   int exitg1;
@@ -2059,7 +2074,7 @@ rigidBody *rigidBody::f_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   signed char b_I[36];
   signed char c_I[9];
   signed char homepos_data[7];
-  boolean_T result;
+  bool result;
   obj = this;
   s.Length = 200.0;
   for (i = 0; i < 200; i++) {
@@ -2141,7 +2156,7 @@ rigidBody *rigidBody::f_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -2338,7 +2353,7 @@ rigidBody *rigidBody::f_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   }
   iobj_3.CollisionsInternal = iobj_1.init(static_cast<double>(0.0));
   iobj_3.matlabCodegenIsDeleted = false;
-  b_default = iobj_0.init();
+  b_default = iobj_0.init(aInstancePtr);
   obj->BodyInternal = &iobj_3;
   obj->TreeInternal = b_default;
   obj->matlabCodegenIsDeleted = false;
@@ -2521,13 +2536,15 @@ void rigidBody::f_set_Mass()
 }
 
 //
-// Arguments    : robotics::manip::internal::b_RigidBodyTree &iobj_0
+// Arguments    : GIKSolver *aInstancePtr
+//                robotics::manip::internal::RigidBodyTree &iobj_0
 //                robotics::manip::internal::CollisionSet &iobj_1
 //                rigidBodyJoint &iobj_2
 //                robotics::manip::internal::RigidBody &iobj_3
 // Return Type  : rigidBody *
 //
-rigidBody *rigidBody::g_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
+rigidBody *rigidBody::g_init(GIKSolver *aInstancePtr,
+                             robotics::manip::internal::RigidBodyTree &iobj_0,
                              robotics::manip::internal::CollisionSet &iobj_1,
                              rigidBodyJoint &iobj_2,
                              robotics::manip::internal::RigidBody &iobj_3)
@@ -2543,7 +2560,7 @@ rigidBody *rigidBody::g_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   static const char b_cv4[5]{'f', 'i', 'x', 'e', 'd'};
   rigidBody *obj;
   robotics::manip::internal::CharacterVector s;
-  robotics::manip::internal::b_RigidBodyTree *b_default;
+  robotics::manip::internal::RigidBodyTree *b_default;
   double msubspace_data[36];
   double poslim_data[14];
   int exitg1;
@@ -2555,7 +2572,7 @@ rigidBody *rigidBody::g_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   signed char b_I[36];
   signed char c_I[9];
   signed char homepos_data[7];
-  boolean_T result;
+  bool result;
   obj = this;
   s.Length = 200.0;
   for (i = 0; i < 200; i++) {
@@ -2637,7 +2654,7 @@ rigidBody *rigidBody::g_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -2834,7 +2851,7 @@ rigidBody *rigidBody::g_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   }
   iobj_3.CollisionsInternal = iobj_1.init(static_cast<double>(0.0));
   iobj_3.matlabCodegenIsDeleted = false;
-  b_default = iobj_0.init();
+  b_default = iobj_0.init(aInstancePtr);
   obj->BodyInternal = &iobj_3;
   obj->TreeInternal = b_default;
   obj->matlabCodegenIsDeleted = false;
@@ -3017,13 +3034,15 @@ void rigidBody::g_set_Mass()
 }
 
 //
-// Arguments    : robotics::manip::internal::b_RigidBodyTree &iobj_0
+// Arguments    : GIKSolver *aInstancePtr
+//                robotics::manip::internal::RigidBodyTree &iobj_0
 //                robotics::manip::internal::CollisionSet &iobj_1
 //                rigidBodyJoint &iobj_2
 //                robotics::manip::internal::RigidBody &iobj_3
 // Return Type  : rigidBody *
 //
-rigidBody *rigidBody::h_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
+rigidBody *rigidBody::h_init(GIKSolver *aInstancePtr,
+                             robotics::manip::internal::RigidBodyTree &iobj_0,
                              robotics::manip::internal::CollisionSet &iobj_1,
                              rigidBodyJoint &iobj_2,
                              robotics::manip::internal::RigidBody &iobj_3)
@@ -3039,7 +3058,7 @@ rigidBody *rigidBody::h_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   static const char b_cv4[5]{'f', 'i', 'x', 'e', 'd'};
   rigidBody *obj;
   robotics::manip::internal::CharacterVector s;
-  robotics::manip::internal::b_RigidBodyTree *b_default;
+  robotics::manip::internal::RigidBodyTree *b_default;
   double msubspace_data[36];
   double poslim_data[14];
   int exitg1;
@@ -3051,7 +3070,7 @@ rigidBody *rigidBody::h_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   signed char b_I[36];
   signed char c_I[9];
   signed char homepos_data[7];
-  boolean_T result;
+  bool result;
   obj = this;
   s.Length = 200.0;
   for (i = 0; i < 200; i++) {
@@ -3133,7 +3152,7 @@ rigidBody *rigidBody::h_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -3330,7 +3349,7 @@ rigidBody *rigidBody::h_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   }
   iobj_3.CollisionsInternal = iobj_1.init(static_cast<double>(0.0));
   iobj_3.matlabCodegenIsDeleted = false;
-  b_default = iobj_0.init();
+  b_default = iobj_0.init(aInstancePtr);
   obj->BodyInternal = &iobj_3;
   obj->TreeInternal = b_default;
   obj->matlabCodegenIsDeleted = false;
@@ -3513,13 +3532,15 @@ void rigidBody::h_set_Mass()
 }
 
 //
-// Arguments    : robotics::manip::internal::b_RigidBodyTree &iobj_0
+// Arguments    : GIKSolver *aInstancePtr
+//                robotics::manip::internal::RigidBodyTree &iobj_0
 //                robotics::manip::internal::CollisionSet &iobj_1
 //                rigidBodyJoint &iobj_2
 //                robotics::manip::internal::RigidBody &iobj_3
 // Return Type  : rigidBody *
 //
-rigidBody *rigidBody::i_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
+rigidBody *rigidBody::i_init(GIKSolver *aInstancePtr,
+                             robotics::manip::internal::RigidBodyTree &iobj_0,
                              robotics::manip::internal::CollisionSet &iobj_1,
                              rigidBodyJoint &iobj_2,
                              robotics::manip::internal::RigidBody &iobj_3)
@@ -3535,7 +3556,7 @@ rigidBody *rigidBody::i_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   static const char b_cv4[5]{'f', 'i', 'x', 'e', 'd'};
   rigidBody *obj;
   robotics::manip::internal::CharacterVector s;
-  robotics::manip::internal::b_RigidBodyTree *b_default;
+  robotics::manip::internal::RigidBodyTree *b_default;
   double msubspace_data[36];
   double poslim_data[14];
   int exitg1;
@@ -3547,7 +3568,7 @@ rigidBody *rigidBody::i_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   signed char b_I[36];
   signed char c_I[9];
   signed char homepos_data[7];
-  boolean_T result;
+  bool result;
   obj = this;
   s.Length = 200.0;
   for (i = 0; i < 200; i++) {
@@ -3629,7 +3650,7 @@ rigidBody *rigidBody::i_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -3826,7 +3847,7 @@ rigidBody *rigidBody::i_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   }
   iobj_3.CollisionsInternal = iobj_1.init(static_cast<double>(0.0));
   iobj_3.matlabCodegenIsDeleted = false;
-  b_default = iobj_0.init();
+  b_default = iobj_0.init(aInstancePtr);
   obj->BodyInternal = &iobj_3;
   obj->TreeInternal = b_default;
   obj->matlabCodegenIsDeleted = false;
@@ -4009,13 +4030,15 @@ void rigidBody::i_set_Mass()
 }
 
 //
-// Arguments    : robotics::manip::internal::b_RigidBodyTree &iobj_0
+// Arguments    : GIKSolver *aInstancePtr
+//                robotics::manip::internal::RigidBodyTree &iobj_0
 //                robotics::manip::internal::CollisionSet &iobj_1
 //                rigidBodyJoint &iobj_2
 //                robotics::manip::internal::RigidBody &iobj_3
 // Return Type  : rigidBody *
 //
-rigidBody *rigidBody::init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
+rigidBody *rigidBody::init(GIKSolver *aInstancePtr,
+                           robotics::manip::internal::RigidBodyTree &iobj_0,
                            robotics::manip::internal::CollisionSet &iobj_1,
                            rigidBodyJoint &iobj_2,
                            robotics::manip::internal::RigidBody &iobj_3)
@@ -4031,7 +4054,7 @@ rigidBody *rigidBody::init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   static const char b_cv4[5]{'f', 'i', 'x', 'e', 'd'};
   rigidBody *obj;
   robotics::manip::internal::CharacterVector s;
-  robotics::manip::internal::b_RigidBodyTree *b_default;
+  robotics::manip::internal::RigidBodyTree *b_default;
   double msubspace_data[36];
   double poslim_data[14];
   int exitg1;
@@ -4043,7 +4066,7 @@ rigidBody *rigidBody::init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   signed char b_I[36];
   signed char c_I[9];
   signed char homepos_data[7];
-  boolean_T result;
+  bool result;
   obj = this;
   s.Length = 200.0;
   for (i = 0; i < 200; i++) {
@@ -4053,7 +4076,7 @@ rigidBody *rigidBody::init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   s = iobj_3.NameInternal;
   s.Length = 11.0;
   for (i = 0; i < 11; i++) {
-    s.Vector[i] = cv2[i];
+    s.Vector[i] = cv4[i];
   }
   iobj_3.NameInternal = s;
   iobj_2.InTree = false;
@@ -4125,7 +4148,7 @@ rigidBody *rigidBody::init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -4322,7 +4345,7 @@ rigidBody *rigidBody::init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   }
   iobj_3.CollisionsInternal = iobj_1.init(static_cast<double>(0.0));
   iobj_3.matlabCodegenIsDeleted = false;
-  b_default = iobj_0.init();
+  b_default = iobj_0.init(aInstancePtr);
   obj->BodyInternal = &iobj_3;
   obj->TreeInternal = b_default;
   obj->matlabCodegenIsDeleted = false;
@@ -4330,13 +4353,15 @@ rigidBody *rigidBody::init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
 }
 
 //
-// Arguments    : robotics::manip::internal::b_RigidBodyTree &iobj_0
+// Arguments    : GIKSolver *aInstancePtr
+//                robotics::manip::internal::RigidBodyTree &iobj_0
 //                robotics::manip::internal::CollisionSet &iobj_1
 //                rigidBodyJoint &iobj_2
 //                robotics::manip::internal::RigidBody &iobj_3
 // Return Type  : rigidBody *
 //
-rigidBody *rigidBody::j_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
+rigidBody *rigidBody::j_init(GIKSolver *aInstancePtr,
+                             robotics::manip::internal::RigidBodyTree &iobj_0,
                              robotics::manip::internal::CollisionSet &iobj_1,
                              rigidBodyJoint &iobj_2,
                              robotics::manip::internal::RigidBody &iobj_3)
@@ -4352,7 +4377,7 @@ rigidBody *rigidBody::j_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   static const char b_cv4[5]{'f', 'i', 'x', 'e', 'd'};
   rigidBody *obj;
   robotics::manip::internal::CharacterVector s;
-  robotics::manip::internal::b_RigidBodyTree *b_default;
+  robotics::manip::internal::RigidBodyTree *b_default;
   double msubspace_data[36];
   double poslim_data[14];
   int exitg1;
@@ -4364,7 +4389,7 @@ rigidBody *rigidBody::j_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   signed char b_I[36];
   signed char c_I[9];
   signed char homepos_data[7];
-  boolean_T result;
+  bool result;
   obj = this;
   s.Length = 200.0;
   for (i = 0; i < 200; i++) {
@@ -4446,7 +4471,7 @@ rigidBody *rigidBody::j_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -4643,7 +4668,7 @@ rigidBody *rigidBody::j_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   }
   iobj_3.CollisionsInternal = iobj_1.init(static_cast<double>(0.0));
   iobj_3.matlabCodegenIsDeleted = false;
-  b_default = iobj_0.init();
+  b_default = iobj_0.init(aInstancePtr);
   obj->BodyInternal = &iobj_3;
   obj->TreeInternal = b_default;
   obj->matlabCodegenIsDeleted = false;
@@ -4826,13 +4851,15 @@ void rigidBody::j_set_Mass()
 }
 
 //
-// Arguments    : robotics::manip::internal::b_RigidBodyTree &iobj_0
+// Arguments    : GIKSolver *aInstancePtr
+//                robotics::manip::internal::RigidBodyTree &iobj_0
 //                robotics::manip::internal::CollisionSet &iobj_1
 //                rigidBodyJoint &iobj_2
 //                robotics::manip::internal::RigidBody &iobj_3
 // Return Type  : rigidBody *
 //
-rigidBody *rigidBody::k_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
+rigidBody *rigidBody::k_init(GIKSolver *aInstancePtr,
+                             robotics::manip::internal::RigidBodyTree &iobj_0,
                              robotics::manip::internal::CollisionSet &iobj_1,
                              rigidBodyJoint &iobj_2,
                              robotics::manip::internal::RigidBody &iobj_3)
@@ -4849,7 +4876,7 @@ rigidBody *rigidBody::k_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   static const char b_cv4[5]{'f', 'i', 'x', 'e', 'd'};
   rigidBody *obj;
   robotics::manip::internal::CharacterVector s;
-  robotics::manip::internal::b_RigidBodyTree *b_default;
+  robotics::manip::internal::RigidBodyTree *b_default;
   double msubspace_data[36];
   double poslim_data[14];
   int exitg1;
@@ -4861,7 +4888,7 @@ rigidBody *rigidBody::k_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   signed char b_I[36];
   signed char c_I[9];
   signed char homepos_data[7];
-  boolean_T result;
+  bool result;
   obj = this;
   s.Length = 200.0;
   for (i = 0; i < 200; i++) {
@@ -4943,7 +4970,7 @@ rigidBody *rigidBody::k_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
       do {
         exitg1 = 0;
         if (ibmat < 9) {
-          if (cv1[ibmat] != s.Vector[ibmat]) {
+          if (cv3[ibmat] != s.Vector[ibmat]) {
             exitg1 = 1;
           } else {
             ibmat++;
@@ -5140,7 +5167,7 @@ rigidBody *rigidBody::k_init(robotics::manip::internal::b_RigidBodyTree &iobj_0,
   }
   iobj_3.CollisionsInternal = iobj_1.init(static_cast<double>(0.0));
   iobj_3.matlabCodegenIsDeleted = false;
-  b_default = iobj_0.init();
+  b_default = iobj_0.init(aInstancePtr);
   obj->BodyInternal = &iobj_3;
   obj->TreeInternal = b_default;
   obj->matlabCodegenIsDeleted = false;
@@ -5331,6 +5358,7 @@ void rigidBody::set_Mass()
 }
 
 } // namespace coder
+} // namespace gik9dof
 
 //
 // File trailer for rigidBody1.cpp

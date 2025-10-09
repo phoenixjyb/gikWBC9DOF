@@ -2,7 +2,7 @@
 // File: tic.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 #ifndef TIC_H
@@ -13,11 +13,19 @@
 #include <cstddef>
 #include <cstdlib>
 
-// Function Declarations
-namespace coder {
-double tic(double &tstart_tv_nsec);
+// Type Declarations
+namespace gik9dof {
+class GIKSolver;
 
 }
+
+// Function Declarations
+namespace gik9dof {
+namespace coder {
+double tic(GIKSolver *aInstancePtr, double &tstart_tv_nsec);
+
+}
+} // namespace gik9dof
 
 #endif
 //

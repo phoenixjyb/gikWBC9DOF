@@ -2,7 +2,7 @@
 // File: JointPositionBounds.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 // Include Files
@@ -17,21 +17,35 @@
 
 // Function Definitions
 //
-// Arguments    : array<double, 2U> &b_value
-// Return Type  : void
+// Arguments    : void
+// Return Type  : JointPositionBounds
 //
+namespace gik9dof {
 namespace coder {
 namespace robotics {
 namespace manip {
 namespace internal {
-void JointPositionBounds::get_KinematicPath(array<double, 2U> &b_value) const
+JointPositionBounds::JointPositionBounds() = default;
+
+//
+// Arguments    : void
+// Return Type  : void
+//
+JointPositionBounds::~JointPositionBounds() = default;
+
+//
+// Arguments    : ::coder::array<double, 2U> &b_value
+// Return Type  : void
+//
+void JointPositionBounds::get_KinematicPath(
+    ::coder::array<double, 2U> &b_value) const
 {
-  array<double, 1U> b;
-  array<double, 1U> b_ii;
-  array<int, 1U> ii;
-  array<int, 1U> iwork;
-  array<boolean_T, 2U> x;
-  array<boolean_T, 1U> b_x;
+  ::coder::array<double, 1U> b;
+  ::coder::array<double, 1U> b_ii;
+  ::coder::array<int, 1U> ii;
+  ::coder::array<int, 1U> iwork;
+  ::coder::array<bool, 2U> x;
+  ::coder::array<bool, 1U> b_x;
   double xtmp;
   int b_i;
   int i;
@@ -42,7 +56,7 @@ void JointPositionBounds::get_KinematicPath(array<double, 2U> &b_value) const
   int k;
   int pEnd;
   int qEnd;
-  boolean_T exitg1;
+  bool exitg1;
   pEnd = BoundsInternal.size(0);
   x.set_size(pEnd, 2);
   i1 = BoundsInternal.size(0) << 1;
@@ -109,7 +123,7 @@ void JointPositionBounds::get_KinematicPath(array<double, 2U> &b_value) const
   for (i = 0; i < pEnd; i++) {
     b_ii[i + 1] = ii[i];
   }
-  ::coder::internal::sort(b_ii);
+  ::gik9dof::coder::internal::sort(b_ii);
   j2 = b_ii.size(0);
   i1 = b_ii.size(0) + 1;
   ii.set_size(b_ii.size(0));
@@ -240,10 +254,10 @@ void JointPositionBounds::get_KinematicPath(array<double, 2U> &b_value) const
 }
 
 //
-// Arguments    : RigidBodyTree *tree
+// Arguments    : b_RigidBodyTree *tree
 // Return Type  : JointPositionBounds *
 //
-JointPositionBounds *JointPositionBounds::init(RigidBodyTree *tree)
+JointPositionBounds *JointPositionBounds::init(b_RigidBodyTree *tree)
 {
   JointPositionBounds *obj;
   double numElements;
@@ -277,6 +291,7 @@ JointPositionBounds *JointPositionBounds::init(RigidBodyTree *tree)
 } // namespace manip
 } // namespace robotics
 } // namespace coder
+} // namespace gik9dof
 
 //
 // File trailer for JointPositionBounds.cpp

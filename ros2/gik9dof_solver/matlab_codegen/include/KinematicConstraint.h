@@ -2,7 +2,7 @@
 // File: KinematicConstraint.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 #ifndef KINEMATICCONSTRAINT_H
@@ -15,10 +15,13 @@
 #include <cstdlib>
 
 // Function Declarations
+namespace gik9dof {
 void minus(double in1[2], const double in2[2],
-           const coder::array<double, 1U> &in3);
+           const ::coder::array<double, 1U> &in3);
 
-void minus(double in1[2], const coder::array<double, 1U> &in2);
+void minus(double in1[2], const ::coder::array<double, 1U> &in2);
+
+} // namespace gik9dof
 
 #endif
 //

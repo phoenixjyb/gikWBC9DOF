@@ -2,7 +2,7 @@
 // File: sort.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 // Include Files
@@ -19,6 +19,7 @@
 //                const int x_size[2]
 // Return Type  : void
 //
+namespace gik9dof {
 namespace coder {
 namespace internal {
 void b_sort(double x_data[], const int x_size[2])
@@ -457,15 +458,15 @@ void sort(double x[22], int idx[22])
 }
 
 //
-// Arguments    : array<double, 1U> &x
+// Arguments    : ::coder::array<double, 1U> &x
 // Return Type  : void
 //
-void sort(array<double, 1U> &x)
+void sort(::coder::array<double, 1U> &x)
 {
-  array<double, 1U> vwork;
-  array<double, 1U> xwork;
-  array<int, 1U> iidx;
-  array<int, 1U> iwork;
+  ::coder::array<double, 1U> vwork;
+  ::coder::array<double, 1U> xwork;
+  ::coder::array<int, 1U> iidx;
+  ::coder::array<int, 1U> iwork;
   int dim;
   int i;
   int i1;
@@ -734,6 +735,7 @@ void sort(array<double, 1U> &x)
 
 } // namespace internal
 } // namespace coder
+} // namespace gik9dof
 
 //
 // File trailer for sort.cpp

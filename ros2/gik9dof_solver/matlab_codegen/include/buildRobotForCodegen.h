@@ -2,7 +2,7 @@
 // File: buildRobotForCodegen.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 #ifndef BUILDROBOTFORCODEGEN_H
@@ -14,6 +14,9 @@
 #include <cstdlib>
 
 // Type Declarations
+namespace gik9dof {
+class GIKSolver;
+
 namespace coder {
 namespace robotics {
 namespace manip {
@@ -36,12 +39,14 @@ class RigidBody;
 class rigidBodyTree;
 
 } // namespace coder
+} // namespace gik9dof
 
 // Function Declarations
 namespace gik9dof {
 namespace codegen_inuse {
 coder::rigidBodyTree *
-buildRobotForCodegen(coder::robotics::manip::internal::CollisionSet &iobj_0,
+buildRobotForCodegen(GIKSolver *aInstancePtr,
+                     coder::robotics::manip::internal::CollisionSet &iobj_0,
                      coder::rigidBodyJoint &iobj_1,
                      coder::robotics::manip::internal::RigidBody &iobj_2,
                      coder::rigidBodyTree &iobj_3);

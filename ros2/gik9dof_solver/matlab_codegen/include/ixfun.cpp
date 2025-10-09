@@ -2,7 +2,7 @@
 // File: ixfun.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 // Include Files
@@ -14,15 +14,17 @@
 
 // Function Definitions
 //
-// Arguments    : const array<double, 1U> &a
-//                const array<double, 1U> &b
-//                array<double, 1U> &c
+// Arguments    : const ::coder::array<double, 1U> &a
+//                const ::coder::array<double, 1U> &b
+//                ::coder::array<double, 1U> &c
 // Return Type  : void
 //
+namespace gik9dof {
 namespace coder {
 namespace internal {
-void expand_max(const array<double, 1U> &a, const array<double, 1U> &b,
-                array<double, 1U> &c)
+void expand_max(const ::coder::array<double, 1U> &a,
+                const ::coder::array<double, 1U> &b,
+                ::coder::array<double, 1U> &c)
 {
   int csz_idx_0;
   int u1;
@@ -40,8 +42,8 @@ void expand_max(const array<double, 1U> &a, const array<double, 1U> &b,
   }
   c.set_size(csz_idx_0);
   if (csz_idx_0 != 0) {
-    boolean_T b1;
-    boolean_T b_b;
+    bool b1;
+    bool b_b;
     b_b = (a.size(0) != 1);
     b1 = (b.size(0) != 1);
     for (u1 = 0; u1 < csz_idx_0; u1++) {
@@ -51,13 +53,14 @@ void expand_max(const array<double, 1U> &a, const array<double, 1U> &b,
 }
 
 //
-// Arguments    : const array<double, 1U> &a
-//                const array<double, 1U> &b
-//                array<double, 1U> &c
+// Arguments    : const ::coder::array<double, 1U> &a
+//                const ::coder::array<double, 1U> &b
+//                ::coder::array<double, 1U> &c
 // Return Type  : void
 //
-void expand_min(const array<double, 1U> &a, const array<double, 1U> &b,
-                array<double, 1U> &c)
+void expand_min(const ::coder::array<double, 1U> &a,
+                const ::coder::array<double, 1U> &b,
+                ::coder::array<double, 1U> &c)
 {
   int csz_idx_0;
   int u1;
@@ -75,8 +78,8 @@ void expand_min(const array<double, 1U> &a, const array<double, 1U> &b,
   }
   c.set_size(csz_idx_0);
   if (csz_idx_0 != 0) {
-    boolean_T b1;
-    boolean_T b_b;
+    bool b1;
+    bool b_b;
     b_b = (a.size(0) != 1);
     b1 = (b.size(0) != 1);
     for (u1 = 0; u1 < csz_idx_0; u1++) {
@@ -87,6 +90,7 @@ void expand_min(const array<double, 1U> &a, const array<double, 1U> &b,
 
 } // namespace internal
 } // namespace coder
+} // namespace gik9dof
 
 //
 // File trailer for ixfun.cpp

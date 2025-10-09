@@ -2,7 +2,7 @@
 // File: mldivide.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 // Include Files
@@ -12,21 +12,22 @@
 #include "coder_array.h"
 #include <cmath>
 #include <cstring>
-#include <emmintrin.h>
 
 // Function Definitions
 //
-// Arguments    : const array<double, 2U> &A
-//                array<double, 1U> &B
+// Arguments    : const ::coder::array<double, 2U> &A
+//                ::coder::array<double, 1U> &B
 // Return Type  : void
 //
+namespace gik9dof {
 namespace coder {
-void mldivide(const array<double, 2U> &A, array<double, 1U> &B)
+void mldivide(const ::coder::array<double, 2U> &A,
+              ::coder::array<double, 1U> &B)
 {
-  array<double, 2U> b_A;
-  array<double, 1U> b_B;
-  array<double, 1U> tau;
-  array<int, 2U> jpvt;
+  ::coder::array<double, 2U> b_A;
+  ::coder::array<double, 1U> b_B;
+  ::coder::array<double, 1U> tau;
+  ::coder::array<int, 2U> jpvt;
   if ((A.size(0) == 0) || (A.size(1) == 0) || (B.size(0) == 0)) {
     int minmn;
     minmn = A.size(1);
@@ -60,9 +61,9 @@ void mldivide(const array<double, 2U> &A, array<double, 1U> &B)
     if (n > 0) {
       jpvt[0] = 1;
       minmn = 1;
-      for (int rankA{2}; rankA <= n; rankA++) {
+      for (int k{2}; k <= n; k++) {
         minmn++;
-        jpvt[rankA - 1] = minmn;
+        jpvt[k - 1] = minmn;
       }
     }
     if (n >= 1) {
@@ -72,24 +73,24 @@ void mldivide(const array<double, 2U> &A, array<double, 1U> &B)
       }
       for (int j{0}; j < u0; j++) {
         int b_tmp;
+        int jp1j;
         int maxmn;
         int mmj_tmp;
-        int mn;
-        int vectorUB;
+        int rankA;
         mmj_tmp = n - j;
         b_tmp = j * (LDA_tmp + 1);
-        mn = b_tmp + 2;
+        jp1j = b_tmp + 2;
         if (mmj_tmp < 1) {
           minmn = -1;
         } else {
           minmn = 0;
           if (mmj_tmp > 1) {
             tol = std::abs(b_A[b_tmp]);
-            for (int rankA{2}; rankA <= mmj_tmp; rankA++) {
+            for (int k{2}; k <= mmj_tmp; k++) {
               double s;
-              s = std::abs(b_A[(b_tmp + rankA) - 1]);
+              s = std::abs(b_A[(b_tmp + k) - 1]);
               if (s > tol) {
-                minmn = rankA - 1;
+                minmn = k - 1;
                 tol = s;
               }
             }
@@ -99,30 +100,30 @@ void mldivide(const array<double, 2U> &A, array<double, 1U> &B)
           if (minmn != 0) {
             maxmn = j + minmn;
             jpvt[j] = maxmn + 1;
-            for (int rankA{0}; rankA < n; rankA++) {
-              minmn = rankA * LDA_tmp;
-              vectorUB = j + minmn;
-              tol = b_A[vectorUB];
+            for (int k{0}; k < n; k++) {
+              minmn = k * LDA_tmp;
+              rankA = j + minmn;
+              tol = b_A[rankA];
               i = maxmn + minmn;
-              b_A[vectorUB] = b_A[i];
+              b_A[rankA] = b_A[i];
               b_A[i] = tol;
             }
           }
           i = b_tmp + mmj_tmp;
-          for (int b_i{mn}; b_i <= i; b_i++) {
+          for (int b_i{jp1j}; b_i <= i; b_i++) {
             b_A[b_i - 1] = b_A[b_i - 1] / b_A[b_tmp];
           }
         }
         minmn = b_tmp + LDA_tmp;
         maxmn = minmn;
-        for (mn = 0; mn <= mmj_tmp - 2; mn++) {
-          tol = b_A[minmn + mn * LDA_tmp];
+        for (jp1j = 0; jp1j <= mmj_tmp - 2; jp1j++) {
+          tol = b_A[minmn + jp1j * LDA_tmp];
           if (tol != 0.0) {
             i = maxmn + 2;
-            vectorUB = mmj_tmp + maxmn;
-            for (int rankA{i}; rankA <= vectorUB; rankA++) {
-              b_A[rankA - 1] =
-                  b_A[rankA - 1] + b_A[((b_tmp + rankA) - maxmn) - 1] * -tol;
+            rankA = mmj_tmp + maxmn;
+            for (int b_i{i}; b_i <= rankA; b_i++) {
+              b_A[b_i - 1] =
+                  b_A[b_i - 1] + b_A[((b_tmp + b_i) - maxmn) - 1] * -tol;
             }
           }
           maxmn += LDA_tmp;
@@ -137,23 +138,23 @@ void mldivide(const array<double, 2U> &A, array<double, 1U> &B)
         B[i - 1] = tol;
       }
     }
-    for (int rankA{0}; rankA < n; rankA++) {
-      minmn = LDA_tmp * rankA;
-      if (B[rankA] != 0.0) {
-        i = rankA + 2;
+    for (int k{0}; k < n; k++) {
+      minmn = LDA_tmp * k;
+      if (B[k] != 0.0) {
+        i = k + 2;
         for (int b_i{i}; b_i <= n; b_i++) {
-          B[b_i - 1] = B[b_i - 1] - B[rankA] * b_A[(b_i + minmn) - 1];
+          B[b_i - 1] = B[b_i - 1] - B[k] * b_A[(b_i + minmn) - 1];
         }
       }
     }
-    for (int rankA{n}; rankA >= 1; rankA--) {
-      minmn = LDA_tmp * (rankA - 1);
-      tol = B[rankA - 1];
+    for (int k{n}; k >= 1; k--) {
+      minmn = LDA_tmp * (k - 1);
+      tol = B[k - 1];
       if (tol != 0.0) {
-        tol /= b_A[(rankA + minmn) - 1];
-        B[rankA - 1] = tol;
-        for (int b_i{0}; b_i <= rankA - 2; b_i++) {
-          B[b_i] = B[b_i] - B[rankA - 1] * b_A[b_i + minmn];
+        tol /= b_A[(k + minmn) - 1];
+        B[k - 1] = tol;
+        for (int b_i{0}; b_i <= k - 2; b_i++) {
+          B[b_i] = B[b_i] - B[k - 1] * b_A[b_i + minmn];
         }
       }
     }
@@ -162,7 +163,6 @@ void mldivide(const array<double, 2U> &A, array<double, 1U> &B)
     int i;
     int maxmn;
     int minmn;
-    int mn;
     int rankA;
     int u0;
     b_A.set_size(A.size(0), A.size(1));
@@ -199,11 +199,11 @@ void mldivide(const array<double, 2U> &A, array<double, 1U> &B)
       B[i] = 0.0;
     }
     u0 = b_A.size(0);
-    mn = b_A.size(1);
-    if (u0 <= mn) {
-      mn = u0;
+    maxmn = b_A.size(1);
+    if (u0 <= maxmn) {
+      maxmn = u0;
     }
-    for (int j{0}; j < mn; j++) {
+    for (int j{0}; j < maxmn; j++) {
       minmn = b_A.size(0);
       if (tau[j] != 0.0) {
         tol = b_B[j];
@@ -213,19 +213,8 @@ void mldivide(const array<double, 2U> &A, array<double, 1U> &B)
         }
         tol *= tau[j];
         if (tol != 0.0) {
-          int vectorUB;
           b_B[j] = b_B[j] - tol;
-          maxmn = (((((b_A.size(0) - j) - 1) / 2) << 1) + j) + 2;
-          vectorUB = maxmn - 2;
-          for (int b_i{i}; b_i <= vectorUB; b_i += 2) {
-            __m128d r;
-            __m128d r1;
-            r = _mm_loadu_pd(&b_A[(b_i + b_A.size(0) * j) - 1]);
-            r1 = _mm_loadu_pd(&b_B[b_i - 1]);
-            _mm_storeu_pd(&b_B[b_i - 1],
-                          _mm_sub_pd(r1, _mm_mul_pd(r, _mm_set1_pd(tol))));
-          }
-          for (int b_i{maxmn}; b_i <= minmn; b_i++) {
+          for (int b_i{i}; b_i <= minmn; b_i++) {
             b_B[b_i - 1] =
                 b_B[b_i - 1] - b_A[(b_i + b_A.size(0) * j) - 1] * tol;
           }
@@ -247,6 +236,7 @@ void mldivide(const array<double, 2U> &A, array<double, 1U> &B)
 }
 
 } // namespace coder
+} // namespace gik9dof
 
 //
 // File trailer for mldivide.cpp

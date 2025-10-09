@@ -2,7 +2,7 @@
 // File: sortIdx.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 #ifndef SORTIDX_H
@@ -15,6 +15,7 @@
 #include <cstdlib>
 
 // Function Declarations
+namespace gik9dof {
 namespace coder {
 namespace internal {
 void merge(int idx[22], double x[22], int offset, int np, int nq, int iwork[22],
@@ -23,12 +24,14 @@ void merge(int idx[22], double x[22], int offset, int np, int nq, int iwork[22],
 void merge_block(int idx_data[], double x_data[], int offset, int n,
                  int preSortLevel, int iwork_data[], double xwork_data[]);
 
-void merge_block(array<int, 1U> &idx, array<double, 1U> &x, int offset, int n,
-                 int preSortLevel, array<int, 1U> &iwork,
-                 array<double, 1U> &xwork);
+void merge_block(::coder::array<int, 1U> &idx, ::coder::array<double, 1U> &x,
+                 int offset, int n, int preSortLevel,
+                 ::coder::array<int, 1U> &iwork,
+                 ::coder::array<double, 1U> &xwork);
 
 } // namespace internal
 } // namespace coder
+} // namespace gik9dof
 
 #endif
 //

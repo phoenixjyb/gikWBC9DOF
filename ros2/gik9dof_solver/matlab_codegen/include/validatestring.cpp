@@ -2,7 +2,7 @@
 // File: validatestring.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 // Include Files
@@ -20,6 +20,7 @@
 //                int out_size[2]
 // Return Type  : void
 //
+namespace gik9dof {
 namespace coder {
 void validatestring(const char str_data[], const int str_size[2],
                     char out_data[], int out_size[2])
@@ -52,12 +53,12 @@ void validatestring(const char str_data[], const int str_size[2],
   int u0;
   int u1;
   char partial_match_data[9];
-  boolean_T b_bool;
-  boolean_T guard1;
-  boolean_T guard2;
-  boolean_T guard3;
-  boolean_T guard4;
-  boolean_T matched;
+  bool b_bool;
+  bool guard1;
+  bool guard2;
+  bool guard3;
+  bool guard4;
+  bool matched;
   partial_match_size_idx_1 = 8;
   for (u0 = 0; u0 < 8; u0++) {
     partial_match_data[u0] = ' ';
@@ -115,7 +116,7 @@ void validatestring(const char str_data[], const int str_size[2],
         exitg1 = 0;
         if (u0 <= u1 - 1) {
           if (b_cv[static_cast<int>(static_cast<unsigned char>(str_data[u0]) &
-                                    127U)] != b_cv[static_cast<int>(cv1[u0])]) {
+                                    127U)] != b_cv[static_cast<int>(cv3[u0])]) {
             exitg1 = 1;
           } else {
             u0++;
@@ -130,13 +131,13 @@ void validatestring(const char str_data[], const int str_size[2],
           nmatched = 1;
           partial_match_size_idx_1 = 9;
           for (u0 = 0; u0 < 9; u0++) {
-            partial_match_data[u0] = cv1[u0];
+            partial_match_data[u0] = cv3[u0];
           }
         } else {
           if (!matched) {
             partial_match_size_idx_1 = 9;
             for (u0 = 0; u0 < 9; u0++) {
-              partial_match_data[u0] = cv1[u0];
+              partial_match_data[u0] = cv3[u0];
             }
           }
           matched = true;
@@ -260,6 +261,7 @@ void validatestring(const char str_data[], const int str_size[2],
 }
 
 } // namespace coder
+} // namespace gik9dof
 
 //
 // File trailer for validatestring.cpp

@@ -2,7 +2,7 @@
 // File: randn.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 #ifndef RANDN_H
@@ -13,15 +13,23 @@
 #include <cstddef>
 #include <cstdlib>
 
+// Type Declarations
+namespace gik9dof {
+class GIKSolver;
+
+}
+
 // Function Declarations
+namespace gik9dof {
 namespace coder {
-void b_randn(double r[3]);
+void b_randn(GIKSolver *aInstancePtr, double r[3]);
 
-int randn(const double varargin_1[2], double r_data[]);
+void randn(GIKSolver *aInstancePtr, double r[4]);
 
-void randn(double r[4]);
+int randn(GIKSolver *aInstancePtr, const double varargin_1[2], double r_data[]);
 
 } // namespace coder
+} // namespace gik9dof
 
 #endif
 //

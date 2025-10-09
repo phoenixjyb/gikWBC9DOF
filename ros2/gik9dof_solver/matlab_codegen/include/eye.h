@@ -2,7 +2,7 @@
 // File: eye.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 #ifndef EYE_H
@@ -15,10 +15,12 @@
 #include <cstdlib>
 
 // Function Declarations
+namespace gik9dof {
 namespace coder {
-void eye(double varargin_1, array<double, 2U> &b_I);
+void eye(double varargin_1, ::coder::array<double, 2U> &b_I);
 
 }
+} // namespace gik9dof
 
 #endif
 //

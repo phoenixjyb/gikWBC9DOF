@@ -2,7 +2,7 @@
 // File: DistanceBoundsConstraint.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 // Include Files
@@ -17,30 +17,42 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
-#include <emmintrin.h>
 
 // Function Definitions
 //
-// Arguments    : const array<double, 1U> &q
-//                double J_data[]
-//                int J_size[2]
-// Return Type  : double
+// Arguments    : void
+// Return Type  : DistanceBoundsConstraint
 //
+namespace gik9dof {
 namespace coder {
 namespace robotics {
 namespace manip {
 namespace internal {
-double DistanceBoundsConstraint::evaluate(const array<double, 1U> &q,
+DistanceBoundsConstraint::DistanceBoundsConstraint() = default;
+
+//
+// Arguments    : void
+// Return Type  : void
+//
+DistanceBoundsConstraint::~DistanceBoundsConstraint() = default;
+
+//
+// Arguments    : const ::coder::array<double, 1U> &q
+//                double J_data[]
+//                int J_size[2]
+// Return Type  : double
+//
+double DistanceBoundsConstraint::evaluate(const ::coder::array<double, 1U> &q,
                                           double J_data[], int J_size[2])
 {
-  __m128d b_r;
-  array<double, 2U> C;
-  array<double, 2U> Jrobot;
+  ::coder::array<double, 2U> C;
+  ::coder::array<double, 2U> Jrobot;
   double T_data[16];
   double A[6];
-  double r[3];
   double d;
   double g;
+  double r_idx_0;
+  double r_idx_1;
   double s;
   int T_size[2];
   int boffset;
@@ -49,18 +61,18 @@ double DistanceBoundsConstraint::evaluate(const array<double, 1U> &q,
                                     T_data, T_size, Jrobot);
   boffset = T_size[0] * (T_size[1] - 1);
   d = T_data[boffset];
-  r[0] = d;
+  r_idx_0 = d;
   s = d * d;
   d = T_data[boffset + 1];
-  r[1] = d;
+  r_idx_1 = d;
   s += d * d;
   d = T_data[boffset + 2];
-  r[2] = d;
   s += d * d;
   g = std::sqrt(s + 2.2204460492503131E-16);
-  _mm_storeu_pd(&A[0], _mm_set1_pd(0.0));
-  b_r = _mm_loadu_pd(&r[0]);
-  _mm_storeu_pd(&A[3], _mm_div_pd(b_r, _mm_set1_pd(g)));
+  A[0] = 0.0;
+  A[3] = r_idx_0 / g;
+  A[1] = 0.0;
+  A[4] = r_idx_1 / g;
   A[2] = 0.0;
   A[5] = d / g;
   n_tmp = Jrobot.size(1);
@@ -91,7 +103,7 @@ void DistanceBoundsConstraint::get_EndEffector(char value_data[],
 {
   CharacterVector c_obj;
   RigidBody *b_obj;
-  RigidBodyTree *obj;
+  b_RigidBodyTree *obj;
   if (EndEffectorIndex > 0.0) {
     int loop_ub;
     b_obj = Tree->Bodies[static_cast<int>(EndEffectorIndex) - 1];
@@ -133,7 +145,7 @@ void DistanceBoundsConstraint::get_ReferenceBody(char value_data[],
 {
   CharacterVector c_obj;
   RigidBody *b_obj;
-  RigidBodyTree *obj;
+  b_RigidBodyTree *obj;
   if (ReferenceBodyIndex > 0.0) {
     int loop_ub;
     b_obj = Tree->Bodies[static_cast<int>(ReferenceBodyIndex) - 1];
@@ -166,10 +178,10 @@ void DistanceBoundsConstraint::get_ReferenceBody(char value_data[],
 }
 
 //
-// Arguments    : RigidBodyTree *tree
+// Arguments    : b_RigidBodyTree *tree
 // Return Type  : DistanceBoundsConstraint *
 //
-DistanceBoundsConstraint *DistanceBoundsConstraint::init(RigidBodyTree *tree)
+DistanceBoundsConstraint *DistanceBoundsConstraint::init(b_RigidBodyTree *tree)
 {
   DistanceBoundsConstraint *obj;
   int obj_idx_0;
@@ -201,65 +213,51 @@ void DistanceBoundsConstraint::update(const constraintDistanceBounds *other)
 {
   CharacterVector b_obj;
   RigidBody *c_obj;
-  RigidBodyTree *obj;
-  int a_size[2];
-  int kstr;
-  char a_data[200];
-  boolean_T b_bool;
+  b_RigidBodyTree *obj;
+  double bid;
+  int obj_size[2];
+  char obj_data[200];
   Weights.set_size(1, 1);
   Weights[0] = other->Weights;
-  get_EndEffector(a_data, a_size);
-  b_bool = false;
-  if (a_size[1] == 17) {
-    kstr = 0;
-    int exitg1;
-    do {
-      exitg1 = 0;
-      if (kstr < 17) {
-        if (a_data[kstr] != other->EndEffector[kstr]) {
-          exitg1 = 1;
-        } else {
-          kstr++;
-        }
-      } else {
-        b_bool = true;
-        exitg1 = 1;
-      }
-    } while (exitg1 == 0);
+  get_EndEffector(obj_data, obj_size);
+  if (!::gik9dof::coder::internal::b_strcmp(obj_data, obj_size,
+                                            other->EndEffector)) {
+    obj = Tree;
+    bid = obj->findBodyIndexByName(other->EndEffector);
+    EndEffectorIndex = bid;
   }
-  if (!b_bool) {
-    EndEffectorIndex = Tree->validateInputBodyName(other->EndEffector);
-  }
-  get_ReferenceBody(a_data, a_size);
-  if (!::coder::internal::b_strcmp(a_data, a_size, other->ReferenceBody)) {
+  get_ReferenceBody(obj_data, obj_size);
+  if (!::gik9dof::coder::internal::c_strcmp(obj_data, obj_size,
+                                            other->ReferenceBody)) {
     if ((other->ReferenceBody.size(0) == 0) ||
         (other->ReferenceBody.size(1) == 0)) {
       ReferenceBodyIndex = 0.0;
     } else {
+      int b_bid;
       int loop_ub;
       obj = Tree;
-      kstr = -1;
+      b_bid = -1;
       b_obj = obj->Base.NameInternal;
       if (b_obj.Length < 1.0) {
         loop_ub = 0;
       } else {
         loop_ub = static_cast<int>(b_obj.Length);
       }
-      a_size[0] = 1;
-      a_size[1] = loop_ub;
+      obj_size[0] = 1;
+      obj_size[1] = loop_ub;
       if (loop_ub - 1 >= 0) {
-        ::std::copy(&b_obj.Vector[0], &b_obj.Vector[loop_ub], &a_data[0]);
+        ::std::copy(&b_obj.Vector[0], &b_obj.Vector[loop_ub], &obj_data[0]);
       }
-      if (::coder::internal::b_strcmp(a_data, a_size, other->ReferenceBody)) {
-        kstr = 0;
+      if (::gik9dof::coder::internal::c_strcmp(obj_data, obj_size,
+                                               other->ReferenceBody)) {
+        b_bid = 0;
       } else {
-        double d;
         int i;
-        boolean_T exitg2;
-        d = obj->NumBodies;
+        bool exitg1;
+        bid = obj->NumBodies;
         i = 0;
-        exitg2 = false;
-        while ((!exitg2) && (i <= static_cast<int>(d) - 1)) {
+        exitg1 = false;
+        while ((!exitg1) && (i <= static_cast<int>(bid) - 1)) {
           c_obj = obj->Bodies[i];
           b_obj = c_obj->NameInternal;
           if (b_obj.Length < 1.0) {
@@ -267,21 +265,21 @@ void DistanceBoundsConstraint::update(const constraintDistanceBounds *other)
           } else {
             loop_ub = static_cast<int>(b_obj.Length);
           }
-          a_size[0] = 1;
-          a_size[1] = loop_ub;
+          obj_size[0] = 1;
+          obj_size[1] = loop_ub;
           if (loop_ub - 1 >= 0) {
-            ::std::copy(&b_obj.Vector[0], &b_obj.Vector[loop_ub], &a_data[0]);
+            ::std::copy(&b_obj.Vector[0], &b_obj.Vector[loop_ub], &obj_data[0]);
           }
-          if (::coder::internal::b_strcmp(a_data, a_size,
-                                          other->ReferenceBody)) {
-            kstr = i + 1;
-            exitg2 = true;
+          if (::gik9dof::coder::internal::c_strcmp(obj_data, obj_size,
+                                                   other->ReferenceBody)) {
+            b_bid = i + 1;
+            exitg1 = true;
           } else {
             i++;
           }
         }
       }
-      ReferenceBodyIndex = kstr;
+      ReferenceBodyIndex = b_bid;
     }
   }
   BoundsInternal.set_size(1, 2);
@@ -293,6 +291,7 @@ void DistanceBoundsConstraint::update(const constraintDistanceBounds *other)
 } // namespace manip
 } // namespace robotics
 } // namespace coder
+} // namespace gik9dof
 
 //
 // File trailer for DistanceBoundsConstraint.cpp

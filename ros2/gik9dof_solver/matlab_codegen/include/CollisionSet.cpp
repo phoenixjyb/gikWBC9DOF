@@ -2,7 +2,7 @@
 // File: CollisionSet.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 // Include Files
@@ -19,6 +19,7 @@
 // Arguments    : void
 // Return Type  : CollisionSet
 //
+namespace gik9dof {
 namespace coder {
 namespace robotics {
 namespace manip {
@@ -97,6 +98,7 @@ void CollisionSet::matlabCodegenDestructor()
 } // namespace manip
 } // namespace robotics
 } // namespace coder
+} // namespace gik9dof
 
 //
 // File trailer for CollisionSet.cpp

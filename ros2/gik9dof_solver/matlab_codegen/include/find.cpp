@@ -2,7 +2,7 @@
 // File: find.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 // Include Files
@@ -12,16 +12,17 @@
 
 // Function Definitions
 //
-// Arguments    : const boolean_T x[9]
+// Arguments    : const bool x[9]
 //                int i_data[]
 // Return Type  : int
 //
+namespace gik9dof {
 namespace coder {
-int eml_find(const boolean_T x[9], int i_data[])
+int eml_find(const bool x[9], int i_data[])
 {
   int i_size;
   int ii;
-  boolean_T exitg1;
+  bool exitg1;
   i_size = 0;
   ii = 0;
   exitg1 = false;
@@ -45,6 +46,7 @@ int eml_find(const boolean_T x[9], int i_data[])
 }
 
 } // namespace coder
+} // namespace gik9dof
 
 //
 // File trailer for find.cpp

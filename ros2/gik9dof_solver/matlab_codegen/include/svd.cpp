@@ -2,7 +2,7 @@
 // File: svd.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 // Include Files
@@ -18,7 +18,6 @@
 #include "xzlascl.h"
 #include <cmath>
 #include <cstring>
-#include <emmintrin.h>
 
 // Function Definitions
 //
@@ -28,11 +27,11 @@
 //                double V[9]
 // Return Type  : void
 //
+namespace gik9dof {
 namespace coder {
 namespace internal {
 void svd(const double A[9], double U[9], double s[3], double V[9])
 {
-  __m128d r;
   double b_A[9];
   double e[3];
   double work[3];
@@ -42,7 +41,6 @@ void svd(const double A[9], double U[9], double s[3], double V[9])
   double rt;
   double snorm;
   double sqds;
-  int i;
   int ii;
   int kase;
   int m;
@@ -50,8 +48,7 @@ void svd(const double A[9], double U[9], double s[3], double V[9])
   int qp1;
   int qq;
   int qq_tmp;
-  int scalarLB;
-  boolean_T doscale;
+  bool doscale;
   s[0] = 0.0;
   e[0] = 0.0;
   work[0] = 0.0;
@@ -61,10 +58,10 @@ void svd(const double A[9], double U[9], double s[3], double V[9])
   s[2] = 0.0;
   e[2] = 0.0;
   work[2] = 0.0;
-  for (i = 0; i < 9; i++) {
-    b_A[i] = A[i];
-    U[i] = 0.0;
-    V[i] = 0.0;
+  for (qjj = 0; qjj < 9; qjj++) {
+    b_A[qjj] = A[qjj];
+    U[qjj] = 0.0;
+    V[qjj] = 0.0;
   }
   doscale = false;
   anrm = reflapack::xzlangeM(A);
@@ -79,7 +76,7 @@ void svd(const double A[9], double U[9], double s[3], double V[9])
     reflapack::xzlascl(anrm, cscale, b_A);
   }
   for (int q{0}; q < 2; q++) {
-    boolean_T apply_transform;
+    bool apply_transform;
     qp1 = q + 2;
     qq_tmp = q + 3 * q;
     qq = qq_tmp + 1;
@@ -93,25 +90,13 @@ void svd(const double A[9], double U[9], double s[3], double V[9])
       s[q] = nrm;
       if (std::abs(nrm) >= 1.0020841800044864E-292) {
         nrm = 1.0 / nrm;
-        i = (qq_tmp - q) + 3;
-        scalarLB = ((((i - qq_tmp) / 2) << 1) + qq_tmp) + 1;
-        qjj = scalarLB - 2;
-        for (int k{qq}; k <= qjj; k += 2) {
-          r = _mm_loadu_pd(&b_A[k - 1]);
-          _mm_storeu_pd(&b_A[k - 1], _mm_mul_pd(_mm_set1_pd(nrm), r));
-        }
-        for (int k{scalarLB}; k <= i; k++) {
+        qjj = (qq_tmp - q) + 3;
+        for (int k{qq}; k <= qjj; k++) {
           b_A[k - 1] *= nrm;
         }
       } else {
-        i = (qq_tmp - q) + 3;
-        scalarLB = ((((i - qq_tmp) / 2) << 1) + qq_tmp) + 1;
-        qjj = scalarLB - 2;
-        for (int k{qq}; k <= qjj; k += 2) {
-          r = _mm_loadu_pd(&b_A[k - 1]);
-          _mm_storeu_pd(&b_A[k - 1], _mm_div_pd(r, _mm_set1_pd(s[q])));
-        }
-        for (int k{scalarLB}; k <= i; k++) {
+        qjj = (qq_tmp - q) + 3;
+        for (int k{qq}; k <= qjj; k++) {
           b_A[k - 1] /= s[q];
         }
       }
@@ -147,23 +132,11 @@ void svd(const double A[9], double U[9], double s[3], double V[9])
         nrm = e[0];
         if (std::abs(e[0]) >= 1.0020841800044864E-292) {
           nrm = 1.0 / e[0];
-          scalarLB = ((((2 - q) / 2) << 1) + q) + 2;
-          qjj = scalarLB - 2;
-          for (int k{qp1}; k <= qjj; k += 2) {
-            r = _mm_loadu_pd(&e[k - 1]);
-            _mm_storeu_pd(&e[k - 1], _mm_mul_pd(_mm_set1_pd(nrm), r));
-          }
-          for (int k{scalarLB}; k < 4; k++) {
+          for (int k{qp1}; k < 4; k++) {
             e[k - 1] *= nrm;
           }
         } else {
-          scalarLB = ((((2 - q) / 2) << 1) + q) + 2;
-          qjj = scalarLB - 2;
-          for (int k{qp1}; k <= qjj; k += 2) {
-            r = _mm_loadu_pd(&e[k - 1]);
-            _mm_storeu_pd(&e[k - 1], _mm_div_pd(r, _mm_set1_pd(nrm)));
-          }
-          for (int k{scalarLB}; k < 4; k++) {
+          for (int k{qp1}; k < 4; k++) {
             e[k - 1] /= nrm;
           }
         }
@@ -200,15 +173,8 @@ void svd(const double A[9], double U[9], double s[3], double V[9])
         blas::xaxpy(3 - q, -(blas::xdotc(3 - q, U, qq + 1, U, qjj) / U[qq]),
                     qq + 1, U, qjj);
       }
-      scalarLB = q + 3;
-      qjj = q + 1;
-      for (ii = q + 1; ii <= qjj; ii += 2) {
-        i = (ii + 3 * q) - 1;
-        r = _mm_loadu_pd(&U[i]);
-        _mm_storeu_pd(&U[i], _mm_mul_pd(r, _mm_set1_pd(-1.0)));
-      }
-      for (ii = scalarLB; ii < 4; ii++) {
-        kase = 3 * q + 2;
+      for (ii = q + 1; ii < 4; ii++) {
+        kase = (ii + 3 * q) - 1;
         U[kase] = -U[kase];
       }
       U[qq]++;
@@ -244,13 +210,8 @@ void svd(const double A[9], double U[9], double s[3], double V[9])
         e[q] /= nrm;
       }
       kase = 3 * q;
-      scalarLB = kase + 3;
-      qjj = kase + 1;
-      for (int k{kase + 1}; k <= qjj; k += 2) {
-        r = _mm_loadu_pd(&U[k - 1]);
-        _mm_storeu_pd(&U[k - 1], _mm_mul_pd(_mm_set1_pd(nrm), r));
-      }
-      for (int k{scalarLB}; k <= scalarLB; k++) {
+      qjj = kase + 3;
+      for (int k{kase + 1}; k <= qjj; k++) {
         U[k - 1] *= nrm;
       }
     }
@@ -262,13 +223,8 @@ void svd(const double A[9], double U[9], double s[3], double V[9])
         e[q] = rt;
         s[q + 1] *= nrm;
         kase = 3 * (q + 1);
-        scalarLB = kase + 3;
-        qjj = kase + 1;
-        for (int k{kase + 1}; k <= qjj; k += 2) {
-          r = _mm_loadu_pd(&V[k - 1]);
-          _mm_storeu_pd(&V[k - 1], _mm_mul_pd(_mm_set1_pd(nrm), r));
-        }
-        for (int k{scalarLB}; k <= scalarLB; k++) {
+        qjj = kase + 3;
+        for (int k{kase + 1}; k <= qjj; k++) {
           V[k - 1] *= nrm;
         }
       }
@@ -276,7 +232,7 @@ void svd(const double A[9], double U[9], double s[3], double V[9])
     snorm = std::fmax(snorm, std::fmax(std::abs(s[q]), std::abs(e[q])));
   }
   while ((m + 2 > 0) && (qq < 75)) {
-    boolean_T exitg1;
+    bool exitg1;
     qq_tmp = m + 1;
     ii = m + 1;
     exitg1 = false;
@@ -394,9 +350,9 @@ void svd(const double A[9], double U[9], double s[3], double V[9])
         e[k - 1] = sm * nrm - sqds * b;
         rt = sqds * s[k];
         s[k] *= sm;
-        i = 3 * (k - 1) + 1;
+        qjj = 3 * (k - 1) + 1;
         kase = 3 * k + 1;
-        blas::xrot(V, i, kase, sm, sqds);
+        blas::xrot(V, qjj, kase, sm, sqds);
         s[k - 1] = sm * b + sqds * nrm;
         sm = blas::xrotg(s[k - 1], rt, sqds);
         b = e[k - 1];
@@ -404,7 +360,7 @@ void svd(const double A[9], double U[9], double s[3], double V[9])
         s[k] = -sqds * b + sm * s[k];
         nrm = sqds * e[k];
         e[k] *= sm;
-        blas::xrot(U, i, kase, sm, sqds);
+        blas::xrot(U, qjj, kase, sm, sqds);
       }
       e[m] = rt;
       qq++;
@@ -413,13 +369,8 @@ void svd(const double A[9], double U[9], double s[3], double V[9])
       if (s[ii] < 0.0) {
         s[ii] = -s[ii];
         kase = 3 * ii;
-        scalarLB = kase + 3;
-        qjj = kase + 1;
-        for (int k{kase + 1}; k <= qjj; k += 2) {
-          r = _mm_loadu_pd(&V[k - 1]);
-          _mm_storeu_pd(&V[k - 1], _mm_mul_pd(r, _mm_set1_pd(-1.0)));
-        }
-        for (int k{scalarLB}; k <= scalarLB; k++) {
+        qjj = kase + 3;
+        for (int k{kase + 1}; k <= qjj; k++) {
           V[k - 1] = -V[k - 1];
         }
       }
@@ -428,10 +379,10 @@ void svd(const double A[9], double U[9], double s[3], double V[9])
         rt = s[ii];
         s[ii] = s[qp1];
         s[qp1] = rt;
-        i = 3 * ii + 1;
+        qjj = 3 * ii + 1;
         kase = 3 * (ii + 1) + 1;
-        blas::xswap(V, i, kase);
-        blas::xswap(U, i, kase);
+        blas::xswap(V, qjj, kase);
+        blas::xswap(U, qjj, kase);
         ii = qp1;
         qp1++;
       }
@@ -447,6 +398,7 @@ void svd(const double A[9], double U[9], double s[3], double V[9])
 
 } // namespace internal
 } // namespace coder
+} // namespace gik9dof
 
 //
 // File trailer for svd.cpp

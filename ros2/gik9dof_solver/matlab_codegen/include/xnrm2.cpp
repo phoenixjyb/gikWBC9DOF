@@ -2,7 +2,7 @@
 // File: xnrm2.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 // Include Files
@@ -15,14 +15,15 @@
 // Function Definitions
 //
 // Arguments    : int n
-//                const array<double, 2U> &x
+//                const ::coder::array<double, 2U> &x
 //                int ix0
 // Return Type  : double
 //
+namespace gik9dof {
 namespace coder {
 namespace internal {
 namespace blas {
-double xnrm2(int n, const array<double, 2U> &x, int ix0)
+double xnrm2(int n, const ::coder::array<double, 2U> &x, int ix0)
 {
   double y;
   y = 0.0;
@@ -115,6 +116,7 @@ double xnrm2(const double x[3])
 } // namespace blas
 } // namespace internal
 } // namespace coder
+} // namespace gik9dof
 
 //
 // File trailer for xnrm2.cpp

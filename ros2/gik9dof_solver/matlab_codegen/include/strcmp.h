@@ -2,7 +2,7 @@
 // File: strcmp.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 #ifndef STRCMP_H
@@ -15,16 +15,18 @@
 #include <cstdlib>
 
 // Function Declarations
+namespace gik9dof {
 namespace coder {
 namespace internal {
-boolean_T b_strcmp(const char a_data[], const int a_size[2],
-                   const array<char, 2U> &b);
+bool b_strcmp(const char a_data[], const int a_size[2],
+              const ::coder::array<char, 2U> &b);
 
-boolean_T b_strcmp(const char a_data[], const int a_size[2],
-                   const char b_data[], const int b_size[2]);
+bool c_strcmp(const char a_data[], const int a_size[2],
+              const ::coder::array<char, 2U> &b);
 
 } // namespace internal
 } // namespace coder
+} // namespace gik9dof
 
 #endif
 //

@@ -2,7 +2,7 @@
 // File: xzlascl.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 // Include Files
@@ -10,7 +10,6 @@
 #include "rt_nonfinite.h"
 #include <cmath>
 #include <cstring>
-#include <emmintrin.h>
 
 // Function Definitions
 //
@@ -19,6 +18,7 @@
 //                double A[3]
 // Return Type  : void
 //
+namespace gik9dof {
 namespace coder {
 namespace internal {
 namespace reflapack {
@@ -26,12 +26,11 @@ void b_xzlascl(double cfrom, double cto, double A[3])
 {
   double cfromc;
   double ctoc;
-  boolean_T notdone;
+  bool notdone;
   cfromc = cfrom;
   ctoc = cto;
   notdone = true;
   while (notdone) {
-    __m128d r;
     double cfrom1;
     double cto1;
     double mul;
@@ -47,8 +46,8 @@ void b_xzlascl(double cfrom, double cto, double A[3])
       mul = ctoc / cfromc;
       notdone = false;
     }
-    r = _mm_loadu_pd(&A[0]);
-    _mm_storeu_pd(&A[0], _mm_mul_pd(r, _mm_set1_pd(mul)));
+    A[0] *= mul;
+    A[1] *= mul;
     A[2] *= mul;
   }
 }
@@ -63,7 +62,7 @@ void xzlascl(double cfrom, double cto, double A[9])
 {
   double cfromc;
   double ctoc;
-  boolean_T notdone;
+  bool notdone;
   cfromc = cfrom;
   ctoc = cto;
   notdone = true;
@@ -96,6 +95,7 @@ void xzlascl(double cfrom, double cto, double A[9])
 } // namespace reflapack
 } // namespace internal
 } // namespace coder
+} // namespace gik9dof
 
 //
 // File trailer for xzlascl.cpp

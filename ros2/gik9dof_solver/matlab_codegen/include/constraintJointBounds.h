@@ -2,45 +2,47 @@
 // File: constraintJointBounds.h
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 #ifndef CONSTRAINTJOINTBOUNDS_H
 #define CONSTRAINTJOINTBOUNDS_H
 
 // Include Files
+#include "gik9dof_codegen_inuse_solveGIKStepWrapper_types1.h"
 #include "rtwtypes.h"
 #include "coder_array.h"
 #include <cstddef>
 #include <cstdlib>
 
 // Type Declarations
+namespace gik9dof {
 namespace coder {
 class rigidBodyTree;
 
 }
+} // namespace gik9dof
 
 // Type Definitions
-struct cell_13 {
-  coder::array<double, 2U> f1;
-  coder::array<double, 2U> f2;
-};
-
+namespace gik9dof {
 namespace coder {
 class constraintJointBounds {
 public:
   constraintJointBounds *init(rigidBodyTree &rigidbodytree);
-  array<double, 2U> BoundsInternal;
-  array<double, 2U> WeightsInternal;
+  constraintJointBounds();
+  ~constraintJointBounds();
+  ::coder::array<double, 2U> BoundsInternal;
+  ::coder::array<double, 2U> WeightsInternal;
 
 protected:
-  cell_13 ConstructorPropertyDefaultValues;
+  cell_12 ConstructorPropertyDefaultValues;
 
 private:
   double NumElements;
 };
 
 } // namespace coder
+} // namespace gik9dof
 
 #endif
 //

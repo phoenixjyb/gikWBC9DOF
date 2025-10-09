@@ -2,7 +2,7 @@
 // File: structConstructorHelper.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 // Include Files
@@ -16,12 +16,14 @@
 // Function Definitions
 //
 // Arguments    : struct1_T in1[22]
-//                const coder::array<double, 1U> &in3
-//                const coder::array<double, 1U> &in5
+//                const ::coder::array<double, 1U> &in3
+//                const ::coder::array<double, 1U> &in5
 // Return Type  : void
 //
-void binary_expand_op_10(struct1_T in1[22], const coder::array<double, 1U> &in3,
-                         const coder::array<double, 1U> &in5)
+namespace gik9dof {
+void binary_expand_op_10(struct1_T in1[22],
+                         const ::coder::array<double, 1U> &in3,
+                         const ::coder::array<double, 1U> &in5)
 {
   int loop_ub;
   int stride_0_1;
@@ -47,12 +49,13 @@ void binary_expand_op_10(struct1_T in1[22], const coder::array<double, 1U> &in3,
 
 //
 // Arguments    : struct1_T in1[22]
-//                const coder::array<double, 1U> &in3
-//                const coder::array<double, 1U> &in5
+//                const ::coder::array<double, 1U> &in3
+//                const ::coder::array<double, 1U> &in5
 // Return Type  : void
 //
-void binary_expand_op_11(struct1_T in1[22], const coder::array<double, 1U> &in3,
-                         const coder::array<double, 1U> &in5)
+void binary_expand_op_11(struct1_T in1[22],
+                         const ::coder::array<double, 1U> &in3,
+                         const ::coder::array<double, 1U> &in5)
 {
   int loop_ub;
   int stride_0_1;
@@ -78,12 +81,13 @@ void binary_expand_op_11(struct1_T in1[22], const coder::array<double, 1U> &in3,
 
 //
 // Arguments    : struct1_T in1[22]
-//                const coder::array<double, 1U> &in3
-//                const coder::array<double, 1U> &in5
+//                const ::coder::array<double, 1U> &in3
+//                const ::coder::array<double, 1U> &in5
 // Return Type  : void
 //
-void binary_expand_op_12(struct1_T in1[22], const coder::array<double, 1U> &in3,
-                         const coder::array<double, 1U> &in5)
+void binary_expand_op_12(struct1_T in1[22],
+                         const ::coder::array<double, 1U> &in3,
+                         const ::coder::array<double, 1U> &in5)
 {
   int loop_ub;
   int stride_0_1;
@@ -109,12 +113,13 @@ void binary_expand_op_12(struct1_T in1[22], const coder::array<double, 1U> &in3,
 
 //
 // Arguments    : struct1_T in1[22]
-//                const coder::array<double, 1U> &in3
-//                const coder::array<double, 1U> &in5
+//                const ::coder::array<double, 1U> &in3
+//                const ::coder::array<double, 1U> &in5
 // Return Type  : void
 //
-void binary_expand_op_13(struct1_T in1[22], const coder::array<double, 1U> &in3,
-                         const coder::array<double, 1U> &in5)
+void binary_expand_op_13(struct1_T in1[22],
+                         const ::coder::array<double, 1U> &in3,
+                         const ::coder::array<double, 1U> &in5)
 {
   int loop_ub;
   int stride_0_1;
@@ -140,12 +145,13 @@ void binary_expand_op_13(struct1_T in1[22], const coder::array<double, 1U> &in3,
 
 //
 // Arguments    : struct1_T in1[22]
-//                const coder::array<double, 1U> &in3
-//                const coder::array<double, 1U> &in5
+//                const ::coder::array<double, 1U> &in3
+//                const ::coder::array<double, 1U> &in5
 // Return Type  : void
 //
-void binary_expand_op_14(struct1_T in1[22], const coder::array<double, 1U> &in3,
-                         const coder::array<double, 1U> &in5)
+void binary_expand_op_14(struct1_T in1[22],
+                         const ::coder::array<double, 1U> &in3,
+                         const ::coder::array<double, 1U> &in5)
 {
   int loop_ub;
   int stride_0_1;
@@ -171,12 +177,13 @@ void binary_expand_op_14(struct1_T in1[22], const coder::array<double, 1U> &in3,
 
 //
 // Arguments    : struct1_T in1[22]
-//                const coder::array<double, 1U> &in3
-//                const coder::array<double, 1U> &in5
+//                const ::coder::array<double, 1U> &in3
+//                const ::coder::array<double, 1U> &in5
 // Return Type  : void
 //
-void binary_expand_op_15(struct1_T in1[22], const coder::array<double, 1U> &in3,
-                         const coder::array<double, 1U> &in5)
+void binary_expand_op_15(struct1_T in1[22],
+                         const ::coder::array<double, 1U> &in3,
+                         const ::coder::array<double, 1U> &in5)
 {
   int loop_ub;
   int stride_0_1;
@@ -202,12 +209,13 @@ void binary_expand_op_15(struct1_T in1[22], const coder::array<double, 1U> &in3,
 
 //
 // Arguments    : struct1_T in1[22]
-//                const coder::array<double, 1U> &in3
-//                const coder::array<double, 1U> &in5
+//                const ::coder::array<double, 1U> &in3
+//                const ::coder::array<double, 1U> &in5
 // Return Type  : void
 //
-void binary_expand_op_16(struct1_T in1[22], const coder::array<double, 1U> &in3,
-                         const coder::array<double, 1U> &in5)
+void binary_expand_op_16(struct1_T in1[22],
+                         const ::coder::array<double, 1U> &in3,
+                         const ::coder::array<double, 1U> &in5)
 {
   int loop_ub;
   int stride_0_1;
@@ -233,12 +241,13 @@ void binary_expand_op_16(struct1_T in1[22], const coder::array<double, 1U> &in3,
 
 //
 // Arguments    : struct1_T in1[22]
-//                const coder::array<double, 1U> &in3
-//                const coder::array<double, 1U> &in5
+//                const ::coder::array<double, 1U> &in3
+//                const ::coder::array<double, 1U> &in5
 // Return Type  : void
 //
-void binary_expand_op_17(struct1_T in1[22], const coder::array<double, 1U> &in3,
-                         const coder::array<double, 1U> &in5)
+void binary_expand_op_17(struct1_T in1[22],
+                         const ::coder::array<double, 1U> &in3,
+                         const ::coder::array<double, 1U> &in5)
 {
   int loop_ub;
   int stride_0_1;
@@ -264,12 +273,13 @@ void binary_expand_op_17(struct1_T in1[22], const coder::array<double, 1U> &in3,
 
 //
 // Arguments    : struct1_T in1[22]
-//                const coder::array<double, 1U> &in3
-//                const coder::array<double, 1U> &in5
+//                const ::coder::array<double, 1U> &in3
+//                const ::coder::array<double, 1U> &in5
 // Return Type  : void
 //
-void binary_expand_op_18(struct1_T in1[22], const coder::array<double, 1U> &in3,
-                         const coder::array<double, 1U> &in5)
+void binary_expand_op_18(struct1_T in1[22],
+                         const ::coder::array<double, 1U> &in3,
+                         const ::coder::array<double, 1U> &in5)
 {
   int loop_ub;
   int stride_0_1;
@@ -295,12 +305,13 @@ void binary_expand_op_18(struct1_T in1[22], const coder::array<double, 1U> &in3,
 
 //
 // Arguments    : struct1_T in1[22]
-//                const coder::array<double, 1U> &in3
-//                const coder::array<double, 1U> &in5
+//                const ::coder::array<double, 1U> &in3
+//                const ::coder::array<double, 1U> &in5
 // Return Type  : void
 //
-void binary_expand_op_19(struct1_T in1[22], const coder::array<double, 1U> &in3,
-                         const coder::array<double, 1U> &in5)
+void binary_expand_op_19(struct1_T in1[22],
+                         const ::coder::array<double, 1U> &in3,
+                         const ::coder::array<double, 1U> &in5)
 {
   int loop_ub;
   int stride_0_1;
@@ -326,12 +337,13 @@ void binary_expand_op_19(struct1_T in1[22], const coder::array<double, 1U> &in3,
 
 //
 // Arguments    : struct1_T in1[22]
-//                const coder::array<double, 1U> &in3
-//                const coder::array<double, 1U> &in5
+//                const ::coder::array<double, 1U> &in3
+//                const ::coder::array<double, 1U> &in5
 // Return Type  : void
 //
-void binary_expand_op_20(struct1_T in1[22], const coder::array<double, 1U> &in3,
-                         const coder::array<double, 1U> &in5)
+void binary_expand_op_20(struct1_T in1[22],
+                         const ::coder::array<double, 1U> &in3,
+                         const ::coder::array<double, 1U> &in5)
 {
   int loop_ub;
   int stride_0_1;
@@ -357,12 +369,13 @@ void binary_expand_op_20(struct1_T in1[22], const coder::array<double, 1U> &in3,
 
 //
 // Arguments    : struct1_T in1[22]
-//                const coder::array<double, 1U> &in3
-//                const coder::array<double, 1U> &in5
+//                const ::coder::array<double, 1U> &in3
+//                const ::coder::array<double, 1U> &in5
 // Return Type  : void
 //
-void binary_expand_op_21(struct1_T in1[22], const coder::array<double, 1U> &in3,
-                         const coder::array<double, 1U> &in5)
+void binary_expand_op_21(struct1_T in1[22],
+                         const ::coder::array<double, 1U> &in3,
+                         const ::coder::array<double, 1U> &in5)
 {
   int loop_ub;
   int stride_0_1;
@@ -388,12 +401,13 @@ void binary_expand_op_21(struct1_T in1[22], const coder::array<double, 1U> &in3,
 
 //
 // Arguments    : struct1_T in1[22]
-//                const coder::array<double, 1U> &in3
-//                const coder::array<double, 1U> &in5
+//                const ::coder::array<double, 1U> &in3
+//                const ::coder::array<double, 1U> &in5
 // Return Type  : void
 //
-void binary_expand_op_22(struct1_T in1[22], const coder::array<double, 1U> &in3,
-                         const coder::array<double, 1U> &in5)
+void binary_expand_op_22(struct1_T in1[22],
+                         const ::coder::array<double, 1U> &in3,
+                         const ::coder::array<double, 1U> &in5)
 {
   int loop_ub;
   int stride_0_1;
@@ -419,12 +433,13 @@ void binary_expand_op_22(struct1_T in1[22], const coder::array<double, 1U> &in3,
 
 //
 // Arguments    : struct1_T in1[22]
-//                const coder::array<double, 1U> &in3
-//                const coder::array<double, 1U> &in5
+//                const ::coder::array<double, 1U> &in3
+//                const ::coder::array<double, 1U> &in5
 // Return Type  : void
 //
-void binary_expand_op_23(struct1_T in1[22], const coder::array<double, 1U> &in3,
-                         const coder::array<double, 1U> &in5)
+void binary_expand_op_23(struct1_T in1[22],
+                         const ::coder::array<double, 1U> &in3,
+                         const ::coder::array<double, 1U> &in5)
 {
   int loop_ub;
   int stride_0_1;
@@ -450,12 +465,13 @@ void binary_expand_op_23(struct1_T in1[22], const coder::array<double, 1U> &in3,
 
 //
 // Arguments    : struct1_T in1[22]
-//                const coder::array<double, 1U> &in3
-//                const coder::array<double, 1U> &in5
+//                const ::coder::array<double, 1U> &in3
+//                const ::coder::array<double, 1U> &in5
 // Return Type  : void
 //
-void binary_expand_op_24(struct1_T in1[22], const coder::array<double, 1U> &in3,
-                         const coder::array<double, 1U> &in5)
+void binary_expand_op_24(struct1_T in1[22],
+                         const ::coder::array<double, 1U> &in3,
+                         const ::coder::array<double, 1U> &in5)
 {
   int loop_ub;
   int stride_0_1;
@@ -481,12 +497,13 @@ void binary_expand_op_24(struct1_T in1[22], const coder::array<double, 1U> &in3,
 
 //
 // Arguments    : struct1_T in1[22]
-//                const coder::array<double, 1U> &in3
-//                const coder::array<double, 1U> &in5
+//                const ::coder::array<double, 1U> &in3
+//                const ::coder::array<double, 1U> &in5
 // Return Type  : void
 //
-void binary_expand_op_25(struct1_T in1[22], const coder::array<double, 1U> &in3,
-                         const coder::array<double, 1U> &in5)
+void binary_expand_op_25(struct1_T in1[22],
+                         const ::coder::array<double, 1U> &in3,
+                         const ::coder::array<double, 1U> &in5)
 {
   int loop_ub;
   int stride_0_1;
@@ -512,12 +529,13 @@ void binary_expand_op_25(struct1_T in1[22], const coder::array<double, 1U> &in3,
 
 //
 // Arguments    : struct1_T in1[22]
-//                const coder::array<double, 1U> &in3
-//                const coder::array<double, 1U> &in5
+//                const ::coder::array<double, 1U> &in3
+//                const ::coder::array<double, 1U> &in5
 // Return Type  : void
 //
-void binary_expand_op_26(struct1_T in1[22], const coder::array<double, 1U> &in3,
-                         const coder::array<double, 1U> &in5)
+void binary_expand_op_26(struct1_T in1[22],
+                         const ::coder::array<double, 1U> &in3,
+                         const ::coder::array<double, 1U> &in5)
 {
   int loop_ub;
   int stride_0_1;
@@ -543,12 +561,13 @@ void binary_expand_op_26(struct1_T in1[22], const coder::array<double, 1U> &in3,
 
 //
 // Arguments    : struct1_T in1[22]
-//                const coder::array<double, 1U> &in3
-//                const coder::array<double, 1U> &in5
+//                const ::coder::array<double, 1U> &in3
+//                const ::coder::array<double, 1U> &in5
 // Return Type  : void
 //
-void binary_expand_op_27(struct1_T in1[22], const coder::array<double, 1U> &in3,
-                         const coder::array<double, 1U> &in5)
+void binary_expand_op_27(struct1_T in1[22],
+                         const ::coder::array<double, 1U> &in3,
+                         const ::coder::array<double, 1U> &in5)
 {
   int loop_ub;
   int stride_0_1;
@@ -574,18 +593,19 @@ void binary_expand_op_27(struct1_T in1[22], const coder::array<double, 1U> &in3,
 
 //
 // Arguments    : struct1_T in1[22]
-//                const coder::array<double, 1U> &in3
+//                const ::coder::array<double, 1U> &in3
 //                int in4
-//                const coder::array<double, 1U> &in5
-//                const coder::array<double, 1U> &in7
+//                const ::coder::array<double, 1U> &in5
+//                const ::coder::array<double, 1U> &in7
 // Return Type  : void
 //
-void binary_expand_op_28(struct1_T in1[22], const coder::array<double, 1U> &in3,
-                         int in4, const coder::array<double, 1U> &in5,
-                         const coder::array<double, 1U> &in7)
+void binary_expand_op_28(struct1_T in1[22],
+                         const ::coder::array<double, 1U> &in3, int in4,
+                         const ::coder::array<double, 1U> &in5,
+                         const ::coder::array<double, 1U> &in7)
 {
-  coder::array<double, 1U> b_in3;
-  coder::array<double, 1U> c_in3;
+  ::coder::array<double, 1U> b_in3;
+  ::coder::array<double, 1U> c_in3;
   int loop_ub;
   int stride_0_0_tmp;
   int stride_1_0;
@@ -631,12 +651,13 @@ void binary_expand_op_28(struct1_T in1[22], const coder::array<double, 1U> &in3,
 
 //
 // Arguments    : struct1_T in1[22]
-//                const coder::array<double, 1U> &in3
-//                const coder::array<double, 1U> &in5
+//                const ::coder::array<double, 1U> &in3
+//                const ::coder::array<double, 1U> &in5
 // Return Type  : void
 //
-void binary_expand_op_8(struct1_T in1[22], const coder::array<double, 1U> &in3,
-                        const coder::array<double, 1U> &in5)
+void binary_expand_op_8(struct1_T in1[22],
+                        const ::coder::array<double, 1U> &in3,
+                        const ::coder::array<double, 1U> &in5)
 {
   int loop_ub;
   int stride_0_1;
@@ -662,12 +683,13 @@ void binary_expand_op_8(struct1_T in1[22], const coder::array<double, 1U> &in3,
 
 //
 // Arguments    : struct1_T in1[22]
-//                const coder::array<double, 1U> &in3
-//                const coder::array<double, 1U> &in5
+//                const ::coder::array<double, 1U> &in3
+//                const ::coder::array<double, 1U> &in5
 // Return Type  : void
 //
-void binary_expand_op_9(struct1_T in1[22], const coder::array<double, 1U> &in3,
-                        const coder::array<double, 1U> &in5)
+void binary_expand_op_9(struct1_T in1[22],
+                        const ::coder::array<double, 1U> &in3,
+                        const ::coder::array<double, 1U> &in5)
 {
   int loop_ub;
   int stride_0_1;
@@ -690,6 +712,8 @@ void binary_expand_op_9(struct1_T in1[22], const coder::array<double, 1U> &in3,
         std::fmin(0.0, varargin_2) + std::fmax(0.0, b_varargin_2);
   }
 }
+
+} // namespace gik9dof
 
 //
 // File trailer for structConstructorHelper.cpp

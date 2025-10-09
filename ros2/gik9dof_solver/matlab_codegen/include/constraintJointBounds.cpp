@@ -2,12 +2,13 @@
 // File: constraintJointBounds.cpp
 //
 // MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 08-Oct-2025 12:14:03
+// C/C++ source code generated on  : 09-Oct-2025 12:02:50
 //
 
 // Include Files
 #include "constraintJointBounds.h"
 #include "RigidBodyTree.h"
+#include "gik9dof_codegen_inuse_solveGIKStepWrapper_types1.h"
 #include "rigidBodyTree1.h"
 #include "rt_nonfinite.h"
 #include "coder_array.h"
@@ -15,15 +16,28 @@
 
 // Function Definitions
 //
+// Arguments    : void
+// Return Type  : constraintJointBounds
+//
+namespace gik9dof {
+namespace coder {
+constraintJointBounds::constraintJointBounds() = default;
+
+//
+// Arguments    : void
+// Return Type  : void
+//
+constraintJointBounds::~constraintJointBounds() = default;
+
+//
 // Arguments    : rigidBodyTree &rigidbodytree
 // Return Type  : constraintJointBounds *
 //
-namespace coder {
 constraintJointBounds *constraintJointBounds::init(rigidBodyTree &rigidbodytree)
 {
   constraintJointBounds *obj;
-  array<double, 2U> defaultValues_f2;
-  array<double, 2U> limits;
+  ::coder::array<double, 2U> defaultValues_f2;
+  ::coder::array<double, 2U> limits;
   int i;
   int loop_ub;
   int loop_ub_tmp;
@@ -86,6 +100,7 @@ constraintJointBounds *constraintJointBounds::init(rigidBodyTree &rigidbodytree)
 }
 
 } // namespace coder
+} // namespace gik9dof
 
 //
 // File trailer for constraintJointBounds.cpp
