@@ -10,8 +10,8 @@
 
 #include "gik9dof_solver_node.h"
 
-// MATLAB Coder generated solver (NEW: 20-constraint interface)
-#include "gik9dof_codegen_inuse_solveGIKStepWrapper.h"
+// MATLAB Coder generated solver (Class-based architecture)
+#include "GIKSolver.h"
 
 // MATLAB Coder generated velocity controllers
 #include "velocity_controller/holisticVelocityController.h"
@@ -263,12 +263,11 @@ GIK9DOFSolverNode::GIK9DOFSolverNode() : Node("gik9dof_solver_node")
             timer_period,
             std::bind(&GIK9DOFSolverNode::controlLoop, this));
         
-        // NOTE: With new codegen_inuse interface, solver is a free function (no initialization needed)
-        // matlab_solver_ = std::make_unique<gik9dof::GIKSolver>();  // DEPRECATED
-        // matlab_solver_->setMaxIterations(max_solver_iterations_);  // DEPRECATED
+        // Initialize MATLAB solver (class-based architecture)
+        matlab_solver_ = std::make_unique<gik9dof::GIKSolver>();
         
         RCLCPP_INFO(this->get_logger(), "GIK9DOF Solver Node initialized");
-        RCLCPP_INFO(this->get_logger(), "MATLAB solver interface: codegen_inuse (20 constraints)");
+        RCLCPP_INFO(this->get_logger(), "MATLAB solver interface: codegen_inuse (class-based, 20 constraints)");
         RCLCPP_INFO(this->get_logger(), "Control rate: %.1f Hz", control_rate_);
         RCLCPP_INFO(this->get_logger(), "Max solve time: %.0f ms", max_solve_time_ * 1000.0);
         RCLCPP_INFO(this->get_logger(), "Max solver iterations: %d", max_solver_iterations_);
@@ -717,9 +716,9 @@ bool GIK9DOFSolverNode::solveIK(const geometry_msgs::msg::Pose& target_pose)
         auto solve_start_time = std::chrono::steady_clock::now();
         rclcpp::Time solve_start_ros = this->now();
         
-        // Call MATLAB-generated solver (NEW 7-parameter interface for 20 constraints)
+        // Call MATLAB-generated solver (class-based architecture, 20 constraints)
         // Note: The solver itself has MaxTime=50ms configured in MATLAB code
-        gik9dof::codegen_inuse::solveGIKStepWrapper(
+        matlab_solver_->gik9dof_codegen_inuse_solveGIKStepWrapper(
             q_current,                // Current joint configuration [9]
             target_matrix,            // Target end-effector pose (4x4 homogeneous, column-major) [16]
             dist_body_indices_,       // Body indices for distance constraints [20]

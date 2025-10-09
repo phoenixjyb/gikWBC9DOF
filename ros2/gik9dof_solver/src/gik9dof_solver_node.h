@@ -182,8 +182,8 @@ private:
     bool stage_b_enabled_;
     
     // ========== MATLAB SOLVER ==========
-    // NOTE: With new codegen_inuse interface, solver is a free function (no object needed)
-    // std::unique_ptr<gik9dof::GIKSolver> matlab_solver_;  // DEPRECATED
+    // Production ARM64 uses class-based architecture (not standalone function)
+    std::unique_ptr<gik9dof::GIKSolver> matlab_solver_;
 };
 
 #endif // GIK9DOF_SOLVER_NODE_H
