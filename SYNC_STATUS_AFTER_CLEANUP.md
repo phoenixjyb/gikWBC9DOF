@@ -71,6 +71,19 @@ test_cpp/
 | **ROS2 Embedded** | `ros2/.../matlab_codegen/include/` | 50ms | ✅ Synced |
 | **C++ WSL Tests** | `test_cpp/` → `arm64_realtime/` | 50ms | ✅ Updated |
 | **Deployment Scripts** | `scripts/deployment/*.ps1` | N/A | ✅ Uses ROS2 folder |
+| **Planner ARM64** | `codegen/planner_arm64/` | N/A | ⚠️ **Windows MATLAB (Oct 7)** |
+
+### ⚠️ Planner Out of Sync Warning
+
+**Issue:** `codegen/planner_arm64/` was generated with **Windows MATLAB** on Oct 7, 2025, **before** the Linux MATLAB migration.
+
+**Impact:** ROS2 uses the planner (integrated in `hybrid_astar_planner` library), so there's a mix of:
+- ✅ GIK solver: Linux MATLAB (Oct 9)
+- ⚠️ Planner: Windows MATLAB (Oct 7)
+
+**Recommendation:** Regenerate planner with Linux MATLAB before Orin deployment.
+
+**See:** `PLANNER_SYNC_STATUS.md` for detailed analysis and regeneration steps.
 
 ## ✅ Testing Ready
 
