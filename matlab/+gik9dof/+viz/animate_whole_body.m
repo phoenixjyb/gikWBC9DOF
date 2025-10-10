@@ -75,15 +75,6 @@ stageSelection = lower(string(options.StageSelection));
 stageBreak = max(1, round(options.StageBreakIndex));
 
 stageCRefPath = options.StageCReferenceEEPath;
-if isempty(stageCRefPath) && ~isempty(eePoses)
-    stageCRefPath = eePoses;
-end
-if isempty(stageCRefPath) && ~isempty(options.DesiredEEPath)
-    stageCRefPath = options.DesiredEEPath;
-end
-
-eePoses = stageCRefPath;
-
 desiredEEPath = options.DesiredEEPath;
 
 % Work on a copy so visual tweaks don't leak back to caller
@@ -187,6 +178,34 @@ elseif numel(stageLabelsActive) > numel(stageBoundariesActive)
     stageLabelsActive = stageLabelsActive(1:numel(stageBoundariesActive));
 end
 
+% Prepare desired and Stage C reference EE paths aligned with timeline
+stageCIdxRange = stageRanges{end};
+stageCFull = nan(numSteps, 3);
+stageCFirstIdx = NaN;
+if ~isempty(stageCRefPath)
+    pathC = stageCRefPath;
+    if size(pathC,2) ~= 3
+        pathC = pathC.';
+    end
+    L = min(size(pathC,1), numel(stageCIdxRange));
+    stageCFull(stageCIdxRange(1:L), :) = pathC(1:L, 1:3);
+    idxFirst = find(~any(isnan(stageCFull), 2), 1, 'first');
+    if ~isempty(idxFirst)
+        stageCFirstIdx = idxFirst;
+    end
+end
+
+desiredEEFull = [];
+if ~isempty(desiredEEPath)
+    pathD = desiredEEPath;
+    if size(pathD,2) ~= 3
+        pathD = pathD.';
+    end
+    desiredEEFull = pathD(:, 1:3);
+end
+
+eePoses = stageCFull;
+
 if size(basePose,2) ~= 3
     error('basePose must be K-by-3 with columns [x y yaw].');
 end
@@ -241,13 +260,14 @@ if ~isempty(options.StageBPath)
     plot(axTop,   sbPath(:,1), sbPath(:,2), ':', 'Color', stageBColor, 'LineWidth', 1.2, 'DisplayName', char(options.StageBLabel));
 end
 
-if ~isempty(desiredEEPath)
-    plot3(axPersp, desiredEEPath(:,1), desiredEEPath(:,2), desiredEEPath(:,3), 'w--', 'LineWidth', 1.0, 'DisplayName', 'Desired EE path');
-    plot(axTop,   desiredEEPath(:,1), desiredEEPath(:,2), 'w--', 'LineWidth', 1.0, 'DisplayName', 'Desired EE path');
+if ~isempty(desiredEEFull)
+    plot3(axPersp, desiredEEFull(:,1), desiredEEFull(:,2), desiredEEFull(:,3), 'w--', 'LineWidth', 1.0, 'DisplayName', 'Desired EE path');
+    plot(axTop,   desiredEEFull(:,1), desiredEEFull(:,2), 'w--', 'LineWidth', 1.0, 'DisplayName', 'Desired EE path');
 end
-if ~isempty(stageCRefPath)
-    plot3(axPersp, stageCRefPath(:,1), stageCRefPath(:,2), stageCRefPath(:,3), 'm-.', 'LineWidth', 1.2, 'DisplayName', 'Stage C reference EE path');
-    plot(axTop,   stageCRefPath(:,1), stageCRefPath(:,2), 'm-.', 'LineWidth', 1.2, 'DisplayName', 'Stage C reference EE path');
+if any(~isnan(stageCFull(:,1)))
+    stageCPlot = stageCFull;
+    plot3(axPersp, stageCPlot(:,1), stageCPlot(:,2), stageCPlot(:,3), 'm-.', 'LineWidth', 1.2, 'DisplayName', 'Stage C reference EE path');
+    plot(axTop,   stageCPlot(:,1), stageCPlot(:,2), 'm-.', 'LineWidth', 1.2, 'DisplayName', 'Stage C reference EE path');
 end
 if ~isempty(options.TargetPath)
     tp = options.TargetPath;
@@ -270,9 +290,13 @@ headingLinePersp = plot3(axPersp, [baseX(1), baseX(1)+headingLen*cos(baseYaw(1))
 headingLineTop = plot(axTop, [baseX(1), baseX(1)+headingLen*cos(baseYaw(1))], ...
                          [baseY(1), baseY(1)+headingLen*sin(baseYaw(1))], ...
                          '-', 'Color', executedColor, 'LineWidth', 2, 'HandleVisibility', 'off');
-if ~isempty(stageCRefPath)
-    eeMarkerPersp = plot3(axPersp, stageCRefPath(1,1), stageCRefPath(1,2), stageCRefPath(1,3), 'ro', 'MarkerFaceColor', 'r', 'DisplayName', 'Stage C reference EE waypoint');
-    eeMarkerTop   = plot(axTop,   stageCRefPath(1,1), stageCRefPath(1,2), 'ro', 'MarkerFaceColor', 'r', 'HandleVisibility', 'off');
+if any(~isnan(stageCFull(:,1)))
+    firstRef = stageCIdxRange(find(~any(isnan(stageCFull(stageCIdxRange,:)),2),1,'first'));
+    if isempty(firstRef)
+        firstRef = stageCIdxRange(1);
+    end
+    eeMarkerPersp = plot3(axPersp, stageCFull(firstRef,1), stageCFull(firstRef,2), stageCFull(firstRef,3), 'ro', 'MarkerFaceColor', 'r', 'DisplayName', 'Stage C reference EE waypoint');
+    eeMarkerTop   = plot(axTop,   stageCFull(firstRef,1), stageCFull(firstRef,2), 'ro', 'MarkerFaceColor', 'r', 'HandleVisibility', 'off');
 else
     eeMarkerPersp = [];
     eeMarkerTop   = [];
@@ -438,8 +462,13 @@ for k = 1:numSteps
 
     if ~isempty(eeMarkerPersp)
         idx = min(k, size(eePoses,1));
-        set(eeMarkerPersp, 'XData', eePoses(idx,1), 'YData', eePoses(idx,2), 'ZData', eePoses(idx,3));
-        set(eeMarkerTop,   'XData', eePoses(idx,1), 'YData', eePoses(idx,2));
+        if all(~isnan(eePoses(idx,1:3)))
+            set(eeMarkerPersp, 'XData', eePoses(idx,1), 'YData', eePoses(idx,2), 'ZData', eePoses(idx,3));
+            set(eeMarkerTop,   'XData', eePoses(idx,1), 'YData', eePoses(idx,2));
+        else
+            set(eeMarkerPersp, 'XData', NaN, 'YData', NaN, 'ZData', NaN);
+            set(eeMarkerTop,   'XData', NaN, 'YData', NaN);
+        end
     end
 
     try
@@ -458,9 +487,11 @@ for k = 1:numSteps
     if isempty(stageIdx)
         stageIdx = numel(stageBoundariesActive);
     end
-    if ~isempty(eePoses) && size(eePoses,2) >= 3
-        idx = min(k, size(eePoses,1));
-        desiredEE = eePoses(idx,1:3);
+    if k <= size(stageCFull,1) && all(~isnan(stageCFull(k,1:3)))
+        desiredEE = stageCFull(k,1:3);
+        errPos = norm(actualEE(k,:) - desiredEE);
+    elseif ~isempty(desiredEEFull) && k <= size(desiredEEFull,1)
+        desiredEE = desiredEEFull(k,1:3);
         errPos = norm(actualEE(k,:) - desiredEE);
     else
         errPos = NaN;
