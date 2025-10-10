@@ -50,10 +50,10 @@ ref.t = refTime;
 % Current pose estimate as 1x3 vector
 estPose = [estX, estY, estYaw];
 
-% Call main controller in "holistic" mode (params before state)
+% Call main controller in "holistic" mode (state before params - API updated Oct 2025)
 % Use char array 'holistic' instead of string "holistic" for codegen compatibility
 [cmd, stateOut] = gik9dof.control.unifiedChassisCtrl(...
-    'holistic', ref, estPose, params, stateIn);
+    'holistic', ref, estPose, stateIn, params);
 
 % Extract velocity commands
 Vx = cmd.base.Vx;
