@@ -1,16 +1,32 @@
-# Pure Pursuit Follower Refactoring Plan
-**Date:** October 10, 2025  
+# Chassis Path Follower Refactoring Plan
+**Date:** October 10, 2025 (Updated with new naming)  
 **Goal:** Make advanced purePursuitFollower codegen-compatible  
-**Strategy:** Refactor class → function while preserving ALL features
+**Strategy:** Refactor class → function while preserving ALL features  
+**New Name:** `chassisPathFollowerCodegen` (clear deployment-ready name)
 
 ---
 
 ## Executive Summary
 
 **Decision:** Refactor new `purePursuitFollower` class into codegen-compatible function  
+**New File:** `chassisPathFollowerCodegen.m` (instead of "simulate" prefix)  
 **Rationale:** Gets all advanced features (curvature, accel limits, modes) in deployable C++  
+**Naming:** Clear purpose (path following) + avoids "simulate" confusion  
 **Effort:** 3-4 days (refactoring + testing)  
 **Value:** Long-term solution with full feature set
+
+### Why "chassisPathFollowerCodegen"?
+
+**Problem:** `simulateChassisController` sounds like MATLAB-only testing tool  
+**Reality:** Mode 2 is a full production controller for geometric path following  
+**Solution:** New name clarifies this is for deployment
+
+**Relationship to other controllers:**
+- `chassisPathFollowerCodegen`: Geometric waypoint following (sparse paths)
+- `unifiedChassisCtrl`: GIK trajectory differentiation (dense timed paths)
+- `purePursuitVelocityController`: Old simple version (deprecated)
+
+See: `NAMING_CONFUSION_CLARIFICATION.md` for full analysis
 
 ---
 
@@ -155,9 +171,9 @@ status = struct(
 
 **2.1 Main Function Signature**
 ```matlab
-function [vx, wz, state, status] = purePursuitFollowerCodegen(...
+function [vx, wz, state, status] = chassisPathFollowerCodegen(...
     pose, dt, state, params)
-%PUREPURSUITFOLLOWERCODEGEN Codegen-compatible advanced path follower
+%chassisPathFollowerCodegen Codegen-compatible advanced path follower
 %
 % Inputs:
 %   pose   - [x y theta] current robot pose
@@ -404,7 +420,7 @@ state = struct();
 
 % Control loop
 while ~done
-    [vx, wz, state, status] = purePursuitFollowerCodegen(...
+    [vx, wz, state, status] = chassisPathFollowerCodegen(...
         pose, dt, state, params);
     
     publishCommand(vx, wz);
@@ -422,7 +438,7 @@ end
 ### Week 1: Core Refactoring (Days 1-3)
 
 - [ ] **Day 1: Structure Setup**
-  - [ ] Create `purePursuitFollowerCodegen.m` skeleton
+  - [ ] Create `chassisPathFollowerCodegen.m` skeleton
   - [ ] Define params struct with all fields
   - [ ] Define state struct with all fields
   - [ ] Define status struct with all fields
@@ -486,7 +502,7 @@ end
 matlab/
 ├── +gik9dof/
 │   └── +control/
-│       ├── purePursuitFollowerCodegen.m          ← NEW: Main function
+│       ├── chassisPathFollowerCodegen.m          ← NEW: Main function
 │       ├── purePursuitFollower.m                 ← KEEP: Original class for MATLAB
 │       ├── preparePathForFollower.m              ← KEEP: Preprocessing
 │       ├── rsClothoidRefine.m                    ← KEEP: Smoothing
@@ -554,3 +570,4 @@ codegen/
 ---
 
 **END OF REFACTORING PLAN**
+
