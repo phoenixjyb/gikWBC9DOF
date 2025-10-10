@@ -60,6 +60,8 @@ arguments
     options.ExecutedBaseLabel (1,1) string = "Executed Base (Log)"
     options.StageBPath double = []
     options.StageBLabel (1,1) string = "Stage B Executed Base"
+    options.DesiredEEPath double = []
+    options.StageCReferenceEEPath double = []
 end
 
 if options.VisualAlpha < 0 || options.VisualAlpha > 1
@@ -71,6 +73,18 @@ end
 stageLabels = string(options.StageLabels);
 stageSelection = lower(string(options.StageSelection));
 stageBreak = max(1, round(options.StageBreakIndex));
+
+stageCRefPath = options.StageCReferenceEEPath;
+if isempty(stageCRefPath) && ~isempty(eePoses)
+    stageCRefPath = eePoses;
+end
+if isempty(stageCRefPath) && ~isempty(options.DesiredEEPath)
+    stageCRefPath = options.DesiredEEPath;
+end
+
+eePoses = stageCRefPath;
+
+desiredEEPath = options.DesiredEEPath;
 
 % Work on a copy so visual tweaks don't leak back to caller
 robot = copy(robot);
@@ -227,9 +241,13 @@ if ~isempty(options.StageBPath)
     plot(axTop,   sbPath(:,1), sbPath(:,2), ':', 'Color', stageBColor, 'LineWidth', 1.2, 'DisplayName', char(options.StageBLabel));
 end
 
-if ~isempty(eePoses) && size(eePoses,2) >= 3
-    plot3(axPersp, eePoses(:,1), eePoses(:,2), eePoses(:,3), 'r-.', 'LineWidth', 1.0, 'DisplayName', 'Desired EE path');
-    plot(axTop,   eePoses(:,1), eePoses(:,2), 'r-.', 'LineWidth', 1.0, 'DisplayName', 'Desired EE path');
+if ~isempty(desiredEEPath)
+    plot3(axPersp, desiredEEPath(:,1), desiredEEPath(:,2), desiredEEPath(:,3), 'w--', 'LineWidth', 1.0, 'DisplayName', 'Desired EE path');
+    plot(axTop,   desiredEEPath(:,1), desiredEEPath(:,2), 'w--', 'LineWidth', 1.0, 'DisplayName', 'Desired EE path');
+end
+if ~isempty(stageCRefPath)
+    plot3(axPersp, stageCRefPath(:,1), stageCRefPath(:,2), stageCRefPath(:,3), 'm-.', 'LineWidth', 1.2, 'DisplayName', 'Stage C reference EE path');
+    plot(axTop,   stageCRefPath(:,1), stageCRefPath(:,2), 'm-.', 'LineWidth', 1.2, 'DisplayName', 'Stage C reference EE path');
 end
 if ~isempty(options.TargetPath)
     tp = options.TargetPath;
@@ -243,24 +261,24 @@ leg = legend(axPersp, 'Location', 'bestoutside');
 set(leg, 'TextColor', [0.95 0.95 0.95], 'Color', [0.2 0.2 0.2]);
 
 % Markers for current pose
-baseMarkerPersp = plot3(axPersp, baseX(1), baseY(1), 0, 'o', 'Color', executedColor, 'MarkerFaceColor', executedColor);
-baseMarkerTop   = plot(axTop,   baseX(1), baseY(1), 'o', 'Color', executedColor, 'MarkerFaceColor', executedColor);
+baseMarkerPersp = plot3(axPersp, baseX(1), baseY(1), 0, 'o', 'Color', executedColor, 'MarkerFaceColor', executedColor, 'HandleVisibility', 'off');
+baseMarkerTop   = plot(axTop,   baseX(1), baseY(1), 'o', 'Color', executedColor, 'MarkerFaceColor', executedColor, 'HandleVisibility', 'off');
 headingLen = options.ArrowLength;
 headingLinePersp = plot3(axPersp, [baseX(1), baseX(1)+headingLen*cos(baseYaw(1))], ...
                       [baseY(1), baseY(1)+headingLen*sin(baseYaw(1))], ...
-                      [0 0], '-', 'Color', executedColor, 'LineWidth', 2);
+                      [0 0], '-', 'Color', executedColor, 'LineWidth', 2, 'HandleVisibility', 'off');
 headingLineTop = plot(axTop, [baseX(1), baseX(1)+headingLen*cos(baseYaw(1))], ...
                          [baseY(1), baseY(1)+headingLen*sin(baseYaw(1))], ...
-                         '-', 'Color', executedColor, 'LineWidth', 2);
-if ~isempty(eePoses) && size(eePoses,2) >= 3
-    eeMarkerPersp = plot3(axPersp, eePoses(1,1), eePoses(1,2), eePoses(1,3), 'ro', 'MarkerFaceColor', 'r', 'DisplayName', 'Desired EE waypoint');
-    eeMarkerTop   = plot(axTop,   eePoses(1,1), eePoses(1,2), 'ro', 'MarkerFaceColor', 'r');
+                         '-', 'Color', executedColor, 'LineWidth', 2, 'HandleVisibility', 'off');
+if ~isempty(stageCRefPath)
+    eeMarkerPersp = plot3(axPersp, stageCRefPath(1,1), stageCRefPath(1,2), stageCRefPath(1,3), 'ro', 'MarkerFaceColor', 'r', 'DisplayName', 'Stage C reference EE waypoint');
+    eeMarkerTop   = plot(axTop,   stageCRefPath(1,1), stageCRefPath(1,2), 'ro', 'MarkerFaceColor', 'r', 'HandleVisibility', 'off');
 else
     eeMarkerPersp = [];
     eeMarkerTop   = [];
 end
-actualMarkerPersp = plot3(axPersp, baseX(1), baseY(1), 0, 's', 'Color', [0.0 0.6 0.2], 'MarkerFaceColor', [0.0 0.6 0.2], 'DisplayName', 'Actual EE');
-actualMarkerTop   = plot(axTop,   baseX(1), baseY(1), 's', 'Color', [0.0 0.6 0.2], 'MarkerFaceColor', [0.0 0.6 0.2]);
+actualMarkerPersp = plot3(axPersp, baseX(1), baseY(1), 0, 's', 'Color', [0.0 0.6 0.2], 'MarkerFaceColor', [0.0 0.6 0.2], 'DisplayName', 'Actual EE waypoint');
+actualMarkerTop   = plot(axTop,   baseX(1), baseY(1), 's', 'Color', [0.0 0.6 0.2], 'MarkerFaceColor', [0.0 0.6 0.2], 'HandleVisibility', 'off');
 stageText = text(axPersp, 'Units', 'normalized', 'Position', [0.02 0.95 0], ...
     'String', '', 'Color', [0.95 0.95 0.95], 'FontSize', 12, 'FontWeight', 'bold', ...
     'BackgroundColor', [0.1 0.1 0.1], 'Margin', 4, 'HorizontalAlignment', 'left');
@@ -530,8 +548,9 @@ end
                     Za = Za * obs.height;
                     surfActual = surf(ax, Xa + obs.center(1), Ya + obs.center(2), Za, ...
                         'FaceAlpha', 0.35, 'FaceColor', color, 'EdgeColor', 'none');
-                    if strlength(obs.label) > 0 && ~haveLegendActual
-                        set(surfActual, 'DisplayName', char(obs.label));
+                    obsLabel = sanitizeLegendLabel(obs.label);
+                    if strlength(obsLabel) > 0 && ~haveLegendActual
+                        set(surfActual, 'DisplayName', char(obsLabel));
                         haveLegendActual = true;
                     elseif ~haveLegendActual
                         set(surfActual, 'DisplayName', 'Obstacle');
@@ -553,8 +572,9 @@ end
                     yRect = [bounds(3) bounds(3) bounds(4) bounds(4) bounds(3)];
                     surfHandle = fill3(ax, xRect, yRect, obs.height * ones(size(xRect)), color, ...
                         'FaceAlpha', 0.25, 'EdgeColor', 'none');
-                    if strlength(obs.label) > 0 && ~haveLegendActual
-                        set(surfHandle, 'DisplayName', char(obs.label));
+                    obsLabel = sanitizeLegendLabel(obs.label);
+                    if strlength(obsLabel) > 0 && ~haveLegendActual
+                        set(surfHandle, 'DisplayName', char(obsLabel));
                         haveLegendActual = true;
                     elseif ~haveLegendActual
                         set(surfHandle, 'DisplayName', 'Obstacle');
@@ -793,6 +813,15 @@ for idx = 1:numel(cells)
         end
     end
 end
+
+function labelOut = sanitizeLegendLabel(labelIn)
+if nargin < 1 || isempty(labelIn)
+    labelOut = "";
+    return
+end
+labelOut = string(labelIn);
+labelOut = replace(labelOut, "_", "\_");
+end
 end
 
 function cells = flattenObstacles(input)
@@ -861,4 +890,13 @@ base = sanitizeColor(color, [1 0 0]);
 amount = max(min(amount, 1), 0);
 out = base + (1 - base) * amount;
 out = max(min(out, 1), 0);
+end
+
+function labelOut = sanitizeLegendLabel(labelIn)
+if nargin < 1 || isempty(labelIn)
+    labelOut = "";
+    return
+end
+labelOut = string(labelIn);
+labelOut = replace(labelOut, "_", "\_");
 end
