@@ -142,8 +142,16 @@ function [vx, wz, state, status] = chassisPathFollowerCodegen(...
 %% Input Validation and Initialization
 % Check for empty or uninitialized state
 if isempty(fieldnames(state)) || ~isfield(state, 'PathNumPoints') || state.PathNumPoints == 0
-    % Initialize state on first call
-    state = initializeChassisPathState(params.PathInfo);
+    % Initialize state on first call using flattened PathInfo fields
+    state = struct();
+    state.PathNumPoints = size(params.PathInfo_States, 1);
+    state.CurrentIndex = 1;
+    state.LastVelocity = 0.0;
+    state.LastAcceleration = 0.0;
+    state.LastHeadingError = 0.0;
+    state.IntegralHeadingError = 0.0;
+    state.PreviousPose = [0.0, 0.0, 0.0];
+    state.DistanceTraveled = 0.0;
 end
 
 % Handle empty path
@@ -158,78 +166,339 @@ end
 assert(numel(pose) == 3, 'chassisPathFollowerCodegen:InvalidPose', ...
     'Pose must be 1x3 [x y theta]');
 
-%% Path Tracking - Find Closest Point and Lookahead
-% TODO: Implement findClosestPointOnPath()
-% Updates state.CurrentIndex, computes crossTrackError
-
-% TODO: Implement computeLookaheadDistance()
-% Adaptive lookahead based on velocity and acceleration
-
-% TODO: Implement findLookaheadPoint()
-% Find point on path at lookahead distance ahead
-
 %% Controller Mode Dispatch
-mode = lower(params.ControllerMode);
+mode = params.ControllerMode;  % Numeric: 0, 1, or 2
 
-% TODO: Implement mode-specific controllers
+% Get path states
+pathStates = params.PathInfo_States;
+numPts = state.PathNumPoints;
+position = pose(1:2);
+theta = pose(3);
+
+% Extract chassis limits
+vxMax = params.Chassis.vx_max;
+vxMin = params.Chassis.vx_min;
+track = params.Chassis.track;
+wheelSpeedMax = params.Chassis.wheel_speed_max;
+wzMax = params.Chassis.wz_max;
+accel_limit = params.Chassis.accel_limit;
+decel_limit = params.Chassis.decel_limit;
+
 switch mode
-    case 'purepursuit'
-        % TODO: Implement computePurePursuit()
-        % Classic lookahead-based geometric tracking
-        vx_desired = 0.0;
-        wz_desired = 0.0;
+    case 0
+        %% MODE 0: Legacy 5-Point Differentiation (Open-Loop)
+        % Replay velocities from path using numerical differentiation
+        % No feedback - just transform world velocities to body frame
         
-    case 'stanley'
-        % TODO: Implement computeStanley()
-        % Cross-track error correction with heading
-        vx_desired = 0.0;
-        wz_desired = 0.0;
+        % Differentiate path to get world-frame velocities
+        vxWorld = differentiateSeries(pathStates(:,1), dt);
+        vyWorld = differentiateSeries(pathStates(:,2), dt);
+        wSeries = differentiateSeries(pathStates(:,3), dt);
         
-    case 'blended'
-        % TODO: Implement computeBlended()
-        % Speed-adaptive blend of Stanley + Pure Pursuit
-        vx_desired = 0.0;
-        wz_desired = 0.0;
+        % Find nearest point
+        diffs = pathStates(:,1:2) - position;
+        distSq = sum(diffs.^2, 2);
+        [~, nearestIdx] = min(distSq);
+        nearestIdx = max(nearestIdx, state.CurrentIndex);
+        state.CurrentIndex = nearestIdx;
+        
+        % Transform world velocities to body frame
+        rot = [cos(theta) sin(theta); -sin(theta) cos(theta)];
+        bodyVel = rot * [vxWorld(nearestIdx); vyWorld(nearestIdx)];
+        
+        vx_desired = bodyVel(1);
+        wz_desired = wSeries(nearestIdx);
+        
+        % Simple clamping (no sophisticated limiting for mode 0)
+        vx = clampValue(vx_desired, vxMin, vxMax);
+        wz = wz_desired;
+        [wz, ~] = clampYawByWheelLimit(vx, wz, track, wheelSpeedMax, wzMax);
+        
+        % Status
+        distanceToGoal = params.PathInfo_DistanceRemaining(nearestIdx);
+        isFinished = (distanceToGoal <= params.GoalTolerance) || (nearestIdx >= numPts);
+        
+        crossTrackError = 0.0;
+        headingError = 0.0;
+        lookaheadDistance = 0.0;
+        curvature = 0.0;
+        accel = 0.0;
+        
+    case 1
+        %% MODE 1: Heading-Aware Controller (Simple Feedback)
+        % P-control on heading + feedforward yaw rate
+        % Velocity from distance to lookahead point
+        
+        % Find nearest point
+        diffs = pathStates(:,1:2) - position;
+        distSq = sum(diffs.^2, 2);
+        [~, nearestIdx] = min(distSq);
+        nearestIdx = max(nearestIdx, state.CurrentIndex);
+        state.CurrentIndex = nearestIdx;
+        
+        % Compute lookahead distance
+        lookaheadDistance = params.LookaheadBase ...
+            + params.LookaheadVelGain * abs(state.LastVelocity) ...
+            + params.LookaheadAccelGain * abs(state.LastAcceleration) * dt;
+        lookaheadDistance = max([lookaheadDistance, params.GoalTolerance, 0.05]);
+        
+        % Find lookahead point
+        arc = params.PathInfo_ArcLength;
+        targetS = min(arc(end), arc(nearestIdx) + lookaheadDistance);
+        targetIdx = find(arc >= targetS, 1, 'first');
+        if isempty(targetIdx)
+            targetIdx = numPts;
+        end
+        
+        targetPose = pathStates(targetIdx,:);
+        
+        % Compute heading error and feedforward
+        dx = targetPose(1) - pose(1);
+        dy = targetPose(2) - pose(2);
+        desiredHeading = atan2(dy, dx);
+        headingError = wrapToPi(desiredHeading - theta);
+        
+        yawFF = wrapToPi(targetPose(3) - theta) / max(dt, 1e-3);
+        
+        % Velocity from distance to target
+        distanceAhead = hypot(dx, dy);
+        vx_desired = distanceAhead / max(dt, 1e-3);
+        
+        % Reverse handling
+        if params.ReverseEnabled && cos(headingError) < cosd(120)
+            vx_desired = -vx_desired;
+        end
+        
+        % Heading control
+        wz_desired = params.HeadingKp * headingError + params.FeedforwardGain * yawFF;
+        
+        % Apply limits
+        vx = clampValue(vx_desired, vxMin, vxMax);
+        [wz, ~] = clampYawByWheelLimit(vx, wz_desired, track, wheelSpeedMax, wzMax);
+        
+        % Status
+        distanceToGoal = params.PathInfo_DistanceRemaining(nearestIdx);
+        isFinished = (distanceToGoal <= params.GoalTolerance) || (nearestIdx >= numPts);
+        
+        crossTrackError = 0.0;  % Not computed in mode 1
+        curvature = params.PathInfo_Curvature(targetIdx);
+        accel = (vx - state.LastVelocity) / dt;
+        
+    case 2
+        %% MODE 2: Pure Pursuit (Full Feedback with Advanced Features)
+        % Adaptive lookahead, curvature-based speed control, full limiting
+        
+        % Find nearest point
+        diffs = pathStates(:,1:2) - position;
+        distSq = sum(diffs.^2, 2);
+        [~, nearestIdx] = min(distSq);
+        nearestIdx = max(nearestIdx, state.CurrentIndex);
+        state.CurrentIndex = nearestIdx;
+        
+        % Adaptive lookahead distance
+        lookaheadDistance = params.LookaheadBase ...
+            + params.LookaheadVelGain * abs(state.LastVelocity) ...
+            + params.LookaheadAccelGain * abs(state.LastAcceleration) * dt;
+        lookaheadDistance = max([lookaheadDistance, params.GoalTolerance, 0.05]);
+        
+        % Find lookahead point
+        arc = params.PathInfo_ArcLength;
+        targetS = min(arc(end), arc(nearestIdx) + lookaheadDistance);
+        targetIdx = find(arc >= targetS, 1, 'first');
+        if isempty(targetIdx)
+            targetIdx = numPts;
+        end
+        
+        % Transform target to body frame
+        targetPoint = pathStates(targetIdx,1:2);
+        delta = targetPoint - position;
+        rot = [cos(theta) sin(theta); -sin(theta) cos(theta)];
+        deltaBody = rot * delta(:);
+        xLook = deltaBody(1);
+        yLook = deltaBody(2);
+        
+        % Pure pursuit curvature from geometry
+        ld = max(lookaheadDistance, 1e-3);
+        curvaturePP = 2 * yLook / (ld^2);
+        
+        % Cross-track and heading errors
+        crossTrackError = yLook;
+        headingTarget = pathStates(targetIdx,3);
+        headingError = wrapToPi(headingTarget - theta);
+        
+        % Path curvature for speed control
+        curvature = params.PathInfo_Curvature(targetIdx);
+        
+        % Direction handling
+        direction = 1;
+        if params.ReverseEnabled && xLook < 0
+            direction = -1;
+        end
+        
+        % Curvature-based speed control
+        vxCap = vxMax;
+        kappaThr = params.KappaThreshold;
+        vxReduction = params.VxReduction;
+        
+        if abs(curvature) > kappaThr
+            scale = vxReduction;
+        else
+            ratio = max(0, 1 - abs(curvature)/kappaThr);
+            scale = vxReduction + (1 - vxReduction) * ratio;
+        end
+        vxCap = max(vxMin, vxCap * scale);
+        
+        % Goal approach tapering
+        distanceRemaining = params.PathInfo_DistanceRemaining(nearestIdx);
+        if distanceRemaining < 3 * params.GoalTolerance
+            taper = max(distanceRemaining / (3 * params.GoalTolerance), 0.2);
+            vxCap = min(vxCap, vxMax * taper);
+        end
+        
+        vx_desired = direction * abs(min(vxCap, vxMax));
+        
+        % Pure pursuit angular velocity
+        wz_desired = vx_desired * curvaturePP;
+        
+        % Acceleration limiting
+        accel_desired = (vx_desired - state.LastVelocity) / dt;
+        if accel_desired >= 0
+            accel = min(accel_desired, accel_limit);
+        else
+            accel = max(accel_desired, -decel_limit);
+        end
+        vx_accel = state.LastVelocity + accel * dt;
+        
+        % Jerk limiting
+        jerk_limit = params.Chassis.jerk_limit;
+        jerk = (accel - state.LastAcceleration) / dt;
+        jerk = max(-jerk_limit, min(jerk_limit, jerk));
+        accel_smooth = state.LastAcceleration + jerk * dt;
+        vx_smooth = state.LastVelocity + accel_smooth * dt;
+        
+        % Wheel speed limiting
+        vL = vx_smooth - wz_desired * track / 2;
+        vR = vx_smooth + wz_desired * track / 2;
+        maxWheel = max(abs(vL), abs(vR));
+        if maxWheel > wheelSpeedMax
+            scale = wheelSpeedMax / maxWheel;
+            vx = vx_smooth * scale;
+            wz = wz_desired * scale;
+        else
+            vx = vx_smooth;
+            wz = wz_desired;
+        end
+        
+        % Final yaw clamping
+        [wz, ~] = clampYawByWheelLimit(vx, wz, track, wheelSpeedMax, wzMax);
+        vx = clampValue(vx, vxMin, vxMax);
+        
+        % Goal detection
+        distanceToGoal = distanceRemaining;
+        isFinished = (distanceToGoal <= params.GoalTolerance) || (nearestIdx >= numPts);
         
     otherwise
         error('chassisPathFollowerCodegen:InvalidMode', ...
-            'Unknown controller mode: %s. Use blended/purePursuit/stanley', mode);
+            'Invalid controller mode: %d. Must be 0, 1, or 2', mode);
 end
 
-%% Velocity Limiting Pipeline
-% TODO: Implement applyCurvatureLimiting()
-% Reduce speed in high-curvature regions
-vx_curve_limited = vx_desired;
-
-% TODO: Implement applyAccelerationLimiting()
-% Respect accel/decel limits with feedforward compensation
-vx_accel_limited = vx_curve_limited;
-accel = 0.0;
-
-% TODO: Implement applyJerkLimiting()
-% Smooth acceleration profile
-vx_smooth = vx_accel_limited;
-accel_smooth = accel;
-
-% TODO: Implement applyWheelSpeedLimiting()
-% Ensure wheel speeds within limits for differential drive
-vx = vx_smooth;
-wz = wz_desired;
 
 %% State Update
-% TODO: Update state fields
 state.LastVelocity = vx;
-state.LastAcceleration = accel_smooth;
-% state.DistanceTraveled += norm(pose(1:2) - state.PreviousPose(1:2));
+state.LastAcceleration = accel;
 state.PreviousPose = pose;
 
 %% Status Report
-% TODO: Implement createStatus()
-% Comprehensive diagnostics for monitoring and debugging
-status = createEmptyStatus(params);
-status.isFinished = false;  % TODO: Implement goal detection
+status = struct();
+status.isFinished = isFinished;
+status.distanceRemaining = distanceToGoal;
+status.crossTrackError = crossTrackError;
+status.headingError = headingError;
+status.curvature = curvature;
+status.lookaheadDistance = lookaheadDistance;
+status.currentMode = mode;
+status.currentIndex = nearestIdx;
 
 end % chassisPathFollowerCodegen
+
+%% ========================================================================
+%% Helper Functions
+%% ========================================================================
+
+function val = clampValue(x, minVal, maxVal)
+%CLAMPVALUE Clamp value to range [minVal, maxVal]
+val = min(max(x, minVal), maxVal);
+end
+
+function [wzClamped, caps] = clampYawByWheelLimit(vx, wz, track, wheelMax, wzMax)
+%CLAMPYAWBYWHEELLIMIT Clamp yaw rate respecting wheel speed limits
+%   Computes required wheel speeds and scales down wz if needed
+vL = vx - 0.5 * track * wz;
+vR = vx + 0.5 * track * wz;
+maxWheel = max(abs(vL), abs(vR));
+
+if maxWheel > wheelMax && maxWheel > 1e-6
+    scale = wheelMax / maxWheel;
+    wzClamped = wz * scale;
+    caps.applied = wzClamped;
+    caps.requested = wz;
+else
+    wzClamped = wz;
+    caps.applied = wz;
+    caps.requested = wz;
+end
+
+% Final wz clamping
+wzClamped = clampValue(wzClamped, -wzMax, wzMax);
+end
+
+function df = differentiateSeries(series, dt)
+%DIFFERENTIATESERIES 5-point finite difference formula
+%   Uses different formulas for boundary points:
+%   • Interior (i >= 3, i <= N-2): 5-point centered difference
+%   • Near boundary (i == 2, i == N-1): 3-point centered difference
+%   • Boundary (i == 1, i == N): Forward/backward difference
+
+N = numel(series);
+df = zeros(N,1);
+
+if N < 2
+    return
+end
+
+dt = max(dt, 1e-3);
+
+if N < 5
+    % Use simpler formulas for short series
+    for i = 1:N
+        if i == 1
+            df(i) = (series(min(N, i+1)) - series(i)) / dt;
+        elseif i == N
+            df(i) = (series(i) - series(max(1, i-1))) / dt;
+        else
+            df(i) = (series(i+1) - series(i-1)) / (2*dt);
+        end
+    end
+    return
+end
+
+% 5-point differentiation for longer series
+for i = 1:N
+    if i >= 3 && i <= N-2
+        % Interior: 5-point centered difference
+        df(i) = (-series(i+2) + 8*series(i+1) - 8*series(i-1) + series(i-2)) / (12*dt);
+    elseif i == 2 || i == N-1
+        % Near boundary: 3-point centered
+        df(i) = (series(i+1) - series(i-1)) / (2*dt);
+    elseif i == 1
+        % Start: forward difference
+        df(i) = (-3*series(i) + 4*series(i+1) - series(i+2)) / (2*dt);
+    else % i == N
+        % End: backward difference
+        df(i) = (3*series(i) - 4*series(i-1) + series(i-2)) / (2*dt);
+    end
+end
+end
 
 %% ========================================================================
 %% Helper Function: Initialize Empty State

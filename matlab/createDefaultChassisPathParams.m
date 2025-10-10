@@ -210,10 +210,18 @@ params = struct();
 % ──────────────────────────────────────────────────────────────────────
 % Controller Selection
 % ──────────────────────────────────────────────────────────────────────
-params.ControllerMode = 'blended';  % 'blended', 'purePursuit', or 'stanley'
+% Mode 0: Legacy 5-point differentiation (open-loop replay)
+% Mode 1: Heading-aware controller (simple feedback)
+% Mode 2: Pure pursuit (full feedback with advanced features) - DEFAULT
+params.ControllerMode = 2;  % 0, 1, or 2
 
 % ──────────────────────────────────────────────────────────────────────
-% Lookahead Tuning (Adaptive)
+% Reverse Handling
+% ──────────────────────────────────────────────────────────────────────
+params.ReverseEnabled = chassisProfile.reverse_enabled;  % Allow reverse motion
+
+% ──────────────────────────────────────────────────────────────────────
+% Lookahead Tuning (Adaptive - Used in Modes 1 and 2)
 % ──────────────────────────────────────────────────────────────────────
 % Total lookahead = LookaheadBase + LookaheadVelGain * |vx| + LookaheadAccelGain * accel
 params.LookaheadBase = 0.6;          % m - Base lookahead distance
@@ -226,7 +234,7 @@ params.LookaheadAccelGain = 0.05;    % s²/m - Acceleration-proportional gain
 params.GoalTolerance = 0.10;         % m - Distance threshold for goal reached
 
 % ──────────────────────────────────────────────────────────────────────
-% Heading Control (PID)
+% Heading Control (PID - Used in Mode 1)
 % ──────────────────────────────────────────────────────────────────────
 params.HeadingKp = 1.2;              % Proportional gain (higher = more aggressive)
 params.HeadingKi = 0.0;              % Integral gain (usually keep at 0)
@@ -234,24 +242,25 @@ params.HeadingKd = 0.1;              % Derivative gain (damping)
 params.FeedforwardGain = 0.9;        % Feedforward gain for path yaw rate (0-1)
 
 % ──────────────────────────────────────────────────────────────────────
-% Chassis Physical Parameters (Flattened from nested struct)
+% Curvature-Based Speed Control (Used in Mode 2)
 % ──────────────────────────────────────────────────────────────────────
-params.Chassis_track = chassisProfile.track;
-params.Chassis_wheel_speed_max = chassisProfile.wheel_speed_max;
-params.Chassis_vx_max = chassisProfile.vx_max;
-params.Chassis_vx_min = chassisProfile.vx_min;
-params.Chassis_wz_max = chassisProfile.wz_max;
-params.Chassis_accel_limit = chassisProfile.accel_limit;
-params.Chassis_decel_limit = chassisProfile.decel_limit;
-params.Chassis_jerk_limit = chassisProfile.jerk_limit;
-params.Chassis_wheel_base = chassisProfile.wheel_base;
-params.Chassis_reverse_enabled = chassisProfile.reverse_enabled;
+params.KappaThreshold = 0.9;    % rad/m - Curvature threshold for speed reduction
+params.VxReduction = 0.6;       % fraction - Speed multiplier in high-curvature (60%)
 
 % ──────────────────────────────────────────────────────────────────────
-% Curvature-Based Speed Control (Flattened from nested struct)
+% Chassis Physical Parameters (Flattened from nested struct for codegen)
 % ──────────────────────────────────────────────────────────────────────
-params.CurvatureSlowdown_kappa_threshold = 0.9;   % rad/m - Start reducing speed
-params.CurvatureSlowdown_vx_reduction = 0.6;      % fraction - Speed in curves (60%)
+params.Chassis = struct();
+params.Chassis.track = chassisProfile.track;
+params.Chassis.wheel_speed_max = chassisProfile.wheel_speed_max;
+params.Chassis.vx_max = chassisProfile.vx_max;
+params.Chassis.vx_min = chassisProfile.vx_min;
+params.Chassis.wz_max = chassisProfile.wz_max;
+params.Chassis.accel_limit = chassisProfile.accel_limit;
+params.Chassis.decel_limit = chassisProfile.decel_limit;
+params.Chassis.jerk_limit = chassisProfile.jerk_limit;
+params.Chassis.wheel_base = chassisProfile.wheel_base;
+params.Chassis.reverse_enabled = chassisProfile.reverse_enabled;
 
 % ──────────────────────────────────────────────────────────────────────
 % Path Information (Empty, Must Be Set from preparePathForFollower)
