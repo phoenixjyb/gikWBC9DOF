@@ -3,9 +3,10 @@
 **9-DOF Mobile Manipulator Control System**  
 **Platform**: NVIDIA Jetson AGX Orin | Ubuntu 22.04 | ROS2 Humble | ARM64
 
-**Status**: ✅ Production Ready - Velocity Smoothing Integrated  
+**Status**: ✅ Production Ready - All 4 Components Built & Documented  
 **Last Updated**: October 10, 2025  
-**Branch**: `codegencc45-main`
+**Branch**: `codegencc45-main`  
+**Latest**: ⭐ Comprehensive build system + WSL tools + All codegen regenerated
 
 ---
 
@@ -14,8 +15,10 @@
 ### 🚀 For First-Time Users
 👉 **[docs/getting-started/START_HERE.md](docs/getting-started/START_HERE.md)** - Complete setup guide
 
-### 🏗️ For Building & Deploying
-📘 **[docs/guides/COMPLETE_BUILD_GUIDE.md](docs/guides/COMPLETE_BUILD_GUIDE.md)** - ⭐ **Complete build tutorial** (MATLAB → ROS2 → Orin)
+### 🏗️ For Building & Deploying (⭐ NEW: Complete Guide!)
+📘 **[docs/guides/COMPLETE_BUILD_GUIDE.md](docs/guides/COMPLETE_BUILD_GUIDE.md)** - ⭐ **600+ line complete build tutorial** (MATLAB → ROS2 → Orin)  
+🔧 **[docs/guides/WSL_BUILD_VERSIONING.md](docs/guides/WSL_BUILD_VERSIONING.md)** - WSL-specific build tracking & versioning  
+📦 **[docs/technical/codegen/CODEGEN_FOLDER_STRUCTURE.md](docs/technical/codegen/CODEGEN_FOLDER_STRUCTURE.md)** - Understanding codegen folders
 
 ### 👨‍💻 For Developers
 📖 **[docs/sessions/NEXT_SESSION_VELOCITY_SMOOTHING.md](docs/sessions/NEXT_SESSION_VELOCITY_SMOOTHING.md)** - Current session status
@@ -36,11 +39,16 @@ gikWBC9DOF/
 ├── docs/                        # 📚 All documentation
 │   ├── README.md               # Documentation index
 │   ├── getting-started/        # New user guides
+│   ├── guides/                 # 🆕 Build & deployment guides
+│   │   ├── COMPLETE_BUILD_GUIDE.md          # ⭐ 600+ line master guide
+│   │   ├── WSL_BUILD_VERSIONING.md          # WSL build tracking
+│   │   ├── BUILD_VERIFICATION_GUIDE.md      # Build currency checks
+│   │   └── BUILD_TRACKING_WITHOUT_NUMBERS.md # Git-based versioning
 │   ├── technical/              # Technical docs
 │   │   ├── architecture/       # System architecture
 │   │   ├── smoothing/          # Trajectory & velocity smoothing
 │   │   ├── planning/           # Path planning (Hybrid A*)
-│   │   └── codegen/            # MATLAB Coder
+│   │   └── codegen/            # MATLAB Coder + folder structure
 │   ├── fixes/                  # Bug fixes & solutions
 │   ├── sessions/               # Development session notes
 │   ├── testing/                # Test procedures
@@ -49,9 +57,17 @@ gikWBC9DOF/
 │
 ├── scripts/                     # 🔧 Automation scripts
 │   ├── README.md               # Scripts index
-│   ├── codegen/                # Code generation scripts
+│   ├── codegen/                # 🆕 Code generation scripts (WSL tools!)
+│   │   ├── generate_code_arm64.m               # ARM64 solver codegen
+│   │   ├── run_codegen_wsl_with_version.sh     # WSL versioned build
+│   │   ├── run_codegen_wsl_versioned.ps1       # Windows launcher
+│   │   ├── save_build_info_wsl.sh              # Git version tracking
+│   │   ├── cleanup_backups.ps1                 # Safe backup removal
+│   │   └── ...planner, smoothing scripts
+│   ├── deployment/             # 🆕 Deployment scripts
+│   │   └── check_build_current_wsl.sh          # Build currency check
 │   ├── testing/                # Test scripts
-│   └── deployment/             # Deployment scripts
+│   └── ...
 │
 ├── matlab/                      # 🧮 MATLAB source code
 │   ├── +gik9dof/               # Main package
@@ -69,11 +85,12 @@ gikWBC9DOF/
 │       ├── velocity_smoothing/  # Generated velocity smoothing (NEW)
 │       └── CMakeLists.txt
 │
-├── codegen/                     # 🏗️ Generated code output
-│   ├── velocity_smoothing/     # Velocity smoothing (NEW)
-│   ├── trajectory_smoothing/   # Trajectory smoothing
-│   ├── planner_arm64/          # Path planner (ARM64)
-│   └── ...
+├── codegen/                     # 🏗️ Generated code output (ALL FRESH! ✅)
+│   ├── arm64_realtime/         # ARM64 GIK solver (196 files, Build: 20251010_135707)
+│   ├── planner_arm64/          # Path planner ARM64 (50 files)
+│   ├── trajectory_smoothing/   # Trajectory smoothing (10 files)
+│   ├── velocity_smoothing/     # Velocity smoothing (30 files)
+│   └── archive/                # Archived old builds
 │
 ├── models/                      # 🤖 Robot models
 │   ├── mobile_manipulator_PPR_base_corrected.urdf
@@ -97,6 +114,42 @@ gikWBC9DOF/
 └── deployments/                 # 📦 Deployment packages
     └── Archived deployments
 ```
+
+---
+
+## 🔧 Build System (⭐ NEW!)
+
+### WSL MATLAB Code Generation
+This project uses **WSL Ubuntu 22.04 + Linux MATLAB R2024a** for ARM64 cross-compilation:
+
+**Quick Build (All 4 components):**
+```bash
+# From Windows PowerShell:
+.\scripts\codegen\run_codegen_wsl_versioned.ps1      # ARM64 solver
+.\scripts\codegen\run_planner_codegen.ps1            # Planner
+wsl bash scripts/codegen/run_trajectory_smoothing_codegen.sh  # Trajectory
+wsl bash scripts/codegen/run_velocity_smoothing_codegen.sh    # Velocity
+```
+
+**Check Build Status:**
+```bash
+wsl bash scripts/deployment/check_build_current_wsl.sh
+```
+
+**Key Features:**
+- 🔖 **Git-based versioning** (no hardcoded version numbers)
+- ✅ **Build currency tracking** (auto-detects outdated builds)
+- 🛠️ **Automated metadata** (BUILD_INFO.txt, SOURCE_COMMIT.txt)
+- 📝 **Comprehensive guides** (1,800+ lines documentation)
+
+**Build Times:**
+- ARM64 solver: ~13 minutes (196 files)
+- Planner: ~8 minutes (50 files)
+- Trajectory smoothing: ~3 minutes (10 files)
+- Velocity smoothing: ~3 minutes (30 files)
+- **Total: ~27 minutes** for all components
+
+📖 **See:** [docs/guides/COMPLETE_BUILD_GUIDE.md](docs/guides/COMPLETE_BUILD_GUIDE.md) for detailed instructions
 
 ---
 
@@ -325,20 +378,28 @@ Built packages are archived in `deployments/` with timestamp.
 - [x] 9-DOF GIK solver (MATLAB → C++)
 - [x] Hybrid A* path planner (3-DOF)
 - [x] Trajectory smoothing (waypoint-based)
-- [x] Velocity smoothing (real-time) ⭐ NEW
+- [x] Velocity smoothing (real-time) ⭐
 - [x] ROS2 Humble integration
 - [x] ARM64 optimization (Jetson Orin)
 - [x] Staged control architecture (A→B→C)
 - [x] Multiple velocity control modes (0/1/2/3)
+- [x] **WSL build system with version tracking** ⭐ NEW
+- [x] **Comprehensive build documentation (1,800+ lines)** ⭐ NEW
+- [x] **All 4 codegen components regenerated (Oct 10, 2025)** ⭐ NEW
 
-### 🔄 In Progress
-- Testing velocity smoothing with real robot
+### � Recent Updates (This Session)
+- ✅ Created complete build guide (600+ lines)
+- ✅ WSL build tracking tools (4 scripts)
+- ✅ Git-based version tracking (no hardcoded versions)
+- ✅ Fixed namespace→file path issue for WSL MATLAB
+- ✅ Regenerated all 4 components (286 files, ~27 min)
+- ✅ Repository cleaned and organized
+- ✅ Build artifacts properly ignored
+
+### 📋 Next Steps
+- Testing all components with real robot
 - Performance validation on Jetson
-
-### 📋 Planned Features
-- Advanced collision avoidance
-- Dynamic obstacle handling
-- Multi-robot coordination
+- Deployment to production environment
 
 ---
 
@@ -350,7 +411,8 @@ Built packages are archived in `deployments/` with timestamp.
 3. Consult architecture docs in [docs/technical/architecture/](docs/technical/architecture/)
 
 ### For Development
-- Current work: [docs/sessions/NEXT_SESSION_VELOCITY_SMOOTHING.md](docs/sessions/NEXT_SESSION_VELOCITY_SMOOTHING.md)
+- Current work: [TIDYING_SESSION_COMPLETE.md](TIDYING_SESSION_COMPLETE.md) - Latest session summary
+- Build system: [BUILD_SYSTEM_SESSION_SUMMARY.md](BUILD_SYSTEM_SESSION_SUMMARY.md) - Build tools documentation
 - Organization: [WORKSPACE_ORGANIZATION_PLAN.md](WORKSPACE_ORGANIZATION_PLAN.md)
 
 ---
