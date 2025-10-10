@@ -121,13 +121,13 @@ fprintf('Output Directory:   %s\n\n', CODEGEN_OUTPUT);
 fprintf('===================================================\n');
 fprintf('Generating C++ code for Chassis Controller...\n');
 fprintf('===================================================\n');
-fprintf('Target function: gik9dof.control.simulateChassisController\n');
+fprintf('Target function: gik9dof.control.simulateChassisControllerCodegen\n');
 fprintf('Output directory: %s\n', CODEGEN_OUTPUT);
 fprintf('Purpose: Multi-mode chassis control for NVIDIA AGX Orin\n');
 fprintf('===================================================\n\n');
 
-% Find target file
-targetFile = fullfile(matlabRoot, '+gik9dof', '+control', 'simulateChassisController.m');
+% Find target file - use the codegen wrapper, not the original
+targetFile = fullfile(matlabRoot, '+gik9dof', '+control', 'simulateChassisControllerCodegen.m');
 if ~isfile(targetFile)
     error('Target file not found: %s', targetFile);
 end

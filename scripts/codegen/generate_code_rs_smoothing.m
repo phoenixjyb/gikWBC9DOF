@@ -102,13 +102,13 @@ fprintf('Output Directory:   %s\n\n', CODEGEN_OUTPUT);
 fprintf('===================================================\n');
 fprintf('Generating C++ code for RS Clothoid Smoothing...\n');
 fprintf('===================================================\n');
-fprintf('Target function: gik9dof.control.rsClothoidRefine\n');
+fprintf('Target function: gik9dof.control.rsClothoidRefineCodegen\n');
 fprintf('Output directory: %s\n', CODEGEN_OUTPUT);
 fprintf('Purpose: Clothoid-based path smoothing for NVIDIA AGX Orin\n');
 fprintf('===================================================\n\n');
 
-% Find target file
-targetFile = fullfile(matlabRoot, '+gik9dof', '+control', 'rsClothoidRefine.m');
+% Find target file - use the codegen wrapper, not the original
+targetFile = fullfile(matlabRoot, '+gik9dof', '+control', 'rsClothoidRefineCodegen.m');
 if ~isfile(targetFile)
     error('Target file not found: %s', targetFile);
 end
