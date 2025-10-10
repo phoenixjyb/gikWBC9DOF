@@ -56,7 +56,7 @@ arguments
     options.DistanceBounds (1,2) double = [0.2 Inf]
     options.DistanceWeight (1,1) double = 0.5
     options.DistanceSpecs = struct([])
-    options.MaxIterations (1,1) double {mustBePositive} = 1000
+    options.MaxIterations (1,1) double {mustBePositive} = 1500
 end
 
 % Keep a configuration toolbox around for conversions.

@@ -1,266 +1,337 @@
 classdef purePursuitFollower < handle
-    %PUREPURSUITFOLLOWER Pure pursuit controller with chassis limits.
+    %PUREPURSUITFOLLOWER Chassis-aware path follower for differential drive.
     %   follower = gik9dof.control.purePursuitFollower(pathStates, options)
-    %   builds a controller that produces differential-drive friendly
-    %   (Vx, Wz) commands. The follower supports bidirectional motion and
-    %   dynamically modulates the lookahead distance based on velocity.
+    %   builds a controller that converts SE(2) reference paths into chassis
+    %   commands (Vx, Wz) honouring acceleration, curvature, and wheel-speed
+    %   bounds defined by the loaded chassis profile.
     %
-    %   pathStates : Nx3 matrix [x y yaw] describing the reference path.
-    %   options struct/name-value pairs:
-    %       SampleTime          - Default 0.1 s (used for lookahead gain)
-    %       LookaheadBase       - 0.8 m
-    %       LookaheadVelGain    - 0.3 s
-    %       LookaheadTimeGain   - 0.1 s^2
-    %       VxNominal           - 1.0 m/s
-    %       VxMax               - 1.5 m/s
-    %       VxMin               - -1.0 m/s
-    %       WzMax               - 2.0 rad/s
-    %       TrackWidth          - 0.674 m
-    %       WheelBase           - 0.36 m (informational)
-    %       MaxWheelSpeed       - 2.0 m/s
-    %       WaypointSpacing     - 0.15 m
-    %       PathBufferSize      - 30.0 m
-    %       GoalTolerance       - 0.2 m
-    %       InterpSpacing       - 0.05 m
-    %       ReverseEnabled      - true
+    %   Key options:
+    %       ChassisParams     - struct from loadChassisProfile (required)
+    %       ControllerMode    - "blended", "purePursuit", "stanley"
+    %       SampleTime        - nominal dt used for lookahead adaptation
+    %       LookaheadBase     - base lookahead distance (m)
+    %       LookaheadVelGain  - scales with |vx|
+    %       LookaheadTimeGain - scales with acceleration
+    %       PathInfo          - preprocessed struct from preparePathForFollower
     %
-    %   [vx, wz, status] = follower.step(pose, dt)
-    %       pose : [x y yaw] current chassis pose (world frame).
-    %       dt   : sample time (defaults to options.SampleTime).
-    %       status fields: isFinished, lookaheadIndex, distanceToGoal,
-    %                      lookaheadDistance, wheelSpeeds (1x2), headingError.
-    %
-    %   The controller outputs lateral velocity vy=0; callers must integrate
-    %   the (vx, wz) commands using differential-drive kinematics.
+    %   [vx, wz, status] = follower.step(pose, dt) uses the latest pose
+    %   estimate [x y yaw] and timestep dt to produce commands alongside a
+    %   status struct capturing curvature, acceleration, cross-track error,
+    %   and wheel speeds for logging.
 
     properties
         SampleTime (1,1) double {mustBePositive} = 0.1
-        LookaheadBase (1,1) double {mustBePositive} = 0.4
-        LookaheadVelGain (1,1) double {mustBeNonnegative} = 0.2
+        ControllerMode (1,1) string {mustBeMember(ControllerMode, ["blended","purePursuit","stanley"])} = "blended"
+        LookaheadBase (1,1) double {mustBePositive} = 0.6
+        LookaheadVelGain (1,1) double {mustBeNonnegative} = 0.30
         LookaheadTimeGain (1,1) double {mustBeNonnegative} = 0.05
-        VxNominal (1,1) double = 1.0
-        VxMax (1,1) double {mustBePositive} = 1.5
-        VxMin (1,1) double = -1.0
-        WzMax (1,1) double {mustBePositive} = 2.0
-        TrackWidth (1,1) double {mustBePositive} = 0.674
-        WheelBase (1,1) double {mustBePositive} = 0.36
-        MaxWheelSpeed (1,1) double {mustBePositive} = 2.0
-        WaypointSpacing (1,1) double {mustBePositive} = 0.15
-        PathBufferSize (1,1) double {mustBePositive} = 30.0
-        GoalTolerance (1,1) double {mustBePositive} = 0.05
-        InterpSpacing (1,1) double {mustBePositive} = 0.05
-        ReverseEnabled (1,1) logical = true
+        GoalTolerance (1,1) double {mustBePositive} = 0.10
+        ReverseEnabled (1,1) logical = false
+        HeadingKp (1,1) double = 1.2
+        HeadingKi (1,1) double = 0.0
+        HeadingKd (1,1) double = 0.1
+        FeedforwardGain (1,1) double = 0.9
+    end
+
+    properties (SetAccess = private)
+        Chassis struct = struct('track', 0.573, 'wheel_speed_max', 3.3, ...
+            'vx_max', 1.5, 'vx_min', -0.4, 'wz_max', 2.5, ...
+            'accel_limit', 1.2, 'decel_limit', 1.8, 'jerk_limit', 5.0, ...
+            'wheel_base', 0.36, 'curvature_slowdown', struct('kappa_threshold', 0.9, 'vx_reduction', 0.6), ...
+            'reverse_enabled', false)
+        PathInfo struct = struct('States', zeros(0,3), 'Curvature', [], 'ArcLength', [], ...
+            'DistanceRemaining', [], 'SegmentIndex', [], 'Diagnostics', struct('warnings', strings(1,0)))
     end
 
     properties (Access = private)
-        Path double = zeros(0,3)
-        CumulativeDistance double = double.empty(1,0)
         CurrentIndex (1,1) double {mustBeInteger, mustBeNonnegative} = 1
         LastVelocity double = 0
+        LastAcceleration double = 0
+        LastHeadingError double = 0
+        HeadingIntegral double = 0
+        StatusTemplate struct
     end
 
     methods
         function obj = purePursuitFollower(pathStates, varargin)
-            if nargin < 1
-                pathStates = zeros(0,3);
-            end
-
             parser = inputParser;
             addParameter(parser, 'SampleTime', obj.SampleTime, @(x) isnumeric(x) && isscalar(x) && x > 0);
+            addParameter(parser, 'ControllerMode', obj.ControllerMode, @(x) any(strcmpi(x, ["blended","purePursuit","stanley"])));
+            addParameter(parser, 'ChassisParams', struct(), @(x) isstruct(x));
             addParameter(parser, 'LookaheadBase', obj.LookaheadBase);
             addParameter(parser, 'LookaheadVelGain', obj.LookaheadVelGain);
             addParameter(parser, 'LookaheadTimeGain', obj.LookaheadTimeGain);
-            addParameter(parser, 'VxNominal', obj.VxNominal);
-            addParameter(parser, 'VxMax', obj.VxMax);
-            addParameter(parser, 'VxMin', obj.VxMin);
-            addParameter(parser, 'WzMax', obj.WzMax);
-            addParameter(parser, 'TrackWidth', obj.TrackWidth);
-            addParameter(parser, 'WheelBase', obj.WheelBase);
-            addParameter(parser, 'MaxWheelSpeed', obj.MaxWheelSpeed);
-            addParameter(parser, 'WaypointSpacing', obj.WaypointSpacing);
-            addParameter(parser, 'PathBufferSize', obj.PathBufferSize);
             addParameter(parser, 'GoalTolerance', obj.GoalTolerance);
-            addParameter(parser, 'InterpSpacing', obj.InterpSpacing);
             addParameter(parser, 'ReverseEnabled', obj.ReverseEnabled);
+            addParameter(parser, 'HeadingKp', obj.HeadingKp);
+            addParameter(parser, 'HeadingKi', obj.HeadingKi);
+            addParameter(parser, 'HeadingKd', obj.HeadingKd);
+            addParameter(parser, 'FeedforwardGain', obj.FeedforwardGain);
+            addParameter(parser, 'PathInfo', struct(), @(x) isstruct(x));
             parse(parser, varargin{:});
 
             obj.SampleTime = parser.Results.SampleTime;
+            obj.ControllerMode = string(lower(parser.Results.ControllerMode));
             obj.LookaheadBase = parser.Results.LookaheadBase;
             obj.LookaheadVelGain = parser.Results.LookaheadVelGain;
             obj.LookaheadTimeGain = parser.Results.LookaheadTimeGain;
-            obj.VxNominal = parser.Results.VxNominal;
-            obj.VxMax = parser.Results.VxMax;
-            obj.VxMin = parser.Results.VxMin;
-            obj.WzMax = parser.Results.WzMax;
-            obj.TrackWidth = parser.Results.TrackWidth;
-            obj.WheelBase = parser.Results.WheelBase;
-            obj.MaxWheelSpeed = parser.Results.MaxWheelSpeed;
-            obj.WaypointSpacing = parser.Results.WaypointSpacing;
-            obj.PathBufferSize = parser.Results.PathBufferSize;
             obj.GoalTolerance = parser.Results.GoalTolerance;
-            obj.InterpSpacing = parser.Results.InterpSpacing;
             obj.ReverseEnabled = parser.Results.ReverseEnabled;
+            obj.HeadingKp = parser.Results.HeadingKp;
+            obj.HeadingKi = parser.Results.HeadingKi;
+            obj.HeadingKd = parser.Results.HeadingKd;
+            obj.FeedforwardGain = parser.Results.FeedforwardGain;
 
-            obj.setPath(pathStates);
+            if ~isempty(fieldnames(parser.Results.ChassisParams))
+                obj.Chassis = mergeChassisStruct(obj.Chassis, parser.Results.ChassisParams);
+            end
+            obj.ReverseEnabled = obj.Chassis.reverse_enabled | obj.ReverseEnabled;
+
+            obj.StatusTemplate = struct('isFinished', false, ...
+                'nearestIndex', NaN, ...
+                'targetIndex', NaN, ...
+                'distanceToGoal', NaN, ...
+                'lookaheadDistance', obj.LookaheadBase, ...
+                'curvature', 0, ...
+                'crossTrackError', 0, ...
+                'headingError', 0, ...
+                'vxCommand', 0, ...
+                'wzCommand', 0, ...
+                'acceleration', 0, ...
+                'wheelSpeeds', [0 0], ...
+                'controllerMode', obj.ControllerMode, ...
+                'warnings', strings(1,0));
+
+            if ~isempty(fieldnames(parser.Results.PathInfo))
+                obj.PathInfo = parser.Results.PathInfo;
+            else
+                obj.setPath(pathStates);
+            end
         end
 
         function setPath(obj, pathStates)
-            if isempty(pathStates)
-                obj.Path = zeros(0,3);
-                obj.CumulativeDistance = double.empty(1,0);
-                obj.CurrentIndex = 1;
-                return
+            if nargin < 2
+                pathStates = zeros(0,3);
             end
-
-            if size(pathStates,2) < 2
-                error('purePursuitFollower:InvalidPath', ...
-                    'Path must contain at least [x y] columns.');
-            end
-
-            if size(pathStates,2) == 2
-                heading = computeHeading(pathStates);
-                pathStates = [pathStates, heading];
-            end
-
-            % Interpolate with uniform spacing to improve curvature estimate
-            diffs = diff(pathStates(:,1:2));
-            segLen = hypot(diffs(:,1), diffs(:,2));
-            cumLen = [0; cumsum(segLen)];
-            [cumLen, uniqueIdx] = unique(cumLen, 'stable');
-            pathStates = pathStates(uniqueIdx, :);
-            if cumLen(end) < obj.InterpSpacing
-                interpPath = pathStates;
-            else
-                query = 0:obj.InterpSpacing:cumLen(end);
-                xInterp = interp1(cumLen, pathStates(:,1), query, 'pchip');
-                yInterp = interp1(cumLen, pathStates(:,2), query, 'pchip');
-                yawInterp = unwrap(pathStates(:,3));
-                yawInterp = interp1(cumLen, yawInterp, query, 'linear');
-                interpPath = [xInterp(:), yInterp(:), wrapToPi(yawInterp(:))];
-            end
-
-            % Apply buffer limit (meters)
-            maxPoints = ceil(obj.PathBufferSize / max(obj.WaypointSpacing, obj.InterpSpacing));
-            if size(interpPath,1) > maxPoints
-                interpPath = interpPath(end-maxPoints+1:end, :);
-            end
-
-            obj.Path = interpPath;
-            diffs = diff(interpPath(:,1:2));
-            segLen = hypot(diffs(:,1), diffs(:,2));
-            obj.CumulativeDistance = [0; cumsum(segLen)];
+            obj.PathInfo = gik9dof.control.preparePathForFollower(pathStates, obj.Chassis, 'Validate', true);
             obj.CurrentIndex = 1;
             obj.LastVelocity = 0;
+            obj.LastAcceleration = 0;
+            obj.LastHeadingError = 0;
+            obj.HeadingIntegral = 0;
         end
 
         function reset(obj)
             obj.CurrentIndex = 1;
             obj.LastVelocity = 0;
+            obj.LastAcceleration = 0;
+            obj.LastHeadingError = 0;
+            obj.HeadingIntegral = 0;
         end
 
         function [vx, wz, status] = step(obj, pose, dt)
             if nargin < 3 || isempty(dt)
                 dt = obj.SampleTime;
             end
-            if isempty(obj.Path)
+            dt = max(dt, 1e-3);
+
+            if isempty(obj.PathInfo.States)
                 vx = 0; wz = 0;
-                status = defaultStatus(true, NaN, NaN, obj.LookaheadBase, [0 0], 0);
+                status = obj.StatusTemplate;
+                status.isFinished = true;
                 return
             end
+
+            states = obj.PathInfo.States;
+            numPts = size(states,1);
 
             position = pose(1:2);
             theta = pose(3);
 
-            % Find nearest waypoint
-            distances = vecnorm(obj.Path(:,1:2) - position, 2, 2);
-            [~, nearestIdx] = min(distances);
+            diffs = states(:,1:2) - position;
+            distSq = sum(diffs.^2, 2);
+            [~, nearestIdx] = min(distSq);
+            nearestIdx = max(nearestIdx, obj.CurrentIndex);
             obj.CurrentIndex = nearestIdx;
 
-            cumulativeFromCurrent = obj.CumulativeDistance - obj.CumulativeDistance(nearestIdx);
-
-            lookahead = obj.LookaheadBase + obj.LookaheadVelGain * abs(obj.LastVelocity) + ...
-                obj.LookaheadTimeGain * abs(obj.LastVelocity) * dt;
-            lookahead = max([lookahead, obj.GoalTolerance, obj.InterpSpacing]);
-
-            targetIdx = nearestIdx;
-            while targetIdx < size(obj.Path,1) && cumulativeFromCurrent(targetIdx) < lookahead
-                targetIdx = targetIdx + 1;
-            end
-            if targetIdx > size(obj.Path,1)
-                targetIdx = size(obj.Path,1);
+            lookahead = obj.computeLookahead(dt);
+            arc = obj.PathInfo.ArcLength;
+            targetS = min(arc(end), arc(nearestIdx) + lookahead);
+            targetIdx = find(arc >= targetS, 1, 'first');
+            if isempty(targetIdx)
+                targetIdx = numPts;
             end
 
-            targetPoint = obj.Path(targetIdx,1:2);
+            targetPoint = states(targetIdx,1:2);
             delta = targetPoint - position;
-            rot = [cos(theta), sin(theta); -sin(theta), cos(theta)];
-            deltaBody = rot * delta';
+            rot = [cos(theta) sin(theta); -sin(theta) cos(theta)];
+            deltaBody = rot * delta(:);
             xLook = deltaBody(1);
             yLook = deltaBody(2);
 
             ld = max(lookahead, 1e-3);
-            curvature = 2 * yLook / (ld^2);
+            curvature = obj.PathInfo.Curvature(targetIdx);
+            curvaturePP = 2 * yLook / (ld^2);
+            crossTrackError = yLook;
 
-            % Determine heading error at goal
-            goalHeading = obj.Path(targetIdx,3);
-            headingError = wrapToPi(goalHeading - theta);
+            headingTarget = states(targetIdx,3);
+            headingError = wrapToPi(headingTarget - theta);
+            headingRate = (headingError - obj.LastHeadingError) / dt;
 
-            % Forward velocity selection
             direction = 1;
             if obj.ReverseEnabled && xLook < 0
                 direction = -1;
             end
-            vx = direction * obj.VxNominal;
 
-            % Distance based tapering near goal
-            distanceToGoal = distances(end);
-            if distanceToGoal < obj.GoalTolerance
-                vx = 0;
-                curvature = 0;
-            end
+            vxDesired = obj.computeDesiredSpeed(curvature, obj.PathInfo.DistanceRemaining(nearestIdx));
+            vxDesired = direction * abs(vxDesired);
 
-            % Apply linear velocity saturations
-            vx = min(obj.VxMax, max(obj.VxMin, vx));
-
-            wz = curvature * vx + headingError * 0.5;
-            wz = min(obj.WzMax, max(-obj.WzMax, wz));
-
-            % Enforce wheel speed limits
-            [vx, wz, wheelSpeeds] = enforceWheelLimits(vx, wz, obj.TrackWidth, obj.MaxWheelSpeed);
-
+            [vx, accel] = obj.applyAccelerationLimits(vxDesired, dt);
+            obj.LastAcceleration = accel;
             obj.LastVelocity = vx;
 
-            finished = distanceToGoal < obj.GoalTolerance && targetIdx == size(obj.Path,1);
-            status = defaultStatus(finished, targetIdx, distanceToGoal, lookahead, wheelSpeeds, headingError);
+            wz = obj.computeYawRate(vx, headingError, headingRate, curvature, curvaturePP);
+            [vx, wz, wheelSpeeds] = obj.applyChassisLimits(vx, wz);
+
+            obj.updateHeadingIntegral(headingError, dt, wz);
+            obj.LastHeadingError = headingError;
+
+            distanceToGoal = obj.PathInfo.DistanceRemaining(nearestIdx);
+            isFinished = (distanceToGoal <= obj.GoalTolerance) || (nearestIdx >= numPts);
+
+            status = obj.StatusTemplate;
+            status.isFinished = isFinished;
+            status.nearestIndex = nearestIdx;
+            status.targetIndex = targetIdx;
+            status.distanceToGoal = distanceToGoal;
+            status.lookaheadDistance = lookahead;
+            status.curvature = curvature;
+            status.crossTrackError = crossTrackError;
+            status.headingError = headingError;
+            status.vxCommand = vx;
+            status.wzCommand = wz;
+            status.acceleration = accel;
+            status.wheelSpeeds = wheelSpeeds;
+            status.controllerMode = obj.ControllerMode;
+            status.warnings = obj.PathInfo.Diagnostics.warnings;
+        end
+    end
+
+    methods (Access = private)
+        function lookahead = computeLookahead(obj, dt)
+            lookahead = obj.LookaheadBase ...
+                + obj.LookaheadVelGain * abs(obj.LastVelocity) ...
+                + obj.LookaheadTimeGain * abs(obj.LastAcceleration) * dt;
+            lookahead = max([lookahead, obj.GoalTolerance, 0.05]);
+        end
+
+        function vxDesired = computeDesiredSpeed(obj, curvature, distanceRemaining)
+            vxCap = obj.Chassis.vx_max;
+            slowdown = obj.Chassis.curvature_slowdown;
+            if ~isempty(slowdown)
+                kappaThr = slowdown.kappa_threshold;
+                vxReduction = slowdown.vx_reduction;
+                if abs(curvature) > kappaThr
+                    scale = vxReduction;
+                else
+                    ratio = max(0, 1 - abs(curvature)/kappaThr);
+                    scale = vxReduction + (1 - vxReduction) * ratio;
+                end
+                vxCap = max(obj.Chassis.vx_min, vxCap * scale);
+            end
+
+            if distanceRemaining < 3 * obj.GoalTolerance
+                taper = max(distanceRemaining / (3 * obj.GoalTolerance), 0.2);
+                vxCap = min(vxCap, obj.Chassis.vx_max * taper);
+            end
+
+            vxDesired = min(vxCap, obj.Chassis.vx_max);
+        end
+
+        function [vx, accel] = applyAccelerationLimits(obj, vxDesired, dt)
+            deltaV = vxDesired - obj.LastVelocity;
+            if deltaV >= 0
+                maxDelta = obj.Chassis.accel_limit * dt;
+                deltaV = min(deltaV, maxDelta);
+            else
+                maxDelta = obj.Chassis.decel_limit * dt;
+                deltaV = max(deltaV, -maxDelta);
+            end
+            vx = obj.LastVelocity + deltaV;
+            vx = min(obj.Chassis.vx_max, max(obj.Chassis.vx_min, vx));
+            accel = (vx - obj.LastVelocity) / dt;
+        end
+
+        function wz = computeYawRate(obj, vx, headingError, headingRate, curvatureFF, curvaturePP)
+            switch obj.ControllerMode
+                case "purepursuit"
+                    curvature = curvaturePP;
+                    wzFF = curvature * vx;
+                    wzFB = 0;
+                case "stanley"
+                    % Stanley method substitutes pp curvature for cross-track steering.
+                    if vx ~= 0
+                        crossTrackGain = obj.HeadingKp;
+                        wzFF = obj.FeedforwardGain * curvatureFF * vx;
+                        wzFB = crossTrackGain * atan2(obj.LastVelocity * headingError, obj.LookaheadBase);
+                    else
+                        wzFF = 0;
+                        wzFB = obj.HeadingKp * headingError;
+                    end
+                otherwise % blended
+                    wzFF = obj.FeedforwardGain * curvatureFF * vx;
+                    wzFB = obj.HeadingKp * headingError + obj.HeadingKd * headingRate + obj.HeadingKi * obj.HeadingIntegral;
+            end
+            wz = wzFF + wzFB;
+        end
+
+        function [vx, wz, wheelSpeeds] = applyChassisLimits(obj, vx, wz)
+            track = obj.Chassis.track;
+            wheelSpeedMax = obj.Chassis.wheel_speed_max;
+            yawCapWheel = 2 * max(0, (wheelSpeedMax - abs(vx))) / max(track, eps);
+            yawCap = min(obj.Chassis.wz_max, yawCapWheel);
+            wz = max(-yawCap, min(yawCap, wz));
+
+            vx = max(obj.Chassis.vx_min, min(obj.Chassis.vx_max, vx));
+
+            vl = vx - 0.5 * track * wz;
+            vr = vx + 0.5 * track * wz;
+            maxAbs = max(abs([vl, vr]));
+            if maxAbs > wheelSpeedMax
+                scale = wheelSpeedMax / maxAbs;
+                vx = vx * scale;
+                wz = wz * scale;
+                vl = vl * scale;
+                vr = vr * scale;
+            end
+            wheelSpeeds = [vl, vr];
+        end
+
+        function updateHeadingIntegral(obj, headingError, dt, wz)
+            if obj.HeadingKi <= 0
+                obj.HeadingIntegral = 0;
+                return
+            end
+            obj.HeadingIntegral = obj.HeadingIntegral + headingError * dt;
+            yawCap = obj.Chassis.wz_max;
+            if abs(wz) >= yawCap * 0.98
+                obj.HeadingIntegral = obj.HeadingIntegral * 0.9; % anti-windup bleed
+            end
         end
     end
 end
 
-%% Helper functions
-function heading = computeHeading(path)
-numPts = size(path,1);
-d_heading = atan2(diff([path(:,2); path(end,2)]), diff([path(:,1); path(end,1)]));
-heading = wrapToPi(d_heading(1:numPts));
+function merged = mergeChassisStruct(base, overrides)
+merged = base;
+fields = fieldnames(overrides);
+for idx = 1:numel(fields)
+    name = fields{idx};
+    merged.(name) = overrides.(name);
 end
-
-function status = defaultStatus(isFinished, idx, distGoal, lookahead, wheelSpeeds, headingError)
-status = struct('isFinished', logical(isFinished), ...
-    'lookaheadIndex', idx, ...
-    'distanceToGoal', distGoal, ...
-    'lookaheadDistance', lookahead, ...
-    'wheelSpeeds', wheelSpeeds, ...
-    'headingError', headingError);
+if ~isfield(merged, 'curvature_slowdown')
+    merged.curvature_slowdown = struct('kappa_threshold', 0.9, 'vx_reduction', 0.6);
 end
-
-function [vx, wz, wheelSpeeds] = enforceWheelLimits(vx, wz, trackWidth, maxWheelSpeed)
-vl = vx - 0.5 * trackWidth * wz;
-vr = vx + 0.5 * trackWidth * wz;
-maxAbs = max(abs([vl, vr]));
-if maxAbs > maxWheelSpeed
-    scale = maxWheelSpeed / maxAbs;
-    vx = vx * scale;
-    wz = wz * scale;
-    vl = vl * scale;
-    vr = vr * scale;
+if ~isfield(merged, 'reverse_enabled')
+    merged.reverse_enabled = false;
 end
-wheelSpeeds = [vl, vr];
 end

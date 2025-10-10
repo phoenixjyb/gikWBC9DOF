@@ -203,8 +203,15 @@ if isempty(timestamps)
 end
 
 if isfield(stageB, 'pathStates') && ~isempty(stageB.pathStates)
+    chassisForReplay = gik9dof.control.defaultUnifiedParams("wide_track");
     follower = gik9dof.control.purePursuitFollower(stageB.pathStates, ...
-        'DesiredLinearVelocity', 0.6);
+        'ChassisParams', chassisForReplay, ...
+        'SampleTime', mean(diff(timestamps)), ...
+        'LookaheadBase', 0.6, ...
+        'LookaheadVelGain', 0.0, ...
+        'LookaheadTimeGain', 0.0, ...
+        'GoalTolerance', 0.1, ...
+        'ReverseEnabled', false);
 else
     follower = [];
 end
@@ -213,14 +220,15 @@ numSamples = numel(timestamps);
 samples = repmat(struct('v',0,'w',0,'t',0,'pose',[0 0 0]), 1, numSamples);
 for k = 1:numSamples
     pose = [stageB.qTraj(baseIdx(1),k), stageB.qTraj(baseIdx(2),k), stageB.qTraj(baseIdx(3),k)];
-    if ~isempty(follower)
-        [v,w,~] = follower.step(pose);
+    if k == 1
+        dt = 1e-3;
     else
-        if k == 1
-            dt = 1e-3;
-        else
-            dt = max(1e-3, timestamps(k) - timestamps(k-1));
-        end
+        dt = max(1e-3, timestamps(k) - timestamps(k-1));
+    end
+
+    if ~isempty(follower)
+        [v, w, ~] = follower.step(pose, dt);
+    else
         if k == 1
             v = 0;
             w = 0;

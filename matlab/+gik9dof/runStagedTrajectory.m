@@ -12,9 +12,15 @@ function pipeline = runStagedTrajectory(robot, trajStruct, options)
 %
 %   Optional name-value:
 %       DistanceSpecs       - Distance constraint specs for Stage C (struct array).
-%       RateHz              - Control loop rate (default 100).
+%       RateHz              - Control loop rate (default 10).
 %       Verbose             - Verbosity flag (default false).
 %       DistanceWeight      - Weight used when DistanceSpecs empty (default 0.5).
+%       StageBReedsSheppParams - Struct controlling Stage B RS shortcutting
+%                                (see gik9dof.control.defaultReedsSheppParams).
+%       StageBHybridResolution/StageBHybridMotionPrimitiveLength default to
+%       0.05 m and 0.2 m respectively to provide dense Hybrid A* primitives.
+%       StageCUseBaseRefinement - Apply RS/clothoid smoothing to the Stage C
+%                                 base ribbon before running pure pursuit.
 %
 arguments
     robot (1,1) rigidBodyTree
@@ -23,15 +29,20 @@ arguments
     options.ConfigTools (1,1) struct
     options.DistanceSpecs struct = struct([])
     options.DistanceWeight (1,1) double = 0.5
-    options.RateHz (1,1) double {mustBePositive} = 100
+    options.RateHz (1,1) double {mustBePositive} = 10
     options.Verbose (1,1) logical = false
     options.CommandFcn = []
     options.FloorDiscs struct = struct([])
     options.UseStageBHybridAStar (1,1) logical = false
-    options.StageBHybridResolution (1,1) double = 0.1
+    options.StageBHybridResolution (1,1) double = 0.05
     options.StageBHybridSafetyMargin (1,1) double = 0.15
     options.StageBHybridMinTurningRadius (1,1) double = 0.5
-    options.StageBHybridMotionPrimitiveLength (1,1) double = 0.5
+    options.StageBHybridMotionPrimitiveLength (1,1) double = 0.2
+    options.StageBUseReedsShepp (1,1) logical = false
+    options.StageBReedsSheppParams struct = gik9dof.control.defaultReedsSheppParams()
+    options.StageBUseClothoid (1,1) logical = false
+    options.StageBClothoidParams struct = struct()
+    options.StageBChassisControllerMode (1,1) double {mustBeMember(options.StageBChassisControllerMode, [-1 0 1 2])} = -1
     options.StageBMaxLinearSpeed (1,1) double = 1.5
     options.StageBMaxYawRate (1,1) double = 3.0
     options.StageBMaxJointSpeed (1,1) double = 1.0
@@ -42,6 +53,8 @@ arguments
     options.StageBMode (1,1) string {mustBeMember(options.StageBMode, ["gikInLoop","pureHyb"])} = "gikInLoop"
     options.StageBDockingPositionTolerance (1,1) double {mustBeNonnegative} = 0.02
     options.StageBDockingYawTolerance (1,1) double {mustBeNonnegative} = 2*pi/180
+    options.ChassisProfile (1,1) string = "wide_track"
+    options.ChassisOverrides struct = struct()
     options.ExecutionMode (1,1) string {mustBeMember(options.ExecutionMode, ["pureIk","ppForIk"])} = "ppForIk"
     options.StageCLookaheadDistance (1,1) double {mustBePositive} = 0.4
     options.StageCLookaheadVelGain (1,1) double {mustBeNonnegative} = 0.2
@@ -58,6 +71,8 @@ arguments
     options.StageCGoalTolerance (1,1) double {mustBePositive} = 0.05
     options.StageCInterpSpacing (1,1) double {mustBePositive} = 0.05
     options.StageCReverseEnabled (1,1) logical = true
+    options.StageCChassisControllerMode (1,1) double {mustBeMember(options.StageCChassisControllerMode, [-1 0 1 2])} = -1
+    options.StageCUseBaseRefinement (1,1) logical = true
     options.MaxIterations (1,1) double {mustBePositive} = 1500
 end
 
@@ -78,6 +93,15 @@ velLimits = struct('BaseIndices', baseIdx, ...
     'MaxLinearSpeed', options.StageBMaxLinearSpeed, ...
     'MaxYawRate', options.StageBMaxYawRate, ...
     'MaxJointSpeed', options.StageBMaxJointSpeed);
+
+chassisParams = gik9dof.control.loadChassisProfile(options.ChassisProfile, ...
+    "Overrides", options.ChassisOverrides);
+chassisParams.reverse_enabled = chassisParams.reverse_enabled | strcmpi(options.StageBMode, "purehyb");
+
+options.StageBChassisControllerMode = resolveChassisControllerMode( ...
+    options.StageBChassisControllerMode, chassisParams, "stageB_controller_mode");
+options.StageCChassisControllerMode = resolveChassisControllerMode( ...
+    options.StageCChassisControllerMode, chassisParams, "stageC_controller_mode");
 
 % Extract first desired pose
 TrefAll = trajStruct.Poses;
@@ -106,27 +130,38 @@ qA_end = logA.qTraj(:, end);
 
 %% Stage B: base-only alignment of x-y while arm frozen
 stageBMode = lower(string(options.StageBMode));
+dt = 1 / options.RateHz;
 stageBStart = getTransform(robot, qA_end, trajStruct.EndEffectorName);
 switch stageBMode
     case "gikinloop"
         stageBResult = executeStageBGikInLoop(robot, trajStruct.EndEffectorName, qA_end, baseIdx, armIdx, ...
-            T1, stageBStart, NB, velLimits, options);
+            T1, stageBStart, NB, velLimits, chassisParams, options);
     case "purehyb"
         stageBResult = executeStageBPureHyb(robot, trajStruct.EndEffectorName, qA_end, baseIdx, armIdx, ...
-            T1, NB, velLimits, options);
+            T1, NB, velLimits, chassisParams, options);
     otherwise
         error('gik9dof:runStagedTrajectory:UnsupportedStageBMode', ...
             'Unknown Stage B mode "%s".', stageBMode);
 end
 
 logB = stageBResult.log;
-qB_end = stageBResult.qFinal;
-
 if isfield(stageBResult, 'goalBase') && isfield(stageBResult, 'achievedBase') && ...
         ~isempty(stageBResult.goalBase) && ~isempty(stageBResult.achievedBase)
     checkStageBDocking(stageBResult.goalBase, stageBResult.achievedBase, ...
         options.StageBDockingPositionTolerance, options.StageBDockingYawTolerance, stageBMode);
 end
+
+alignmentInfo = generateStageCAlignmentInfo(stageBResult, qA_end(baseIdx).', options, chassisParams, dt);
+if alignmentInfo.applied
+    stageBResult = applyStageCAlignment(stageBResult, baseIdx, alignmentInfo);
+else
+    logB = stageBResult.log;
+    logB.alignment = alignmentInfo;
+    stageBResult.log = logB;
+    stageBResult.alignment = alignmentInfo;
+end
+logB = stageBResult.log;
+qB_end = stageBResult.qFinal;
 
 %% Stage C: full-body tracking of remaining reference
 trajC = trajStruct;
@@ -135,7 +170,7 @@ logC = struct();
 if ~isempty(trajC.Poses)
     switch options.ExecutionMode
         case "ppForIk"
-            logC = executeStageCPurePursuit(robot, trajC, qB_end, baseIdx, armIdx, velLimits, options);
+            logC = executeStageCPurePursuit(robot, trajC, qB_end, baseIdx, armIdx, velLimits, chassisParams, alignmentInfo, options, stageBResult);
         case "pureIk"
             logC = executeStageCPureIk(robot, trajC, qB_end, baseIdx, velLimits, options);
         otherwise
@@ -147,6 +182,8 @@ else
     logC = emptyLog(robot, qB_end, options.RateHz);
     logC.simulationMode = options.ExecutionMode;
 end
+logC.chassisParams = chassisParams;
+logC.preStageCAlignment = alignmentInfo;
 
 %% Combine logs
 pipeline = mergeStageLogs(logA, logB, logC);
@@ -158,9 +195,16 @@ pipeline.referenceTrajectory = trajStruct;
 pipeline.environment = options.EnvironmentConfig;
 pipeline.stageBMode = stageBMode;
 pipeline.simulationMode = options.ExecutionMode;
+pipeline.chassisParams = chassisParams;
+pipeline.preStageCAlignment = alignmentInfo;
 if isfield(stageBResult, 'goalBase')
     pipeline.stageBGoal = stageBResult.goalBase;
 end
+if isfield(stageBResult, 'planner')
+    pipeline.stageBPlanner = stageBResult.planner;
+end
+pipeline.stageBControllerMode = options.StageBChassisControllerMode;
+pipeline.stageCControllerMode = options.StageCChassisControllerMode;
 end
 
 function lockJointBounds(jointConstraint, indices, values)
@@ -169,35 +213,38 @@ for idx = indices
 end
 end
 
-function result = executeStageBGikInLoop(robot, eeName, qStart, baseIdx, armIdx, targetPose, stageBStartPose, nSamples, velLimits, options)
+function result = executeStageBGikInLoop(robot, eeName, qStart, baseIdx, armIdx, targetPose, stageBStartPose, nSamples, velLimits, chassisParams, options)
 %EXECUTESTAGEBGIKINLOOP Stage B implementation matching legacy behaviour.
 cmdLogPP = [];
 stageBStates = [];
 goalBase = [];
 simResStageB = [];
 plannerReference = [];
+plannerInfo = struct();
 dt = 1 / options.RateHz;
-followerParams = struct( ...
+
+chassisStageB = chassisParams;
+chassisStageB.vx_max = min(chassisStageB.vx_max, options.StageBMaxLinearSpeed);
+chassisStageB.vx_min = max(chassisStageB.vx_min, -options.StageBMaxLinearSpeed);
+chassisStageB.wz_max = min(chassisStageB.wz_max, options.StageBMaxAngularVelocity);
+chassisStageB.reverse_enabled = false;
+
+posTolStageB = max(options.StageBDockingPositionTolerance, 0.02);
+followerOptions = struct( ...
     'SampleTime', dt, ...
+    'ChassisParams', chassisStageB, ...
+    'ControllerMode', "blended", ...
     'LookaheadBase', options.StageBLookaheadDistance, ...
     'LookaheadVelGain', 0.0, ...
     'LookaheadTimeGain', 0.0, ...
-    'VxNominal', options.StageBDesiredLinearVelocity, ...
-    'VxMax', options.StageBMaxLinearSpeed, ...
-    'VxMin', -options.StageBMaxLinearSpeed, ...
-    'WzMax', options.StageBMaxAngularVelocity, ...
-    'TrackWidth', 0.674, ...
-    'WheelBase', 0.36, ...
-    'MaxWheelSpeed', options.StageBMaxLinearSpeed + 0.5, ...
-    'WaypointSpacing', 0.15, ...
-    'PathBufferSize', 30.0, ...
-    'GoalTolerance', options.StageBDockingPositionTolerance + 0.05, ...
-    'InterpSpacing', 0.05, ...
-    'ReverseEnabled', false);
+    'GoalTolerance', posTolStageB, ...
+    'ReverseEnabled', false, ...
+    'HeadingKp', getStructFieldOrDefault(chassisStageB, 'heading_kp', 1.2), ...
+    'FeedforwardGain', getStructFieldOrDefault(chassisStageB, 'feedforward_gain', 0.9));
 
 if options.UseStageBHybridAStar
     try
-        [plannerStates, plannerGoalBase] = planStageBHybridAStarPath(qStart, baseIdx, targetPose, options, robot, eeName, options.FloorDiscs);
+        [plannerStates, plannerGoalBase, plannerInfo] = planStageBHybridAStarPath(qStart, baseIdx, targetPose, options, robot, eeName, options.FloorDiscs);
         goalBase = plannerGoalBase;
     catch plannerErr
         if ~isempty(plannerErr.stack)
@@ -208,12 +255,17 @@ if options.UseStageBHybridAStar
         warning('gik9dof:runStagedTrajectory:HybridAStarFailed', ...
             'Stage B hybrid A* failed (%s at %s); falling back to interpolation.', plannerErr.message, origin);
         plannerStates = [];
+        plannerInfo = struct();
     end
 
     if ~isempty(plannerStates)
         plannerReference = plannerStates;
-        simResStageB = gik9dof.control.simulatePurePursuitExecution(plannerStates, ...
-            'SampleTime', dt, 'FollowerOptions', followerParams);
+        simResStageB = gik9dof.control.simulateChassisController(plannerStates, ...
+            'SampleTime', dt, 'FollowerOptions', followerOptions, ...
+            'ControllerMode', options.StageBChassisControllerMode);
+        simResStageB = ensureDocking(simResStageB, goalBase, followerOptions, dt, ...
+            options.StageBDockingPositionTolerance, options.StageBDockingYawTolerance, ...
+            options.StageBChassisControllerMode);
         if ~isempty(simResStageB.commands)
             timeCommand = (0:size(simResStageB.commands,1)-1)' * dt;
             cmdLogPP = [timeCommand, simResStageB.commands];
@@ -271,13 +323,17 @@ if isempty(goalBase)
     goalBase = achievedBase;
 end
 
-if isempty(stageBStates)
-    baseStates = logB.qTraj(baseIdx, :)';
+if ~isempty(plannerReference)
+    baseStates = plannerReference;
 else
-    baseStates = stageBStates;
+    if isempty(stageBStates)
+        baseStates = logB.qTraj(baseIdx, :)';
+    else
+        baseStates = stageBStates;
+    end
 end
 logB.pathStates = baseStates;
-logB.execBaseStates = logB.qTraj(baseIdx, :)';
+logB.execBaseStates = baseStates;
 logB.mode = "gikInLoop";
 logB.goalBase = goalBase;
 logB.achievedBase = achievedBase;
@@ -293,7 +349,10 @@ if ~isempty(simResStageB) && ~isempty(plannerReference)
     logB.purePursuit.simulation = simResStageB;
     logB.purePursuit.executedPath = simResStageB.poses;
     logB.purePursuit.sampleTime = dt;
+    logB.purePursuit.chassisParams = chassisStageB;
+    logB.purePursuit.controllerMode = options.StageBChassisControllerMode;
 end
+logB.planner = plannerInfo;
 
 result = struct();
 result.log = logB;
@@ -305,17 +364,19 @@ result.mode = "gikInLoop";
 if isfield(logB, 'purePursuit')
     result.purePursuit = logB.purePursuit;
 end
+result.planner = plannerInfo;
 end
 
-function result = executeStageBPureHyb(robot, eeName, qStart, baseIdx, ~, targetPose, nSamples, ~, options)
+function result = executeStageBPureHyb(robot, eeName, qStart, baseIdx, ~, targetPose, nSamples, ~, chassisParams, options)
 %EXECUTESTAGEBPUREHYB Stage B implementation using planner + pure pursuit.
 
 [goalBase, ~] = computeStageBGoalBase(robot, qStart, baseIdx, targetPose, eeName, options.MaxIterations);
 
 plannerStates = [];
+plannerInfo = struct();
 if options.UseStageBHybridAStar
     try
-    [plannerStates, plannerGoalBase] = planStageBHybridAStarPath(qStart, baseIdx, targetPose, options, robot, eeName, options.FloorDiscs);
+    [plannerStates, plannerGoalBase, plannerInfo] = planStageBHybridAStarPath(qStart, baseIdx, targetPose, options, robot, eeName, options.FloorDiscs);
         if ~isempty(plannerGoalBase)
             goalBase = plannerGoalBase;
         end
@@ -328,6 +389,7 @@ if options.UseStageBHybridAStar
         warning('gik9dof:runStagedTrajectory:HybridAStarFailed', ...
             'Stage B hybrid A* failed (%s at %s); falling back to interpolation.', plannerErr.message, origin);
         plannerStates = [];
+        plannerInfo = struct();
     end
 end
 
@@ -336,37 +398,52 @@ if isempty(plannerStates)
 end
 
 dt = 1 / options.RateHz;
-followerParams = struct( ...
+chassisStageB = chassisParams;
+chassisStageB.vx_max = min(chassisStageB.vx_max, options.StageBMaxLinearSpeed);
+chassisStageB.vx_min = max(chassisStageB.vx_min, -options.StageBMaxLinearSpeed);
+chassisStageB.wz_max = min(chassisStageB.wz_max, options.StageBMaxAngularVelocity);
+chassisStageB.reverse_enabled = false;
+posTolStageB = max(options.StageBDockingPositionTolerance, 0.02);
+followerOptions = struct( ...
     'SampleTime', dt, ...
+    'ChassisParams', chassisStageB, ...
+    'ControllerMode', "blended", ...
     'LookaheadBase', options.StageBLookaheadDistance, ...
     'LookaheadVelGain', 0.0, ...
     'LookaheadTimeGain', 0.0, ...
-    'VxNominal', options.StageBDesiredLinearVelocity, ...
-    'VxMax', options.StageBMaxLinearSpeed, ...
-    'VxMin', -options.StageBMaxLinearSpeed, ...
-    'WzMax', options.StageBMaxAngularVelocity, ...
-    'TrackWidth', 0.674, ...
-    'WheelBase', 0.36, ...
-    'MaxWheelSpeed', options.StageBMaxLinearSpeed + 0.5, ...
-    'WaypointSpacing', 0.15, ...
-    'PathBufferSize', 30.0, ...
-    'GoalTolerance', options.StageBDockingPositionTolerance + 0.05, ...
-    'InterpSpacing', 0.05, ...
-    'ReverseEnabled', false);
+    'GoalTolerance', posTolStageB, ...
+    'ReverseEnabled', false, ...
+    'HeadingKp', getStructFieldOrDefault(chassisStageB, 'heading_kp', 1.2), ...
+    'FeedforwardGain', getStructFieldOrDefault(chassisStageB, 'feedforward_gain', 0.9));
 
-simRes = gik9dof.control.simulatePurePursuitExecution(plannerStates, ...
-    'SampleTime', dt, 'FollowerOptions', followerParams);
+    simRes = gik9dof.control.simulateChassisController(plannerStates, ...
+        'SampleTime', dt, 'FollowerOptions', followerOptions, ...
+        'ControllerMode', options.StageBChassisControllerMode);
+simRes = ensureDocking(simRes, goalBase, followerOptions, dt, ...
+    options.StageBDockingPositionTolerance, options.StageBDockingYawTolerance, ...
+    options.StageBChassisControllerMode);
 
-baseStates = simRes.poses;
-if isempty(baseStates)
-    if size(plannerStates,1) > 0
+baseStatesRaw = simRes.poses;
+if isempty(baseStatesRaw)
+    baseStatesRaw = assembleBaseStateSequence(qStart(baseIdx).', []);
+end
+baseStates = baseStatesRaw;
+baseStates(1,:) = qStart(baseIdx).';
+if any(abs(baseStates(:,1)) > 20 | abs(baseStates(:,2)) > 20) || ...
+        hypot(baseStates(end,1) - goalBase(1), baseStates(end,2) - goalBase(2)) > 5
+    if ~isempty(plannerStates)
         baseStates = plannerStates;
     else
-        baseStates = qStart(baseIdx).';
+        baseStates = interpolateBaseStates(qStart(baseIdx).', goalBase, max(nSamples, 2));
     end
 end
-if size(baseStates,1) >= 1
-    baseStates(1,:) = qStart(baseIdx).';
+if any(abs(baseStates(:,1)) > 20 | abs(baseStates(:,2)) > 20) || ...
+        hypot(baseStates(end,1) - goalBase(1), baseStates(end,2) - goalBase(2)) > 5
+    if ~isempty(plannerReference)
+        baseStates = plannerReference;
+    else
+        baseStates = interpolateBaseStates(qStart(baseIdx).', goalBase, max(nSamples, 2));
+    end
 end
 
 cmdLogPP = [];
@@ -405,6 +482,9 @@ logB.purePursuit.referencePath = plannerStates;
 logB.purePursuit.simulation = simRes;
 logB.purePursuit.executedPath = executedStates;
 logB.purePursuit.sampleTime = dt;
+logB.purePursuit.chassisParams = chassisStageB;
+logB.purePursuit.controllerMode = options.StageBChassisControllerMode;
+logB.planner = plannerInfo;
 
 result = struct();
 result.log = logB;
@@ -415,12 +495,20 @@ result.achievedBase = baseStates(end, :);
 result.mode = "pureHyb";
 result.cmdLog = logB.cmdLog;
 result.purePursuit = logB.purePursuit;
+result.planner = plannerInfo;
 end
 
-function logC = executeStageCPurePursuit(robot, trajStruct, qStart, baseIdx, armIdx, velLimits, options)
+function logC = executeStageCPurePursuit(robot, trajStruct, qStart, baseIdx, armIdx, velLimits, chassisParams, alignmentInfo, options, stageBResult)
 %EXECUTESTAGECPUREPURSUIT Track Stage C using pure pursuit driven chassis.
 eeName = trajStruct.EndEffectorName;
 dt = 1 / options.RateHz;
+
+if nargin < 8 || isempty(alignmentInfo)
+    alignmentInfo = struct('applied', false);
+end
+if nargin < 10 || isempty(stageBResult)
+    stageBResult = struct();
+end
 
 % First pass: GIK reference used as pure pursuit path seed.
 bundleRef = gik9dof.createGikSolver(robot, ...
@@ -437,33 +525,54 @@ logRef = gik9dof.runTrajectoryControl(bundleRef, trajStruct, ...
 baseReferenceTail = logRef.qTraj(baseIdx, 2:end).';
 baseReference = [qStart(baseIdx).'; baseReferenceTail];
 
+[baseReference, logRef, stageCRefinement] = stageCApplyBaseRefinement(baseReference, logRef, qStart, baseIdx, options, stageBResult, bundleRef, trajStruct, velLimits);
+
 % Pure pursuit integration honouring chassis constraints.
+chassisStageC = chassisParams;
+chassisStageC.vx_max = options.StageCMaxLinearSpeed;
+chassisStageC.vx_min = options.StageCMinLinearSpeed;
+chassisStageC.wz_max = options.StageCMaxAngularVelocity;
+chassisStageC.wheel_speed_max = options.StageCMaxWheelSpeed;
+chassisStageC.reverse_enabled = options.StageCReverseEnabled;
+chassisStageC.interp_spacing_min = options.StageCInterpSpacing;
+chassisStageC.interp_spacing_max = options.StageCWaypointSpacing;
+
 followerOptions = struct( ...
     'SampleTime', dt, ...
+    'ChassisParams', chassisStageC, ...
+    'ControllerMode', "blended", ...
     'LookaheadBase', options.StageCLookaheadDistance, ...
     'LookaheadVelGain', options.StageCLookaheadVelGain, ...
     'LookaheadTimeGain', options.StageCLookaheadTimeGain, ...
-    'VxNominal', options.StageCDesiredLinearVelocity, ...
-    'VxMax', options.StageCMaxLinearSpeed, ...
-    'VxMin', options.StageCMinLinearSpeed, ...
-    'WzMax', options.StageCMaxAngularVelocity, ...
-    'TrackWidth', options.StageCTrackWidth, ...
-    'WheelBase', options.StageCWheelBase, ...
-    'MaxWheelSpeed', options.StageCMaxWheelSpeed, ...
-    'WaypointSpacing', options.StageCWaypointSpacing, ...
-    'PathBufferSize', options.StageCPathBufferSize, ...
     'GoalTolerance', options.StageCGoalTolerance, ...
-    'InterpSpacing', options.StageCInterpSpacing, ...
-    'ReverseEnabled', options.StageCReverseEnabled);
+    'ReverseEnabled', options.StageCReverseEnabled, ...
+    'HeadingKp', getStructFieldOrDefault(chassisStageC, 'heading_kp', 1.2), ...
+    'FeedforwardGain', getStructFieldOrDefault(chassisStageC, 'feedforward_gain', 0.9));
 
-simRes = gik9dof.control.simulatePurePursuitExecution(baseReference, ...
-    'SampleTime', dt, 'FollowerOptions', followerOptions);
+simRes = gik9dof.control.simulateChassisController(baseReference, ...
+    'SampleTime', dt, 'FollowerOptions', followerOptions, ...
+    'ControllerMode', options.StageCChassisControllerMode);
 
 posesPP = simRes.poses;
 if ~isempty(posesPP)
     posesPP(1,:) = qStart(baseIdx).';
 end
+refCount = size(baseReference, 1);
+if size(posesPP,1) ~= refCount && ~isempty(posesPP)
+    sExec = linspace(0, 1, size(posesPP,1));
+    sRef = linspace(0, 1, refCount);
+    yawExec = unwrap(posesPP(:,3));
+    posesInterp = zeros(refCount,3);
+    posesInterp(:,1) = interp1(sExec, posesPP(:,1), sRef, 'linear');
+    posesInterp(:,2) = interp1(sExec, posesPP(:,2), sRef, 'linear');
+    yawInterp = interp1(sExec, yawExec, sRef, 'linear');
+    posesInterp(:,3) = wrapToPi(yawInterp);
+    posesPP = posesInterp;
+end
 executedBase = posesPP(2:end, :);
+if isempty(executedBase)
+    executedBase = baseReference(2:end, :);
+end
 
 % Second pass: execute GIK with chassis locked to executed path.
 bundle = gik9dof.createGikSolver(robot, ...
@@ -487,10 +596,16 @@ logC.purePursuit.commands = simRes.commands;
 logC.purePursuit.wheelSpeeds = simRes.wheelSpeeds;
 logC.purePursuit.status = simRes.status;
 logC.purePursuit.simulation = simRes;
+logC.purePursuit.chassisParams = chassisStageC;
+logC.purePursuit.controllerMode = options.StageCChassisControllerMode;
+logC.purePursuit.refinement = stageCRefinement;
 logC.referenceInitialIk = logRef;
 logC.referenceBaseStates = baseReference;
 logC.execBaseStates = posesPP;
 logC.simulationMode = "ppForIk";
+
+logC.preStageCAlignment = alignmentInfo;
+logC.stageCBaseRefinement = stageCRefinement;
 
 if ~isempty(simRes.commands)
     timeCommand = (0:size(simRes.commands,1)-1)' * dt;
@@ -580,6 +695,126 @@ if isempty(statesOut)
 else
     seq = [startState; statesOut]; %#ok<AGROW>
 end
+end
+
+function alignment = generateStageCAlignmentInfo(stageBResult, stageBStartBase, options, chassisParams, sampleTime)
+alignment = struct('applied', false, 'states', [], 'commands', [], 'wheelSpeeds', [], ...
+    'status', [], 'sampleTime', sampleTime, 'start', [], 'goal', [], ...
+    'posErrorStart', 0, 'yawErrorStart', 0, 'fallbackUsed', false);
+
+if ~isfield(stageBResult, 'goalBase') || isempty(stageBResult.goalBase)
+    goalBase = stageBStartBase;
+else
+    goalBase = stageBResult.goalBase;
+end
+
+startBase = stageBStartBase;
+
+posErr = hypot(goalBase(1) - startBase(1), goalBase(2) - startBase(2));
+yawErr = abs(wrapToPi(goalBase(3) - startBase(3)));
+alignment.posErrorStart = posErr;
+alignment.yawErrorStart = yawErr;
+alignment.start = startBase;
+alignment.goal = goalBase;
+
+posTol = max(options.StageCGoalTolerance, 0.05);
+yawTol = 5 * pi / 180;
+
+if isfield(stageBResult, 'achievedBase') && ~isempty(stageBResult.achievedBase)
+    achievedBase = stageBResult.achievedBase;
+    posErrAchieved = hypot(goalBase(1) - achievedBase(1), goalBase(2) - achievedBase(2));
+    yawErrAchieved = abs(wrapToPi(goalBase(3) - achievedBase(3)));
+else
+    posErrAchieved = posErr;
+    yawErrAchieved = yawErr;
+end
+
+if posErrAchieved <= posTol && yawErrAchieved <= yawTol
+    return
+end
+
+if posErr <= posTol && yawErr <= yawTol
+    return
+end
+alignment.fallbackUsed = true;
+numSamples = max(ceil(posErr / 0.05) + 2, 5);
+alignmentPath = interpolateBaseStates(startBase, goalBase, numSamples);
+
+alignment.applied = true;
+alignment.states = alignmentPath;
+alignment.sampleTime = sampleTime;
+alignment.path = alignmentPath;
+alignment.positionTolerance = posTol;
+alignment.yawTolerance = yawTol;
+
+% Derive simple command approximations for logging.
+if size(alignmentPath,1) >= 2
+    dt = sampleTime;
+    deltas = diff(alignmentPath);
+    vx = hypot(deltas(:,1), deltas(:,2)) / dt;
+    yawRate = deltas(:,3) / dt;
+    alignment.commands = [vx, yawRate];
+    alignment.wheelSpeeds = zeros(size(alignment.commands));
+    alignment.status = repmat(struct('isFinished', false, 'controllerMode', "alignment"), size(alignment.commands,1), 1);
+else
+    alignment.commands = zeros(0,2);
+    alignment.wheelSpeeds = zeros(0,2);
+    alignment.status = struct([]);
+end
+end
+
+function stageBResult = applyStageCAlignment(stageBResult, baseIdx, alignment)
+if ~alignment.applied || isempty(alignment.states) || size(alignment.states,1) < 2
+    return
+end
+
+alignmentTail = alignment.states(2:end, :);
+% Update path states
+stageBResult.pathStates = [stageBResult.pathStates; alignmentTail];
+stageBResult.achievedBase = alignment.goal;
+stageBResult.goalBase = alignment.goal;
+
+% Update final configuration
+qFinal = stageBResult.qFinal;
+qFinal(baseIdx) = alignment.goal(:);
+stageBResult.qFinal = qFinal;
+
+% Update log
+logB = stageBResult.log;
+if isfield(logB, 'pathStates')
+    logB.pathStates = stageBResult.pathStates;
+end
+if isfield(logB, 'execBaseStates')
+    logB.execBaseStates = stageBResult.pathStates;
+end
+
+% Append command log
+if ~isempty(alignment.commands)
+    timeVec = (0:size(alignment.commands,1)-1)' * alignment.sampleTime;
+    alignTable = array2table([timeVec, alignment.commands], 'VariableNames', {'time','Vx','Wz'});
+    if isfield(logB, 'cmdLog') && ~isempty(logB.cmdLog)
+        logB.cmdLog = [logB.cmdLog; alignTable];
+    else
+        logB.cmdLog = alignTable;
+    end
+end
+
+% Record alignment info
+logB.alignment = alignment;
+if isfield(logB, 'purePursuit') && isstruct(logB.purePursuit)
+    logB.purePursuit.alignment = alignment;
+end
+if isfield(logB, 'goalBase')
+    logB.goalBase = alignment.goal;
+end
+if isfield(logB, 'achievedBase')
+    logB.achievedBase = alignment.goal;
+end
+stageBResult.log = logB;
+stageBResult.cmdLog = logB.cmdLog;
+stageBResult.alignment = alignment;
+stageBResult.achievedBase = alignment.goal;
+stageBResult.goalBase = alignment.goal;
 end
 
 function log = buildSyntheticStageBLog(robot, qTraj, timestamps, eePoses, rateHz)
@@ -805,10 +1040,23 @@ combined.orientationErrorAngle = orientationErrorAngle;
 combined.time = time;
 end
 
-function [states, goalBase] = planStageBHybridAStarPath(qStart, baseIdx, targetPose, options, robot, eeName, floorDiscs)
+function [states, goalBase, plannerInfo] = planStageBHybridAStarPath(qStart, baseIdx, targetPose, options, robot, eeName, floorDiscs)
 %PLANSTAGEBHYBRIDASTARPATH Plan a base trajectory using Hybrid A*.
 startBase = reshape(qStart(baseIdx), 1, []);
 [goalBase, ~] = computeStageBGoalBase(robot, qStart, baseIdx, targetPose, eeName, options.MaxIterations);
+
+plannerInfo = struct( ...
+    'statesRaw', [], ...
+    'statesDensified', [], ...
+    'statesRefined', [], ...
+    'statesClothoid', [], ...
+    'rsMetrics', struct(), ...
+    'rsSmoothing', struct(), ...
+    'rsParamsBase', struct(), ...
+    'rsParamsApplied', struct(), ...
+    'rsParamsFinal', struct(), ...
+    'hcSmoothing', struct(), ...
+    'hcParamsApplied', struct());
 
 resolution = options.StageBHybridResolution;
 safetyMargin = options.StageBHybridSafetyMargin;
@@ -856,6 +1104,7 @@ if isempty(statesRaw)
     error("gik9dof:runStagedTrajectory:HybridAStarEmpty", ...
         "Hybrid A* returned an empty path.");
 end
+plannerInfo.statesRaw = statesRaw;
 
 rateHz = options.RateHz;
 if isempty(rateHz) || ~isscalar(rateHz) || rateHz <= 0
@@ -864,7 +1113,259 @@ end
 maxLinearStep = options.StageBMaxLinearSpeed / rateHz;
 maxYawStep = options.StageBMaxYawRate / rateHz;
 
-states = densifyHybridStates(statesRaw, maxLinearStep, maxYawStep);
+statesDensified = densifyHybridStates(statesRaw, maxLinearStep, maxYawStep);
+plannerInfo.statesDensified = statesDensified;
+
+rsInfo = struct();
+statesRefined = statesDensified;
+
+rsDefaultsCommon = gik9dof.control.defaultReedsSheppParams();
+rsParamsBase = mergeStructs(rsDefaultsCommon, struct( ...
+    'Rmin', options.StageBHybridMinTurningRadius, ...
+    'inflationRadius', options.StageBHybridSafetyMargin));
+if isfield(options, "StageBReedsSheppParams") && ~isempty(options.StageBReedsSheppParams)
+    rsParamsBase = mergeStructs(rsParamsBase, options.StageBReedsSheppParams);
+end
+
+rsBaseLambdaCusp = getStructFieldOrDefault(rsParamsBase, 'lambdaCusp', 1.0);
+plannerInfo.rsParamsBase = rsParamsBase;
+plannerInfo.rsParamsApplied = struct();
+plannerInfo.rsParamsFinal = rsParamsBase;
+
+useReedsShepp = isfield(options, "StageBUseReedsShepp") && options.StageBUseReedsShepp;
+
+if useReedsShepp
+    rsParams = rsParamsBase;
+    if rsParams.Rmin <= 0
+        rsParams.Rmin = options.StageBHybridMinTurningRadius;
+    end
+    if rsParams.inflationRadius < 0
+        rsParams.inflationRadius = options.StageBHybridSafetyMargin;
+    end
+
+    mapData = occupancyMatrix(occMap);
+    [statesRS, rsInfo] = gik9dof.control.rsRefinePath(mapData, occMap.Resolution, statesDensified, rsParams);
+    statesRefined = densifyHybridStates(statesRS, maxLinearStep, maxYawStep);
+    plannerInfo.rsParamsApplied = rsParams;
+    plannerInfo.rsParamsFinal = struct( ...
+        'Rmin', rsParams.Rmin, ...
+        'reverseCost', getStructFieldOrDefault(rsParams, 'reverseCost', getStructFieldOrDefault(rsParamsBase, 'reverseCost', 2.0)), ...
+        'lambdaCusp', getStructFieldOrDefault(rsParams, 'lambdaCusp', rsBaseLambdaCusp));
+
+    if isfield(options, "Verbose") && options.Verbose
+        improvements = getStructFieldOrDefault(rsInfo, 'improvements', int32(0));
+        executed = getStructFieldOrDefault(rsInfo, 'iterationsExecuted', int32(0));
+        fprintf("[Stage B][RS] shortcuts accepted %d/%d (requested %d)\n", ...
+            double(improvements), double(executed), double(getStructFieldOrDefault(rsInfo, 'iterationsPlanned', int32(0))));
+    end
+else
+    plannerInfo.rsParamsApplied = struct();
+    plannerInfo.rsParamsFinal = rsParamsBase;
+end
+
+connMetrics = reedsSheppConnection('MinTurningRadius', max(plannerInfo.rsParamsFinal.Rmin, eps));
+connMetrics.ReverseCost = plannerInfo.rsParamsFinal.reverseCost;
+
+metricsRaw = computeReedsSheppMetrics(connMetrics, statesRaw, plannerInfo.rsParamsFinal.lambdaCusp);
+metricsDensified = computeReedsSheppMetrics(connMetrics, statesDensified, plannerInfo.rsParamsFinal.lambdaCusp);
+metricsRefined = computeReedsSheppMetrics(connMetrics, statesRefined, plannerInfo.rsParamsFinal.lambdaCusp);
+
+statesClothoid = statesRefined;
+pathLengthRefinedEuclid = sum(vecnorm(diff(statesRefined(:,1:2).'), 2, 1));
+hcInfo = struct( ...
+    'applied', false, ...
+    'segmentCount', int32(0), ...
+    'fittedSegments', int32(0), ...
+    'gearChanges', int32(0), ...
+    'pathLengthOriginal', pathLengthRefinedEuclid, ...
+    'pathLengthSmoothed', pathLengthRefinedEuclid, ...
+    'maxCurvature', 0.0, ...
+    'discretizationDistance', 0.0, ...
+    'segmentBounds', zeros(0,2), ...
+    'params', struct());
+plannerInfo.hcParamsApplied = struct();
+
+useClothoid = isfield(options, "StageBUseClothoid") && options.StageBUseClothoid;
+if useClothoid
+hcDefaults = struct( ...
+    'discretizationDistance', 0.03, ...
+    'maxNumWaypoints', int32(0));
+    hcParamsUser = struct();
+    if isfield(options, "StageBClothoidParams") && ~isempty(options.StageBClothoidParams)
+        hcParamsUser = options.StageBClothoidParams;
+    end
+    hcParams = mergeStructs(hcDefaults, hcParamsUser);
+    [statesHC, hcInfo] = gik9dof.control.rsClothoidRefine(statesRefined, hcParams);
+    if ~isempty(statesHC)
+        statesClothoid = densifyHybridStates(statesHC, maxLinearStep, maxYawStep);
+    end
+    plannerInfo.hcParamsApplied = hcParams;
+end
+
+metricsClothoid = computeReedsSheppMetrics(connMetrics, statesClothoid, plannerInfo.rsParamsFinal.lambdaCusp);
+
+plannerInfo.rsMetrics = struct('raw', metricsRaw, 'densified', metricsDensified, 'refined', metricsRefined, 'clothoid', metricsClothoid);
+plannerInfo.statesRefined = statesRefined;
+plannerInfo.statesClothoid = statesClothoid;
+plannerInfo.rsSmoothing = rsInfo;
+plannerInfo.hcSmoothing = hcInfo;
+
+if useReedsShepp && isfield(options, "Verbose") && options.Verbose
+    deltaLength = metricsRefined.length - metricsDensified.length;
+    fprintf("[Stage B][RS] length %.2fm -> %.2fm (Δ%.2fm), cusps %d -> %d\n", ...
+        metricsDensified.length, metricsRefined.length, deltaLength, ...
+        metricsDensified.cusps, metricsRefined.cusps);
+end
+if useClothoid && isfield(options, "Verbose") && options.Verbose
+    deltaLengthHC = metricsClothoid.length - metricsRefined.length;
+    fprintf("[Stage B][HC] length %.2fm -> %.2fm (Δ%.2fm)\n", ...
+        metricsRefined.length, metricsClothoid.length, deltaLengthHC);
+end
+
+states = statesClothoid;
+end
+
+function statesOut = smoothStageBWithReedsShepp(statesIn, minTurningRadius, numSamples)
+if isempty(statesIn) || size(statesIn,1) < 2
+    statesOut = statesIn;
+    return
+end
+
+conn = reedsSheppConnection('MinTurningRadius', max(minTurningRadius, eps));
+statesOut = statesIn(1,:);
+for idx = 1:size(statesIn,1)-1
+    q1 = statesIn(idx,:);
+    q2 = statesIn(idx+1,:);
+    try
+        [pathSeg, ~] = connect(conn, q1, q2);
+    catch
+        pathSeg = {};
+    end
+    if isempty(pathSeg)
+        statesOut(end+1,:) = q2; %#ok<AGROW>
+        continue
+    end
+    segmentStates = discretizeReedsSheppSegment(pathSeg{1}, numSamples);
+    statesOut = [statesOut; segmentStates(2:end,:)]; %#ok<AGROW>
+end
+
+totalDistance = sum(vecnorm(diff(statesOut(:,1:2).'),2,1));
+straightDist = norm(statesIn(end,1:2) - statesIn(1,1:2));
+if totalDistance > max(10*straightDist, straightDist + 10)
+    statesOut = statesIn;
+end
+end
+
+function segStates = discretizeReedsSheppSegment(segment, numSamples)
+if nargin < 2 || numSamples <= 0
+    numSamples = 50;
+end
+
+totalLen = sum(segment.MotionLengths);
+if totalLen <= 0
+    segStates = [segment.StartPose; segment.GoalPose];
+    return
+end
+
+pose = segment.StartPose;
+segStates = pose;
+
+for i = 1:numel(segment.MotionLengths)
+    length_i = segment.MotionLengths(i);
+    if length_i <= 0
+        continue
+    end
+    typeChar = segment.MotionTypes(i);
+    if isa(typeChar, "string") || isa(typeChar, "char")
+        type = char(typeChar);
+    else
+        type = char(typeChar);
+    end
+    type = type(1);
+    direction = segment.MotionDirections(i);
+    numSteps = max(ceil(numSamples * (length_i / totalLen)), 1);
+    ds = length_i / numSteps;
+    for stepIdx = 1:numSteps
+        switch type
+            case 'S'
+                step = direction * ds;
+                pose(1) = pose(1) + step * cos(pose(3));
+                pose(2) = pose(2) + step * sin(pose(3));
+            case {'L','R'}
+                if type == 'L'
+                    curvature = direction / segment.MinTurningRadius;
+                else
+                    curvature = -direction / segment.MinTurningRadius;
+                end
+                deltaTheta = curvature * ds;
+                theta0 = pose(3);
+                theta1 = wrapToPi(theta0 + deltaTheta);
+                if abs(curvature) < 1e-9
+                    pose(1) = pose(1) + direction * ds * cos(theta0);
+                    pose(2) = pose(2) + direction * ds * sin(theta0);
+                    pose(3) = theta1;
+                else
+                    pose(1) = pose(1) + (sin(theta1) - sin(theta0)) / curvature;
+                    pose(2) = pose(2) - (cos(theta1) - cos(theta0)) / curvature;
+                    pose(3) = theta1;
+                end
+            otherwise
+                step = direction * ds;
+                pose(1) = pose(1) + step * cos(pose(3));
+                pose(2) = pose(2) + step * sin(pose(3));
+        end
+        segStates(end+1,:) = pose; %#ok<AGROW>
+    end
+end
+
+segStates(end,:) = segment.GoalPose;
+end
+
+function simResOut = ensureDocking(simResIn, goalBase, followerOptions, sampleTime, posTol, yawTol, controllerMode)
+simResOut = simResIn;
+if nargin < 5 || isempty(posTol) || ~isfinite(posTol)
+    posTol = 0.05;
+end
+if nargin < 6 || isempty(yawTol) || ~isfinite(yawTol)
+    yawTol = 5 * pi/180;
+end
+if nargin < 7 || isempty(controllerMode)
+    controllerMode = 2;
+end
+
+if ~isfield(simResIn, 'poses') || isempty(simResIn.poses)
+    return
+end
+
+finalPose = simResIn.poses(end, :);
+posError = hypot(finalPose(1) - goalBase(1), finalPose(2) - goalBase(2));
+yawError = abs(wrapToPi(finalPose(3) - goalBase(3)));
+if posError <= max(posTol, 1e-3) && yawError <= max(yawTol, 1e-3)
+    return
+end
+
+alignPath = [finalPose; goalBase];
+alignRes = gik9dof.control.simulateChassisController(alignPath, ...
+    'SampleTime', sampleTime, 'FollowerOptions', followerOptions, ...
+    'ControllerMode', controllerMode);
+
+if ~isfield(alignRes, 'poses') || size(alignRes.poses,1) < 2
+    return
+end
+
+trimIdx = 2:size(alignRes.poses,1);
+simResOut.poses = [simResIn.poses; alignRes.poses(trimIdx,:)];
+
+if isfield(simResIn, 'commands') && isfield(alignRes, 'commands') && ~isempty(alignRes.commands)
+    simResOut.commands = [simResIn.commands; alignRes.commands];
+end
+if isfield(simResIn, 'wheelSpeeds') && isfield(alignRes, 'wheelSpeeds') && ~isempty(alignRes.wheelSpeeds)
+    simResOut.wheelSpeeds = [simResIn.wheelSpeeds; alignRes.wheelSpeeds];
+end
+if isfield(simResIn, 'status') && isfield(alignRes, 'status') && ~isempty(alignRes.status)
+    simResOut.status = [simResIn.status; alignRes.status];
+end
+
 end
 
 function map = buildStageBOccupancyMap(startBase, goalBase, floorDiscs, resolution, safetyMargin)
@@ -1008,5 +1509,301 @@ q = qTemplate;
 for k = 1:nStates
     q(baseIdx) = states(k, :).';
     poses(:,:,k) = getTransform(robot, q, eeName);
+end
+end
+
+function metrics = computeReedsSheppMetrics(conn, pathStates, lambdaCusp)
+%COMPUTEREEDSSHEPPMETRICS Evaluate length and cusp cost for a pose sequence.
+ %#ok<INUSD> (conn retained for compatibility)
+if nargin < 3 || isempty(lambdaCusp)
+    lambdaCusp = 0.0;
+end
+
+metrics = struct('length', 0.0, 'cusps', 0, 'cost', 0.0, 'segments', int32(0));
+
+if isempty(pathStates) || size(pathStates,1) < 2
+    return
+end
+
+diffXY = diff(pathStates(:,1:2),1,1);
+segmentLengths = sqrt(sum(diffXY.^2, 2));
+lengthSum = sum(segmentLengths);
+
+dirs = estimatePathDirectionsLocal(pathStates);
+cuspSum = countDirectionChangesLocal(dirs);
+
+metrics.length = lengthSum;
+metrics.cusps = cuspSum;
+metrics.cost = lengthSum + lambdaCusp * double(cuspSum);
+metrics.segments = int32(numel(segmentLengths));
+end
+
+function seg = bestReedsSheppConnection(conn, poseA, poseB)
+%BESTREEDSSHEPPCONNECTION Safely select the shortest RS connection.
+seg = [];
+try
+    [segments, costs] = connect(conn, poseA, poseB);
+catch
+    segments = {};
+    costs = [];
+end
+if isempty(segments)
+    return
+end
+[~, idx] = min(costs);
+seg = segments{idx};
+end
+
+function c = countReedsSheppCusps(seg)
+%COUNTREEDSSHEPPCUSPS Count gear changes in an RS segment.
+dirs = seg.MotionDirections(:).';
+types = seg.MotionTypes;
+validCount = 0;
+for t = 1:numel(types)
+    if types{t} ~= "N"
+        validCount = validCount + 1;
+    end
+end
+dirs = dirs(1:max(1, validCount));
+if numel(dirs) < 2
+    c = 0;
+else
+    c = sum(abs(diff(sign(dirs))) > 0);
+end
+end
+
+function value = getStructFieldOrDefault(s, fieldName, defaultValue)
+%GETSTRUCTFIELDORDEFAULT Return struct field value or default when missing.
+if isempty(s) || ~isstruct(s) || ~isfield(s, fieldName)
+    value = defaultValue;
+    return
+end
+
+fieldValue = s.(fieldName);
+if isempty(fieldValue)
+    value = defaultValue;
+else
+    value = fieldValue;
+end
+end
+
+function dirs = estimatePathDirectionsLocal(pathStates)
+nSteps = size(pathStates,1) - 1;
+dirs = zeros(nSteps,1);
+for idx = 1:nSteps
+    theta = pathStates(idx,3);
+    delta = pathStates(idx+1,1:2) - pathStates(idx,1:2);
+    projection = delta(1) * cos(theta) + delta(2) * sin(theta);
+    if abs(projection) < 1e-6
+        dirs(idx) = 0;
+    else
+        dirs(idx) = sign(projection);
+    end
+end
+
+for idx = 2:nSteps
+    if dirs(idx) == 0
+        dirs(idx) = dirs(idx-1);
+    end
+end
+for idx = nSteps-1:-1:1
+    if dirs(idx) == 0
+        dirs(idx) = dirs(idx+1);
+    end
+end
+dirs(dirs == 0) = 1;
+end
+
+function count = countDirectionChangesLocal(directions)
+if isempty(directions)
+    count = 0;
+    return
+end
+signs = sign(directions(:).');
+signs(signs == 0) = 1;
+count = sum(abs(diff(signs)) > 0);
+end
+
+function [pathOut, logRefOut, info] = stageCApplyBaseRefinement(basePath, logRefIn, qStart, baseIdx, options, stageBResult, bundleRef, trajStruct, velLimits)
+%STAGECAPPLYBASEREFINEMENT Smooth Stage C base ribbon against obstacles.
+pathOut = basePath;
+logRefOut = logRefIn;
+
+info = struct('applied', false, 'lengthBefore', computePathLength(basePath), ...
+    'lengthAfter', computePathLength(basePath), 'rs', struct(), 'hc', struct(), ...
+    'controllerMode', getStructFieldOrDefault(options, 'StageCChassisControllerMode', 2));
+
+if ~isfield(options, 'StageCUseBaseRefinement') || ~options.StageCUseBaseRefinement
+    return
+end
+
+if size(basePath,1) < 2
+    return
+end
+
+resolution = options.StageBHybridResolution;
+if ~isfinite(resolution) || resolution <= 0
+    resolution = 0.05;
+end
+safetyMargin = options.StageBHybridSafetyMargin;
+if ~isfinite(safetyMargin)
+    safetyMargin = 0.1;
+end
+
+floorDiscs = [];
+if isfield(options, 'FloorDiscs') && ~isempty(options.FloorDiscs)
+    floorDiscs = options.FloorDiscs;
+elseif isfield(stageBResult, 'log') && isfield(stageBResult.log, 'floorDiscs') && ~isempty(stageBResult.log.floorDiscs)
+    floorDiscs = stageBResult.log.floorDiscs;
+end
+
+occMap = buildStageBOccupancyMap(basePath(1,:), basePath(end,:), floorDiscs, resolution, safetyMargin);
+mapData = occupancyMatrix(occMap);
+
+rateHz = options.RateHz;
+if isempty(rateHz) || rateHz <= 0
+    rateHz = 100;
+end
+maxLinearStep = options.StageCMaxLinearSpeed / rateHz;
+maxYawStep = options.StageCMaxAngularVelocity / rateHz;
+
+statesSeed = densifyHybridStates(basePath, maxLinearStep, maxYawStep);
+
+rsParams = gik9dof.control.defaultReedsSheppParams();
+if isfield(options, 'StageBReedsSheppParams') && ~isempty(options.StageBReedsSheppParams)
+    rsParams = mergeStructs(rsParams, options.StageBReedsSheppParams);
+end
+rsParams.Rmin = options.StageBHybridMinTurningRadius;
+rsParams.inflationRadius = options.StageBHybridSafetyMargin;
+rsParams.allowReverse = getStructFieldOrDefault(rsParams, 'allowReverse', true);
+
+[statesRS, rsInfo] = gik9dof.control.rsRefinePath(mapData, occMap.Resolution, statesSeed, rsParams);
+statesRS = densifyHybridStates(statesRS, maxLinearStep, maxYawStep);
+
+statesHC = statesRS;
+hcInfo = struct('applied', false);
+if isfield(options, 'StageBUseClothoid') && options.StageBUseClothoid
+    hcParams = struct('discretizationDistance', 0.03);
+    if isfield(options, 'StageBClothoidParams') && ~isempty(options.StageBClothoidParams)
+        hcParams = mergeStructs(hcParams, options.StageBClothoidParams);
+    end
+    [statesHCtmp, hcInfoTmp] = gik9dof.control.rsClothoidRefine(statesRS, hcParams);
+    if ~isempty(statesHCtmp)
+        statesHC = densifyHybridStates(statesHCtmp, maxLinearStep, maxYawStep);
+        hcInfo = hcInfoTmp;
+    end
+end
+
+resampled = resamplePoseSequence(statesHC, size(basePath,1));
+resampled(1,:) = basePath(1,:);
+resampled(end,:) = basePath(end,:);
+
+if max(abs(resampled - basePath), [], 'all') < 5e-4
+    info.rs = rsInfo;
+    info.hc = hcInfo;
+    return
+end
+
+info.applied = true;
+info.rs = rsInfo;
+info.hc = hcInfo;
+info.lengthBefore = computePathLength(basePath);
+info.lengthAfter = computePathLength(resampled);
+
+pathOut = resampled;
+
+fixedRef = struct('Indices', baseIdx, 'Values', pathOut(2:end,:)');
+logRefOut = gik9dof.runTrajectoryControl(bundleRef, trajStruct, ...
+    'InitialConfiguration', qStart, ...
+    'RateHz', options.RateHz, ...
+    'CommandFcn', options.CommandFcn, ...
+    'Verbose', options.Verbose, ...
+    'VelocityLimits', velLimits, ...
+    'FixedJointTrajectory', fixedRef);
+
+baseTail = logRefOut.qTraj(baseIdx, 2:end).';
+pathOut = [qStart(baseIdx).'; baseTail];
+info.lengthAfter = computePathLength(pathOut);
+info.controllerMode = getStructFieldOrDefault(options, 'StageCChassisControllerMode', 2);
+end
+
+function lengthVal = computePathLength(pathStates)
+if size(pathStates,1) < 2
+    lengthVal = 0.0;
+    return
+end
+diffXY = diff(pathStates(:,1:2),1,1);
+lengthVal = sum(sqrt(sum(diffXY.^2,2)));
+end
+
+function poses = resamplePoseSequence(pathStates, targetCount)
+if nargin < 2 || targetCount <= 0
+    poses = pathStates;
+    return
+end
+if size(pathStates,1) <= 1
+    poses = repmat(pathStates, max(1,targetCount), 1);
+    return
+end
+
+diffXY = diff(pathStates(:,1:2),1,1);
+segmentLengths = sqrt(sum(diffXY.^2,2));
+arc = [0; cumsum(segmentLengths)];
+totalLength = arc(end);
+if totalLength <= eps
+    poses = repmat(pathStates(1,:), targetCount, 1);
+    return
+end
+
+sSamples = linspace(0, totalLength, targetCount)';
+poses = zeros(targetCount, 3);
+poses(:,1) = interp1(arc, pathStates(:,1), sSamples, 'linear');
+poses(:,2) = interp1(arc, pathStates(:,2), sSamples, 'linear');
+yaw = unwrap(pathStates(:,3));
+poses(:,3) = wrapToPi(interp1(arc, yaw, sSamples, 'linear'));
+end
+
+function modeOut = resolveChassisControllerMode(modeIn, chassisParams, fieldName)
+%RESOLVECHASSISCONTROLLERMODE Resolve sentinel controller mode using profile.
+if nargin < 3 || isempty(fieldName)
+    fieldName = "";
+end
+
+if isempty(modeIn) || modeIn == -1
+    profileMode = 2;
+    if ~isempty(fieldName) && isfield(chassisParams, fieldName)
+        profileMode = double(chassisParams.(fieldName));
+    elseif isfield(chassisParams, 'controller_mode')
+        profileMode = double(chassisParams.controller_mode);
+    end
+    modeOut = clampControllerMode(profileMode);
+else
+    modeOut = clampControllerMode(modeIn);
+end
+end
+
+function mode = clampControllerMode(val)
+validModes = [0 1 2];
+if any(val == validModes)
+    mode = val;
+else
+    mode = 2;
+end
+end
+
+function out = mergeStructs(a, b)
+%MERGESTRUCTS Simple shallow merge where fields in b override fields in a.
+if nargin < 1 || isempty(a)
+    a = struct();
+end
+if nargin < 2 || isempty(b)
+    out = a;
+    return
+end
+out = a;
+fieldsB = fieldnames(b);
+for idx = 1:numel(fieldsB)
+    key = fieldsB{idx};
+    out.(key) = b.(key);
 end
 end
