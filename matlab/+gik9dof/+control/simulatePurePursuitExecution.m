@@ -32,42 +32,42 @@ if isempty(pathStates)
     return
 end
 
-if size(pathStates,2) < 3
-    error('simulatePurePursuitExecution:PathFormat', ...
-        'pathStates must contain [x y yaw] columns.');
-end
-
 follower = gik9dof.control.purePursuitFollower(pathStates, options.FollowerOptions);
 
 sampleTime = options.SampleTime;
-numSteps = size(pathStates, 1);
-poses = zeros(numSteps, 3);
-commands = zeros(numSteps, 2);
-wheelSpeeds = zeros(numSteps, 2);
-statusArray = repmat(struct('isFinished',false,'lookaheadIndex',NaN, ...
-    'distanceToGoal',NaN,'lookaheadDistance',NaN,'wheelSpeeds',[0 0],'headingError',NaN), numSteps, 1);
+pathSamples = max(2, size(follower.PathInfo.States,1));
+maxSteps = max(pathSamples * 3, 500);
 
-poses(1,:) = pathStates(1,:);
+poses = zeros(maxSteps + 1, 3);
+commands = zeros(maxSteps, 2);
+wheelSpeeds = zeros(maxSteps, 2);
+[~, ~, statusProto] = follower.step(follower.PathInfo.States(1,:), sampleTime);
+statusArray = repmat(statusProto, maxSteps, 1);
+follower.reset();
 
-for k = 1:numSteps
+poses(1,:) = follower.PathInfo.States(1,:);
+stepCount = 0;
+
+for k = 1:maxSteps
     pose = poses(k,:);
     [vx, wz, status] = follower.step(pose, sampleTime);
     commands(k,:) = [vx, wz];
     wheelSpeeds(k,:) = status.wheelSpeeds;
     statusArray(k) = status;
-
-    if k < numSteps
-        poses(k+1,:) = propagatePose(pose, vx, wz, sampleTime);
-    end
+    stepCount = k;
 
     if status.isFinished
-        poses(k+1:end,:) = repmat(poses(k,:), numSteps-k, 1);
-        commands(k+1:end,:) = 0;
-        wheelSpeeds(k+1:end,:) = 0;
-        statusArray(k+1:end) = status;
+        poses(k+1,:) = pose;
         break
     end
+
+    poses(k+1,:) = propagatePose(pose, vx, wz, sampleTime);
 end
+
+poses = poses(1:stepCount+1, :);
+commands = commands(1:stepCount, :);
+wheelSpeeds = wheelSpeeds(1:stepCount, :);
+statusArray = statusArray(1:stepCount);
 
 result = struct('poses', poses, 'commands', commands, ...
     'wheelSpeeds', wheelSpeeds, 'status', statusArray, 'follower', follower);

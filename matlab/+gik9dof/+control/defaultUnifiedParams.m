@@ -1,21 +1,14 @@
-function params = defaultUnifiedParams(track)
-%DEFAULTUNIFIEDPARAMS Baseline parameter set for unified chassis control.
-%   params = gik9dof.control.defaultUnifiedParams() returns a struct with
-%   conservative settings for the compact-track platform (0.329 m).
+function params = defaultUnifiedParams(profile)
+%DEFAULTUNIFIEDPARAMS Load baseline chassis parameters for unified control.
+%   params = gik9dof.control.defaultUnifiedParams() returns the wide-track
+%   preset defined in config/chassis_profiles.yaml.
 %
-%   params = gik9dof.control.defaultUnifiedParams(track) overrides the wheel
-%   track (m). The remaining parameters follow the values documented in
-%   unified_chassis_controller_summary.md.
+%   params = gik9dof.control.defaultUnifiedParams(profile) loads the named
+%   profile (e.g. "compact_track") from the same YAML file.
 %
 arguments
-    track (1,1) double {mustBePositive} = 0.329
+    profile (1,1) string = "wide_track"
 end
 
-params = struct();
-params.track = track;
-params.Vwheel_max = 1.5;     % m/s per wheel
-params.Vx_max = 0.8;         % m/s forward clamp
-params.W_max = 2.5;          % rad/s global yaw clamp
-params.yawKp = 2.0;          % heading proportional gain
-params.yawKff = 0.2;         % yaw feed-forward gain
+params = gik9dof.control.loadChassisProfile(profile);
 end

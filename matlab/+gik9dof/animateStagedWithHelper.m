@@ -33,11 +33,26 @@ t = t(1:opts.SampleStep:end);
 armTimes = t;
 baseTimes = t;
 
-if isfield(logStaged, 'eePositions') && ~isempty(logStaged.eePositions)
-    eePoses = logStaged.eePositions(:, 1:opts.SampleStep:end)';
-else
-    eePoses = computeEEPath(robot, qTraj(:, 1:opts.SampleStep:end));
+eePathDesired = [];
+if isfield(logStaged, 'referenceTrajectory') && isfield(logStaged.referenceTrajectory, 'EndEffectorPositions') && ...
+        ~isempty(logStaged.referenceTrajectory.EndEffectorPositions)
+    eePathDesired = logStaged.referenceTrajectory.EndEffectorPositions;
 end
+
+eePathStageCRef = [];
+if isfield(logStaged, 'stageLogs') && isstruct(logStaged.stageLogs) && ...
+        isfield(logStaged.stageLogs, 'stageC') && ...
+        isfield(logStaged.stageLogs.stageC, 'referenceInitialIk') && ...
+        isfield(logStaged.stageLogs.stageC.referenceInitialIk, 'eePositions') && ...
+        ~isempty(logStaged.stageLogs.stageC.referenceInitialIk.eePositions)
+    eePathStageCRef = logStaged.stageLogs.stageC.referenceInitialIk.eePositions;
+end
+
+if isempty(eePathStageCRef)
+    eePathStageCRef = computeEEPath(robot, qTraj(:, 1:opts.SampleStep:end));
+end
+
+eePoses = eePathStageCRef(:, 1:opts.SampleStep:end)';
 
 helperArgs = {};
 if ~isempty(opts.ExportVideo)
@@ -45,6 +60,12 @@ if ~isempty(opts.ExportVideo)
 end
 
 helperOptions = opts.HelperOptions;
+if ~isempty(eePathDesired)
+    helperOptions.DesiredEEPath = eePathDesired.';
+else
+    helperOptions.DesiredEEPath = [];
+end
+helperOptions.StageCReferenceEEPath = eePathStageCRef.';
 if isfield(logStaged, 'purePursuit') && isfield(logStaged.purePursuit, 'referencePath') && ...
         ~isempty(logStaged.purePursuit.referencePath)
     refPath = logStaged.purePursuit.referencePath;
@@ -53,6 +74,28 @@ if isfield(logStaged, 'purePursuit') && isfield(logStaged.purePursuit, 'referenc
     end
 elseif isfield(logStaged, 'targetPositions') && ~isempty(logStaged.targetPositions)
     helperOptions.TargetPath = logStaged.targetPositions.';
+end
+
+if isfield(logStaged, 'stageLogs') && isstruct(logStaged.stageLogs)
+    if isfield(logStaged.stageLogs, 'stageC') && isstruct(logStaged.stageLogs.stageC)
+        stageC = logStaged.stageLogs.stageC;
+        if isfield(stageC, 'referenceBaseStates') && ~isempty(stageC.referenceBaseStates)
+            helperOptions.ReferenceBasePath = stageC.referenceBaseStates;
+            helperOptions.ReferenceBaseLabel = "Stage C Reference (GIK)";
+        end
+        if isfield(stageC, 'execBaseStates') && ~isempty(stageC.execBaseStates)
+            helperOptions.ExecutedBaseLabel = "Stage C Executed Base";
+        end
+    end
+    if isfield(logStaged.stageLogs, 'stageB') && isstruct(logStaged.stageLogs.stageB)
+        stageB = logStaged.stageLogs.stageB;
+        if isfield(stageB, 'execBaseStates') && ~isempty(stageB.execBaseStates)
+            helperOptions.StageBPath = stageB.execBaseStates;
+            helperOptions.StageBLabel = "Stage B Executed Base";
+        end
+    end
+elseif isfield(logStaged, 'referenceBaseStates') && ~isempty(logStaged.referenceBaseStates)
+    helperOptions.ReferenceBasePath = logStaged.referenceBaseStates;
 end
 
 fields = fieldnames(helperOptions);

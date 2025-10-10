@@ -55,6 +55,13 @@ arguments
     options.ArmMeshDirectory string = ""
     options.ArmMeshColor (1,3) double = [0.78 0.82 0.93]
     options.FigureScale double = 1.0
+    options.ReferenceBasePath double = []
+    options.ReferenceBaseLabel (1,1) string = "Reference Base (GIK)"
+    options.ExecutedBaseLabel (1,1) string = "Executed Base (Log)"
+    options.StageBPath double = []
+    options.StageBLabel (1,1) string = "Stage B Executed Base"
+    options.DesiredEEPath double = []
+    options.StageCReferenceEEPath double = []
 end
 
 if options.VisualAlpha < 0 || options.VisualAlpha > 1
@@ -66,6 +73,9 @@ end
 stageLabels = string(options.StageLabels);
 stageSelection = lower(string(options.StageSelection));
 stageBreak = max(1, round(options.StageBreakIndex));
+
+stageCRefPath = options.StageCReferenceEEPath;
+desiredEEPath = options.DesiredEEPath;
 
 % Work on a copy so visual tweaks don't leak back to caller
 robot = copy(robot);
@@ -168,6 +178,34 @@ elseif numel(stageLabelsActive) > numel(stageBoundariesActive)
     stageLabelsActive = stageLabelsActive(1:numel(stageBoundariesActive));
 end
 
+% Prepare desired and Stage C reference EE paths aligned with timeline
+stageCIdxRange = stageRanges{end};
+stageCFull = nan(numSteps, 3);
+stageCFirstIdx = NaN;
+if ~isempty(stageCRefPath)
+    pathC = stageCRefPath;
+    if size(pathC,2) ~= 3
+        pathC = pathC.';
+    end
+    L = min(size(pathC,1), numel(stageCIdxRange));
+    stageCFull(stageCIdxRange(1:L), :) = pathC(1:L, 1:3);
+    idxFirst = find(~any(isnan(stageCFull), 2), 1, 'first');
+    if ~isempty(idxFirst)
+        stageCFirstIdx = idxFirst;
+    end
+end
+
+desiredEEFull = [];
+if ~isempty(desiredEEPath)
+    pathD = desiredEEPath;
+    if size(pathD,2) ~= 3
+        pathD = pathD.';
+    end
+    desiredEEFull = pathD(:, 1:3);
+end
+
+eePoses = stageCFull;
+
 if size(basePose,2) ~= 3
     error('basePose must be K-by-3 with columns [x y yaw].');
 end
@@ -202,12 +240,34 @@ view(axTop,   0, 90);
 title(axPersp, '3D Perspective', 'Color', [0.95 0.95 0.95]);
 title(axTop,   'Top View', 'Color', [0.95 0.95 0.95]);
 
-% Plot reference paths
-plot(axPersp, basePose(:,1), basePose(:,2), '--', 'Color', [0.85 0.7 0.1], 'LineWidth', 1.0, 'DisplayName', 'Chassis path');
-plot(axTop,   basePose(:,1), basePose(:,2), '--', 'Color', [0.85 0.7 0.1], 'LineWidth', 1.0, 'DisplayName', 'Chassis path');
-if ~isempty(eePoses) && size(eePoses,2) >= 3
-    plot3(axPersp, eePoses(:,1), eePoses(:,2), eePoses(:,3), 'r-.', 'LineWidth', 1.0, 'DisplayName', 'Desired EE path');
-    plot(axTop,   eePoses(:,1), eePoses(:,2), 'r-.', 'LineWidth', 1.0, 'DisplayName', 'Desired EE path');
+% Plot base paths
+executedColor = [0.10 0.45 0.90];
+referenceColor = [0.85 0.70 0.10];
+stageBColor = [0.60 0.60 0.60];
+
+plot(axPersp, basePose(:,1), basePose(:,2), '-', 'Color', executedColor, 'LineWidth', 1.5, 'DisplayName', char(options.ExecutedBaseLabel));
+plot(axTop,   basePose(:,1), basePose(:,2), '-', 'Color', executedColor, 'LineWidth', 1.5, 'DisplayName', char(options.ExecutedBaseLabel));
+
+if ~isempty(options.ReferenceBasePath)
+    refPath = options.ReferenceBasePath;
+    plot(axPersp, refPath(:,1), refPath(:,2), '--', 'Color', referenceColor, 'LineWidth', 1.2, 'DisplayName', char(options.ReferenceBaseLabel));
+    plot(axTop,   refPath(:,1), refPath(:,2), '--', 'Color', referenceColor, 'LineWidth', 1.2, 'DisplayName', char(options.ReferenceBaseLabel));
+end
+
+if ~isempty(options.StageBPath)
+    sbPath = options.StageBPath;
+    plot(axPersp, sbPath(:,1), sbPath(:,2), ':', 'Color', stageBColor, 'LineWidth', 1.2, 'DisplayName', char(options.StageBLabel));
+    plot(axTop,   sbPath(:,1), sbPath(:,2), ':', 'Color', stageBColor, 'LineWidth', 1.2, 'DisplayName', char(options.StageBLabel));
+end
+
+if ~isempty(desiredEEFull)
+    plot3(axPersp, desiredEEFull(:,1), desiredEEFull(:,2), desiredEEFull(:,3), 'w--', 'LineWidth', 1.0, 'DisplayName', 'Desired EE path');
+    plot(axTop,   desiredEEFull(:,1), desiredEEFull(:,2), 'w--', 'LineWidth', 1.0, 'DisplayName', 'Desired EE path');
+end
+if any(~isnan(stageCFull(:,1)))
+    stageCPlot = stageCFull;
+    plot3(axPersp, stageCPlot(:,1), stageCPlot(:,2), stageCPlot(:,3), 'm-.', 'LineWidth', 1.2, 'DisplayName', 'Stage C reference EE path');
+    plot(axTop,   stageCPlot(:,1), stageCPlot(:,2), 'm-.', 'LineWidth', 1.2, 'DisplayName', 'Stage C reference EE path');
 end
 if ~isempty(options.TargetPath)
     tp = options.TargetPath;
@@ -221,24 +281,28 @@ leg = legend(axPersp, 'Location', 'bestoutside');
 set(leg, 'TextColor', [0.95 0.95 0.95], 'Color', [0.2 0.2 0.2]);
 
 % Markers for current pose
-baseMarkerPersp = plot3(axPersp, baseX(1), baseY(1), 0, 'bo', 'MarkerFaceColor', 'b');
-baseMarkerTop   = plot(axTop,   baseX(1), baseY(1), 'bo', 'MarkerFaceColor', 'b');
+baseMarkerPersp = plot3(axPersp, baseX(1), baseY(1), 0, 'o', 'Color', executedColor, 'MarkerFaceColor', executedColor, 'HandleVisibility', 'off');
+baseMarkerTop   = plot(axTop,   baseX(1), baseY(1), 'o', 'Color', executedColor, 'MarkerFaceColor', executedColor, 'HandleVisibility', 'off');
 headingLen = options.ArrowLength;
 headingLinePersp = plot3(axPersp, [baseX(1), baseX(1)+headingLen*cos(baseYaw(1))], ...
                       [baseY(1), baseY(1)+headingLen*sin(baseYaw(1))], ...
-                      [0 0], 'b-', 'LineWidth', 2);
+                      [0 0], '-', 'Color', executedColor, 'LineWidth', 2, 'HandleVisibility', 'off');
 headingLineTop = plot(axTop, [baseX(1), baseX(1)+headingLen*cos(baseYaw(1))], ...
                          [baseY(1), baseY(1)+headingLen*sin(baseYaw(1))], ...
-                         'b-', 'LineWidth', 2);
-if ~isempty(eePoses) && size(eePoses,2) >= 3
-    eeMarkerPersp = plot3(axPersp, eePoses(1,1), eePoses(1,2), eePoses(1,3), 'ro', 'MarkerFaceColor', 'r', 'DisplayName', 'Desired EE waypoint');
-    eeMarkerTop   = plot(axTop,   eePoses(1,1), eePoses(1,2), 'ro', 'MarkerFaceColor', 'r');
+                         '-', 'Color', executedColor, 'LineWidth', 2, 'HandleVisibility', 'off');
+if any(~isnan(stageCFull(:,1)))
+    firstRef = stageCIdxRange(find(~any(isnan(stageCFull(stageCIdxRange,:)),2),1,'first'));
+    if isempty(firstRef)
+        firstRef = stageCIdxRange(1);
+    end
+    eeMarkerPersp = plot3(axPersp, stageCFull(firstRef,1), stageCFull(firstRef,2), stageCFull(firstRef,3), 'ro', 'MarkerFaceColor', 'r', 'DisplayName', 'Stage C reference EE waypoint');
+    eeMarkerTop   = plot(axTop,   stageCFull(firstRef,1), stageCFull(firstRef,2), 'ro', 'MarkerFaceColor', 'r', 'HandleVisibility', 'off');
 else
     eeMarkerPersp = [];
     eeMarkerTop   = [];
 end
-actualMarkerPersp = plot3(axPersp, baseX(1), baseY(1), 0, 's', 'Color', [0.0 0.6 0.2], 'MarkerFaceColor', [0.0 0.6 0.2], 'DisplayName', 'Actual EE');
-actualMarkerTop   = plot(axTop,   baseX(1), baseY(1), 's', 'Color', [0.0 0.6 0.2], 'MarkerFaceColor', [0.0 0.6 0.2]);
+actualMarkerPersp = plot3(axPersp, baseX(1), baseY(1), 0, 's', 'Color', [0.0 0.6 0.2], 'MarkerFaceColor', [0.0 0.6 0.2], 'DisplayName', 'Actual EE waypoint');
+actualMarkerTop   = plot(axTop,   baseX(1), baseY(1), 's', 'Color', [0.0 0.6 0.2], 'MarkerFaceColor', [0.0 0.6 0.2], 'HandleVisibility', 'off');
 stageText = text(axPersp, 'Units', 'normalized', 'Position', [0.02 0.95 0], ...
     'String', '', 'Color', [0.95 0.95 0.95], 'FontSize', 12, 'FontWeight', 'bold', ...
     'BackgroundColor', [0.1 0.1 0.1], 'Margin', 4, 'HorizontalAlignment', 'left');
@@ -398,8 +462,13 @@ for k = 1:numSteps
 
     if ~isempty(eeMarkerPersp)
         idx = min(k, size(eePoses,1));
-        set(eeMarkerPersp, 'XData', eePoses(idx,1), 'YData', eePoses(idx,2), 'ZData', eePoses(idx,3));
-        set(eeMarkerTop,   'XData', eePoses(idx,1), 'YData', eePoses(idx,2));
+        if all(~isnan(eePoses(idx,1:3)))
+            set(eeMarkerPersp, 'XData', eePoses(idx,1), 'YData', eePoses(idx,2), 'ZData', eePoses(idx,3));
+            set(eeMarkerTop,   'XData', eePoses(idx,1), 'YData', eePoses(idx,2));
+        else
+            set(eeMarkerPersp, 'XData', NaN, 'YData', NaN, 'ZData', NaN);
+            set(eeMarkerTop,   'XData', NaN, 'YData', NaN);
+        end
     end
 
     try
@@ -418,9 +487,11 @@ for k = 1:numSteps
     if isempty(stageIdx)
         stageIdx = numel(stageBoundariesActive);
     end
-    if ~isempty(eePoses) && size(eePoses,2) >= 3
-        idx = min(k, size(eePoses,1));
-        desiredEE = eePoses(idx,1:3);
+    if k <= size(stageCFull,1) && all(~isnan(stageCFull(k,1:3)))
+        desiredEE = stageCFull(k,1:3);
+        errPos = norm(actualEE(k,:) - desiredEE);
+    elseif ~isempty(desiredEEFull) && k <= size(desiredEEFull,1)
+        desiredEE = desiredEEFull(k,1:3);
         errPos = norm(actualEE(k,:) - desiredEE);
     else
         errPos = NaN;
@@ -508,8 +579,9 @@ end
                     Za = Za * obs.height;
                     surfActual = surf(ax, Xa + obs.center(1), Ya + obs.center(2), Za, ...
                         'FaceAlpha', 0.35, 'FaceColor', color, 'EdgeColor', 'none');
-                    if strlength(obs.label) > 0 && ~haveLegendActual
-                        set(surfActual, 'DisplayName', char(obs.label));
+                    obsLabel = sanitizeLegendLabel(obs.label);
+                    if strlength(obsLabel) > 0 && ~haveLegendActual
+                        set(surfActual, 'DisplayName', char(obsLabel));
                         haveLegendActual = true;
                     elseif ~haveLegendActual
                         set(surfActual, 'DisplayName', 'Obstacle');
@@ -531,8 +603,9 @@ end
                     yRect = [bounds(3) bounds(3) bounds(4) bounds(4) bounds(3)];
                     surfHandle = fill3(ax, xRect, yRect, obs.height * ones(size(xRect)), color, ...
                         'FaceAlpha', 0.25, 'EdgeColor', 'none');
-                    if strlength(obs.label) > 0 && ~haveLegendActual
-                        set(surfHandle, 'DisplayName', char(obs.label));
+                    obsLabel = sanitizeLegendLabel(obs.label);
+                    if strlength(obsLabel) > 0 && ~haveLegendActual
+                        set(surfHandle, 'DisplayName', char(obsLabel));
                         haveLegendActual = true;
                     elseif ~haveLegendActual
                         set(surfHandle, 'DisplayName', 'Obstacle');
@@ -771,6 +844,15 @@ for idx = 1:numel(cells)
         end
     end
 end
+
+function labelOut = sanitizeLegendLabel(labelIn)
+if nargin < 1 || isempty(labelIn)
+    labelOut = "";
+    return
+end
+labelOut = string(labelIn);
+labelOut = replace(labelOut, "_", "\_");
+end
 end
 
 function cells = flattenObstacles(input)
@@ -839,4 +921,13 @@ base = sanitizeColor(color, [1 0 0]);
 amount = max(min(amount, 1), 0);
 out = base + (1 - base) * amount;
 out = max(min(out, 1), 0);
+end
+
+function labelOut = sanitizeLegendLabel(labelIn)
+if nargin < 1 || isempty(labelIn)
+    labelOut = "";
+    return
+end
+labelOut = string(labelIn);
+labelOut = replace(labelOut, "_", "\_");
 end
