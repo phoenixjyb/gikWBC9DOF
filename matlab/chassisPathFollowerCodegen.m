@@ -215,7 +215,7 @@ switch mode
         [wz, ~] = clampYawByWheelLimit(vx, wz, track, wheelSpeedMax, wzMax);
         
         % Status
-        distanceToGoal = params.PathInfo_DistanceRemaining(nearestIdx);
+        distanceToGoal = params.PathInfo_DistanceRemaining(nearestIdx, 1);  % Ensure scalar
         isFinished = (distanceToGoal <= params.GoalTolerance) || (nearestIdx >= numPts);
         
         crossTrackError = 0.0;
@@ -277,11 +277,11 @@ switch mode
         [wz, ~] = clampYawByWheelLimit(vx, wz_desired, track, wheelSpeedMax, wzMax);
         
         % Status
-        distanceToGoal = params.PathInfo_DistanceRemaining(nearestIdx);
+        distanceToGoal = params.PathInfo_DistanceRemaining(nearestIdx, 1);  % Ensure scalar
         isFinished = (distanceToGoal <= params.GoalTolerance) || (nearestIdx >= numPts);
         
         crossTrackError = 0.0;  % Not computed in mode 1
-        curvature = params.PathInfo_Curvature(targetIdx);
+        curvature = params.PathInfo_Curvature(targetIdx, 1);  % Ensure scalar
         accel = (vx - state.LastVelocity) / dt;
         
     case 2
@@ -325,9 +325,10 @@ switch mode
         crossTrackError = yLook;
         headingTarget = pathStates(targetIdx,3);
         headingError = wrapToPi(headingTarget - theta);
+        headingError = headingError(1);  % Ensure scalar for codegen
         
         % Path curvature for speed control
-        curvature = params.PathInfo_Curvature(targetIdx);
+        curvature = params.PathInfo_Curvature(targetIdx, 1);  % Ensure scalar indexing
         
         % Direction handling
         direction = 1;
@@ -349,7 +350,7 @@ switch mode
         vxCap = max(vxMin, vxCap * scale);
         
         % Goal approach tapering
-        distanceRemaining = params.PathInfo_DistanceRemaining(nearestIdx);
+        distanceRemaining = params.PathInfo_DistanceRemaining(nearestIdx, 1);  % Ensure scalar
         if distanceRemaining < 3 * params.GoalTolerance
             taper = max(distanceRemaining / (3 * params.GoalTolerance), 0.2);
             vxCap = min(vxCap, vxMax * taper);
@@ -390,7 +391,8 @@ switch mode
         end
         
         % Final yaw clamping
-        [wz, ~] = clampYawByWheelLimit(vx, wz, track, wheelSpeedMax, wzMax);
+        wz_temp = clampYawByWheelLimit(vx, wz, track, wheelSpeedMax, wzMax);
+        wz = wz_temp(1);  % Ensure scalar
         vx = clampValue(vx, vxMin, vxMax);
         
         % Goal detection
@@ -404,8 +406,8 @@ end
 
 
 %% State Update
-state.LastVelocity = vx;
-state.LastAcceleration = accel;
+state.LastVelocity = vx(1);  % Ensure scalar
+state.LastAcceleration = accel(1);  % Ensure scalar
 state.PreviousPose = pose;
 
 %% Status Report
@@ -427,29 +429,56 @@ end % chassisPathFollowerCodegen
 
 function val = clampValue(x, minVal, maxVal)
 %CLAMPVALUE Clamp value to range [minVal, maxVal]
+% Force inputs to be scalars for codegen
+x = x(1);
+minVal = minVal(1);
+maxVal = maxVal(1);
 val = min(max(x, minVal), maxVal);
 end
 
 function [wzClamped, caps] = clampYawByWheelLimit(vx, wz, track, wheelMax, wzMax)
 %CLAMPYAWBYWHEELLIMIT Clamp yaw rate respecting wheel speed limits
 %   Computes required wheel speeds and scales down wz if needed
+
+% Force all inputs to be scalars for codegen
+vx = vx(1);
+wz = wz(1);
+track = track(1);
+wheelMax = wheelMax(1);
+wzMax = wzMax(1);
+
 vL = vx - 0.5 * track * wz;
 vR = vx + 0.5 * track * wz;
-maxWheel = max(abs(vL), abs(vR));
 
-if maxWheel > wheelMax && maxWheel > 1e-6
+% Ensure scalars for codegen
+vL_abs = abs(vL);
+vR_abs = abs(vR);
+if vR_abs > vL_abs
+    maxWheel = vR_abs;
+else
+    maxWheel = vL_abs;
+end
+
+% Ensure all are scalars
+maxWheel = double(maxWheel);
+wheelMax = double(wheelMax);
+
+if (maxWheel > wheelMax) && (maxWheel > 1e-6)
     scale = wheelMax / maxWheel;
     wzClamped = wz * scale;
-    caps.applied = wzClamped;
-    caps.requested = wz;
+    caps.applied = double(wzClamped);
+    caps.requested = double(wz);
 else
     wzClamped = wz;
-    caps.applied = wz;
-    caps.requested = wz;
+    caps.applied = double(wz);
+    caps.requested = double(wz);
 end
 
 % Final wz clamping
 wzClamped = clampValue(wzClamped, -wzMax, wzMax);
+
+% Ensure scalar output
+wzClamped = double(wzClamped(1));
 end
 
 function df = differentiateSeries(series, dt)
