@@ -1,12 +1,12 @@
 //
-// File: find.h
+// File: solveGIKStepWrapper_rtwutil.h
 //
 // MATLAB Coder version            : 24.1
 // C/C++ source code generated on  : 10-Oct-2025 13:57:39
 //
 
-#ifndef FIND_H
-#define FIND_H
+#ifndef SOLVEGIKSTEPWRAPPER_RTWUTIL_H
+#define SOLVEGIKSTEPWRAPPER_RTWUTIL_H
 
 // Include Files
 #include "rtwtypes.h"
@@ -15,15 +15,13 @@
 
 // Function Declarations
 namespace gik9dof {
-namespace coder {
-int eml_find(const bool x[9], int i_data[]);
+extern double rt_hypotd_snf(double u0, double u1);
 
 }
-} // namespace gik9dof
 
 #endif
 //
-// File trailer for find.h
+// File trailer for solveGIKStepWrapper_rtwutil.h
 //
 // [EOF]
 //

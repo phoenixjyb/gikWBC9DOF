@@ -1,8 +1,8 @@
 //
 // File: rigidBody1.h
 //
-// MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 09-Oct-2025 12:02:50
+// MATLAB Coder version            : 24.1
+// C/C++ source code generated on  : 10-Oct-2025 13:57:39
 //
 
 #ifndef RIGIDBODY1_H
@@ -66,7 +66,6 @@ public:
                     robotics::manip::internal::CollisionSet &iobj_1,
                     rigidBodyJoint &iobj_2,
                     robotics::manip::internal::RigidBody &iobj_3);
-  void b_set_Mass();
   void b_set_CenterOfMass();
   void b_set_Inertia();
   rigidBody *d_init(GIKSolver *aInstancePtr,
@@ -74,7 +73,7 @@ public:
                     robotics::manip::internal::CollisionSet &iobj_1,
                     rigidBodyJoint &iobj_2,
                     robotics::manip::internal::RigidBody &iobj_3);
-  void c_set_Mass();
+  void b_set_Mass();
   void c_set_CenterOfMass();
   void c_set_Inertia();
   rigidBody *e_init(GIKSolver *aInstancePtr,
@@ -82,7 +81,7 @@ public:
                     robotics::manip::internal::CollisionSet &iobj_1,
                     rigidBodyJoint &iobj_2,
                     robotics::manip::internal::RigidBody &iobj_3);
-  void d_set_Mass();
+  void c_set_Mass();
   void d_set_CenterOfMass();
   void d_set_Inertia();
   rigidBody *f_init(GIKSolver *aInstancePtr,
@@ -90,7 +89,7 @@ public:
                     robotics::manip::internal::CollisionSet &iobj_1,
                     rigidBodyJoint &iobj_2,
                     robotics::manip::internal::RigidBody &iobj_3);
-  void e_set_Mass();
+  void d_set_Mass();
   void e_set_CenterOfMass();
   void e_set_Inertia();
   rigidBody *g_init(GIKSolver *aInstancePtr,
@@ -98,7 +97,7 @@ public:
                     robotics::manip::internal::CollisionSet &iobj_1,
                     rigidBodyJoint &iobj_2,
                     robotics::manip::internal::RigidBody &iobj_3);
-  void f_set_Mass();
+  void e_set_Mass();
   void f_set_CenterOfMass();
   void f_set_Inertia();
   rigidBody *h_init(GIKSolver *aInstancePtr,
@@ -106,7 +105,7 @@ public:
                     robotics::manip::internal::CollisionSet &iobj_1,
                     rigidBodyJoint &iobj_2,
                     robotics::manip::internal::RigidBody &iobj_3);
-  void g_set_Mass();
+  void f_set_Mass();
   void g_set_CenterOfMass();
   void g_set_Inertia();
   rigidBody *i_init(GIKSolver *aInstancePtr,
@@ -114,7 +113,7 @@ public:
                     robotics::manip::internal::CollisionSet &iobj_1,
                     rigidBodyJoint &iobj_2,
                     robotics::manip::internal::RigidBody &iobj_3);
-  void h_set_Mass();
+  void g_set_Mass();
   void h_set_CenterOfMass();
   void h_set_Inertia();
   rigidBody *j_init(GIKSolver *aInstancePtr,
@@ -122,7 +121,7 @@ public:
                     robotics::manip::internal::CollisionSet &iobj_1,
                     rigidBodyJoint &iobj_2,
                     robotics::manip::internal::RigidBody &iobj_3);
-  void i_set_Mass();
+  void h_set_Mass();
   void i_set_CenterOfMass();
   void i_set_Inertia();
   rigidBody *k_init(GIKSolver *aInstancePtr,
@@ -130,7 +129,7 @@ public:
                     robotics::manip::internal::CollisionSet &iobj_1,
                     rigidBodyJoint &iobj_2,
                     robotics::manip::internal::RigidBody &iobj_3);
-  void j_set_Mass();
+  void i_set_Mass();
   void j_set_CenterOfMass();
   void j_set_Inertia();
   void matlabCodegenDestructor();

@@ -1,8 +1,8 @@
 //
 // File: rigidBodyTree1.h
 //
-// MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 09-Oct-2025 12:02:50
+// MATLAB Coder version            : 24.1
+// C/C++ source code generated on  : 10-Oct-2025 13:57:39
 //
 
 #ifndef RIGIDBODYTREE1_H
@@ -17,8 +17,6 @@
 
 // Type Declarations
 namespace gik9dof {
-class GIKSolver;
-
 namespace coder {
 class rigidBody;
 
@@ -40,8 +38,6 @@ namespace gik9dof {
 namespace coder {
 class rigidBodyTree {
 public:
-  rigidBodyTree *init(GIKSolver *aInstancePtr);
-  void get_BaseName(char basename_data[], int basename_size[2]) const;
   void addBody(rigidBody &bodyin,
                robotics::manip::internal::CollisionSet &iobj_0,
                rigidBodyJoint &iobj_1,

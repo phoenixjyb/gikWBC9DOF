@@ -1,16 +1,16 @@
 //
 // File: constraintPoseTarget.h
 //
-// MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 09-Oct-2025 12:02:50
+// MATLAB Coder version            : 24.1
+// C/C++ source code generated on  : 10-Oct-2025 13:57:39
 //
 
 #ifndef CONSTRAINTPOSETARGET_H
 #define CONSTRAINTPOSETARGET_H
 
 // Include Files
-#include "gik9dof_codegen_inuse_solveGIKStepWrapper_types1.h"
 #include "rtwtypes.h"
+#include "solveGIKStepWrapper_types1.h"
 #include <cstddef>
 #include <cstdlib>
 
@@ -19,17 +19,14 @@ namespace gik9dof {
 namespace coder {
 class constraintPoseTarget {
 public:
-  constraintPoseTarget *init();
   constraintPoseTarget();
   ~constraintPoseTarget();
+  cell_10 ConstructorPropertyDefaultValues;
   char EndEffector[17];
   double TargetTransform[16];
   double OrientationTolerance;
   double PositionTolerance;
   double Weights[2];
-
-protected:
-  cell_10 ConstructorPropertyDefaultValues;
 };
 
 } // namespace coder

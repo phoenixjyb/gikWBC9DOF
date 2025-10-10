@@ -1,8 +1,8 @@
 //
 // File: RigidBodyTree.h
 //
-// MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 09-Oct-2025 12:02:50
+// MATLAB Coder version            : 24.1
+// C/C++ source code generated on  : 10-Oct-2025 13:57:39
 //
 
 #ifndef RIGIDBODYTREE_H
@@ -60,6 +60,7 @@ public:
   void kinematicPathInternal(RigidBody *body1, RigidBody *body2,
                              ::coder::array<double, 2U> &indices);
   void ancestorIndices(RigidBody *body, ::coder::array<double, 2U> &indices);
+  int randomJointPositions(GIKSolver *aInstancePtr, double q_data[]);
   void kinematicPath(const char body1Name_data[], const int body1Name_size[2],
                      const char body2Name_data[], const int body2Name_size[2],
                      ::coder::array<double, 2U> &indices);

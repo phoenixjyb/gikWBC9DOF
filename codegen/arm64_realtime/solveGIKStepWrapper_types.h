@@ -1,12 +1,12 @@
 //
-// File: gik9dof_codegen_inuse_solveGIKStepWrapper_types.h
+// File: solveGIKStepWrapper_types.h
 //
-// MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 09-Oct-2025 12:02:50
+// MATLAB Coder version            : 24.1
+// C/C++ source code generated on  : 10-Oct-2025 13:57:39
 //
 
-#ifndef GIK9DOF_CODEGEN_INUSE_SOLVEGIKSTEPWRAPPER_TYPES_H
-#define GIK9DOF_CODEGEN_INUSE_SOLVEGIKSTEPWRAPPER_TYPES_H
+#ifndef SOLVEGIKSTEPWRAPPER_TYPES_H
+#define SOLVEGIKSTEPWRAPPER_TYPES_H
 
 // Include Files
 #include "CollisionSet.h"
@@ -37,7 +37,7 @@ struct struct0_T {
   ::coder::bounded_array<char, 14U, 2U> Status;
 };
 
-struct gik9dof_codegen_inuse_solveGIKStepWrapperPersistentData {
+struct solveGIKStepWrapperPersistentData {
   coder::robotics::manip::internal::RigidBody gobj_7[11];
   coder::rigidBodyJoint gobj_6[22];
   coder::robotics::manip::internal::CollisionSet gobj_5[22];
@@ -54,15 +54,15 @@ struct gik9dof_codegen_inuse_solveGIKStepWrapperPersistentData {
   double lims[2];
 };
 
-struct gik9dof_codegen_inuse_solveGIKStepWrapperStackData {
-  gik9dof_codegen_inuse_solveGIKStepWrapperPersistentData *pd;
+struct solveGIKStepWrapperStackData {
+  solveGIKStepWrapperPersistentData *pd;
 };
 
 } // namespace gik9dof
 
 #endif
 //
-// File trailer for gik9dof_codegen_inuse_solveGIKStepWrapper_types.h
+// File trailer for solveGIKStepWrapper_types.h
 //
 // [EOF]
 //

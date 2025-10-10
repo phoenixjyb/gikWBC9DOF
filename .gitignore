@@ -25,6 +25,8 @@ external_plot_outputs.mat
 # MATLAB Codegen build artifacts
 *.obj
 *.lib
+*.o
+*.a
 codegen/arm64_realtime/*.cpp
 codegen/arm64_realtime/*.c
 codegen/arm64_realtime/*.bat
@@ -37,6 +39,11 @@ codegen/arm64_realtime/interface/*.cpp
 codegen/arm64_realtime/html/
 codegen/arm64_realtime/examples/
 codegen/linux_arm64/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
 
 # Deployment packages
 deployment_package/

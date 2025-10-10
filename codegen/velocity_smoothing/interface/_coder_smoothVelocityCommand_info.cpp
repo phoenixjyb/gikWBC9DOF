@@ -2,7 +2,7 @@
 // File: _coder_smoothVelocityCommand_info.cpp
 //
 // MATLAB Coder version            : 24.1
-// C/C++ source code generated on  : 10-Oct-2025 00:47:40
+// C/C++ source code generated on  : 10-Oct-2025 15:09:44
 //
 
 // Include Files
@@ -65,7 +65,7 @@ mxArray *emlrtMexFcnProperties()
       emlrtMxCreateString("/mnt/h/wSpace/codegenGIKsample/Trial/gikWBC9DOF/"
                           "matlab/+gik9dof/+control/smoothVelocityCommand.m"));
   emlrtSetField(xEntryPoints, 0, "TimeStamp",
-                emlrtMxCreateDoubleScalar(739900.02115740743));
+                emlrtMxCreateDoubleScalar(739900.03680555557));
   emlrtSetField(xEntryPoints, 0, "Constructor",
                 emlrtMxCreateLogicalScalar(false));
   emlrtSetField(xEntryPoints, 0, "Visible", emlrtMxCreateLogicalScalar(true));

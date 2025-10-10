@@ -1,12 +1,12 @@
 //
-// File: gik9dof_codegen_inuse_solveGIKStepWrapper_types1.h
+// File: solveGIKStepWrapper_types1.h
 //
-// MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 09-Oct-2025 12:02:50
+// MATLAB Coder version            : 24.1
+// C/C++ source code generated on  : 10-Oct-2025 13:57:39
 //
 
-#ifndef GIK9DOF_CODEGEN_INUSE_SOLVEGIKSTEPWRAPPER_TYPES1_H
-#define GIK9DOF_CODEGEN_INUSE_SOLVEGIKSTEPWRAPPER_TYPES1_H
+#ifndef SOLVEGIKSTEPWRAPPER_TYPES1_H
+#define SOLVEGIKSTEPWRAPPER_TYPES1_H
 
 // Include Files
 #include "rtwtypes.h"
@@ -108,7 +108,7 @@ struct cell_6 {
 
 #endif
 //
-// File trailer for gik9dof_codegen_inuse_solveGIKStepWrapper_types1.h
+// File trailer for solveGIKStepWrapper_types1.h
 //
 // [EOF]
 //

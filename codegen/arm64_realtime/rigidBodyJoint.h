@@ -1,8 +1,8 @@
 //
 // File: rigidBodyJoint.h
 //
-// MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 09-Oct-2025 12:02:50
+// MATLAB Coder version            : 24.1
+// C/C++ source code generated on  : 10-Oct-2025 13:57:39
 //
 
 #ifndef RIGIDBODYJOINT_H
@@ -19,17 +19,7 @@
 namespace gik9dof {
 class GIKSolver;
 
-namespace coder {
-namespace robotics {
-namespace manip {
-namespace internal {
-class GIKProblem;
-
 }
-} // namespace manip
-} // namespace robotics
-} // namespace coder
-} // namespace gik9dof
 
 // Type Definitions
 namespace gik9dof {
@@ -40,12 +30,10 @@ public:
   void set_MotionSubspace(const double msubspace_data[]);
   rigidBodyJoint *init(const char jname[14]);
   rigidBodyJoint *b_init();
-  void setFixedTransform();
   void set_JointAxis();
   void b_set_MotionSubspace(const double msubspace[6]);
   void set_PositionLimits();
   void resetHomePosition();
-  void set_HomePosition();
   rigidBodyJoint *copy(rigidBodyJoint &iobj_0) const;
   void get_MotionSubspace(double msubspace_data[], int msubspace_size[2]) const;
   rigidBodyJoint *c_init();
@@ -54,32 +42,21 @@ public:
   void c_set_JointAxis();
   void set_PositionLimits(GIKSolver *aInstancePtr);
   rigidBodyJoint *e_init();
-  void b_setFixedTransform();
   rigidBodyJoint *f_init();
-  void c_setFixedTransform();
   void b_set_PositionLimits();
   rigidBodyJoint *g_init();
-  void d_setFixedTransform();
   void d_set_JointAxis();
   void c_set_PositionLimits();
   rigidBodyJoint *h_init();
-  void e_setFixedTransform();
   void d_set_PositionLimits();
   rigidBodyJoint *i_init();
-  void f_setFixedTransform();
   rigidBodyJoint *j_init();
-  void g_setFixedTransform();
   void e_set_PositionLimits();
   rigidBodyJoint *k_init();
-  void h_setFixedTransform();
   rigidBodyJoint *l_init();
-  void i_setFixedTransform();
   void get_JointAxis(double ax[3]) const;
   void transformBodyToParent(const ::coder::array<double, 1U> &q,
                              double T[16]) const;
-  static void randomConfig(GIKSolver *aInstancePtr,
-                           robotics::manip::internal::GIKProblem *problem,
-                           ::coder::array<double, 1U> &rc);
   rigidBodyJoint();
   ~rigidBodyJoint();
   double VelocityNumber;
@@ -96,6 +73,21 @@ public:
 };
 
 } // namespace coder
+} // namespace gik9dof
+
+// Function Declarations
+namespace gik9dof {
+void binary_expand_op_5(::coder::array<double, 1U> &in1,
+                        const double in2_data[], const int in2_size[2]);
+
+void binary_expand_op_6(::coder::array<double, 1U> &in1,
+                        const double in2_data[], const int in2_size[2],
+                        const ::coder::array<double, 1U> &in3);
+
+void binary_expand_op_7(::coder::array<double, 1U> &in1,
+                        const double in2_data[], const int in2_size[2],
+                        const ::coder::array<double, 1U> &in3);
+
 } // namespace gik9dof
 
 #endif

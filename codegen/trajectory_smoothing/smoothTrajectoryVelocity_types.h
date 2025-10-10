@@ -2,7 +2,7 @@
 // File: smoothTrajectoryVelocity_types.h
 //
 // MATLAB Coder version            : 24.1
-// C/C++ source code generated on  : 09-Oct-2025 23:31:47
+// C/C++ source code generated on  : 10-Oct-2025 15:00:48
 //
 
 #ifndef SMOOTHTRAJECTORYVELOCITY_TYPES_H

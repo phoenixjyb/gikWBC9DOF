@@ -1,8 +1,8 @@
 //
 // File: eml_rand_mt19937ar.h
 //
-// MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 09-Oct-2025 12:02:50
+// MATLAB Coder version            : 24.1
+// C/C++ source code generated on  : 10-Oct-2025 13:57:39
 //
 
 #ifndef EML_RAND_MT19937AR_H
@@ -16,16 +16,10 @@
 // Function Declarations
 namespace gik9dof {
 namespace coder {
-namespace internal {
-namespace randfun {
-double b_eml_rand_mt19937ar(unsigned int state[625]);
-
-void eml_rand_mt19937ar(unsigned int state[625]);
+double eml_rand_mt19937ar(unsigned int state[625]);
 
 void genrand_uint32_vector(unsigned int mt[625], unsigned int u[2]);
 
-} // namespace randfun
-} // namespace internal
 } // namespace coder
 } // namespace gik9dof
 

@@ -2,7 +2,7 @@
 // File: smoothVelocityCommand_types.h
 //
 // MATLAB Coder version            : 24.1
-// C/C++ source code generated on  : 10-Oct-2025 00:47:40
+// C/C++ source code generated on  : 10-Oct-2025 15:09:44
 //
 
 #ifndef SMOOTHVELOCITYCOMMAND_TYPES_H

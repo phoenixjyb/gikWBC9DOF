@@ -1,8 +1,8 @@
 //
 // File: CollisionSet.h
 //
-// MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 09-Oct-2025 12:02:50
+// MATLAB Coder version            : 24.1
+// C/C++ source code generated on  : 10-Oct-2025 13:57:39
 //
 
 #ifndef COLLISIONSET_H
@@ -11,6 +11,7 @@
 // Include Files
 #include "CollisionGeometry.h"
 #include "rtwtypes.h"
+#include "string1.h"
 #include "coder_array.h"
 #include <cstddef>
 #include <cstdlib>
@@ -31,6 +32,7 @@ public:
   ::coder::array<CollisionGeometry, 2U> CollisionGeometries;
   double MaxElements;
   double Size;
+  rtString Tags;
 };
 
 } // namespace internal

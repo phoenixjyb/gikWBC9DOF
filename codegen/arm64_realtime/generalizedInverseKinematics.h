@@ -1,8 +1,8 @@
 //
 // File: generalizedInverseKinematics.h
 //
-// MATLAB Coder version            : 24.2
-// C/C++ source code generated on  : 09-Oct-2025 12:02:50
+// MATLAB Coder version            : 24.1
+// C/C++ source code generated on  : 10-Oct-2025 13:57:39
 //
 
 #ifndef GENERALIZEDINVERSEKINEMATICS_H
@@ -54,7 +54,6 @@ public:
                             double solverparams_ErrorChangeTolerance,
                             double solverparams_DampingBias,
                             bool solverparams_UseErrorDamping);
-  void matlabCodegenDestructor();
   void step(GIKSolver *aInstancePtr, double varargin_1[9],
             const constraintPoseTarget &varargin_2,
             const constraintJointBounds &varargin_3,
@@ -78,9 +77,10 @@ public:
             constraintDistanceBounds *varargin_21,
             constraintDistanceBounds *varargin_22,
             constraintDistanceBounds *varargin_23, struct0_T *varargout_2);
-  ~generalizedInverseKinematics();
   generalizedInverseKinematics();
+  ~generalizedInverseKinematics();
   bool matlabCodegenIsDeleted;
+  int isInitialized;
   robotics::core::internal::ErrorDampedLevenbergMarquardt *Solver;
   robotics::manip::internal::b_RigidBodyTree *Tree;
   robotics::manip::internal::GIKProblem Problem;
@@ -92,7 +92,6 @@ public:
   robotics::core::internal::ErrorDampedLevenbergMarquardt _pobj4;
 
 private:
-  int isInitialized;
   bool isSetupComplete;
   bool RigidBodyTreeHasBeenSet;
 };
