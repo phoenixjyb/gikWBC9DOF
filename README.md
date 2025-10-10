@@ -14,6 +14,9 @@
 ### 🚀 For First-Time Users
 👉 **[docs/getting-started/START_HERE.md](docs/getting-started/START_HERE.md)** - Complete setup guide
 
+### 🏗️ For Building & Deploying
+📘 **[docs/guides/COMPLETE_BUILD_GUIDE.md](docs/guides/COMPLETE_BUILD_GUIDE.md)** - ⭐ **Complete build tutorial** (MATLAB → ROS2 → Orin)
+
 ### 👨‍💻 For Developers
 📖 **[docs/sessions/NEXT_SESSION_VELOCITY_SMOOTHING.md](docs/sessions/NEXT_SESSION_VELOCITY_SMOOTHING.md)** - Current session status
 

@@ -4,7 +4,28 @@ Welcome to the gikWBC9DOF documentation! This directory contains all project doc
 
 ---
 
-## 📂 Directory Structure
+## ⭐ Most Important Documents
+
+### For Building & Deployment
+📘 **[guides/COMPLETE_BUILD_GUIDE.md](guides/COMPLETE_BUILD_GUIDE.md)** - Complete build tutorial from MATLAB to Orin  
+📖 **[guides/WSL_BUILD_VERSIONING.md](guides/WSL_BUILD_VERSIONING.md)** - Build version tracking for WSL workflow
+
+### For Getting Started
+🚀 **[getting-started/START_HERE.md](getting-started/START_HERE.md)** - New user setup guide
+
+### For Current Work
+� **[sessions/NEXT_SESSION_VELOCITY_SMOOTHING.md](sessions/NEXT_SESSION_VELOCITY_SMOOTHING.md)** - Latest session status
+
+---
+
+## �📂 Directory Structure
+
+### [guides/](guides/)
+**📘 Step-by-step guides and tutorials**
+- `COMPLETE_BUILD_GUIDE.md` - ⭐ **Complete build & compilation guide** (MATLAB → ROS2 → Orin)
+- `WSL_BUILD_VERSIONING.md` - Build version tracking for WSL MATLAB builds
+- `BUILD_VERIFICATION_GUIDE.md` - How to verify builds are current
+- `BUILD_TRACKING_WITHOUT_NUMBERS.md` - Git-based build tracking concepts
 
 ### [getting-started/](getting-started/)
 **Start here if you're new to the project**

@@ -20,10 +20,7 @@ echo "Running MATLAB codegen..."
 echo "This will take 5-15 minutes."
 echo ""
 
-/home/yanbo/MATLAB/R2024a/bin/matlab -batch "
-    addpath(genpath('matlab'));
-    run('generate_code_planner_arm64.m');
-"
+/home/yanbo/MATLAB/R2024a/bin/matlab -batch "addpath(genpath('matlab')); run('scripts/codegen/generate_code_planner_arm64.m');"
 
 echo ""
 echo "========================================"

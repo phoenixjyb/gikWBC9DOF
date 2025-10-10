@@ -12,14 +12,14 @@ Write-Host ""
 
 # Make script executable
 Write-Host "Making script executable..." -ForegroundColor Yellow
-wsl bash -c "chmod +x /mnt/c/Users/yanbo/wSpace/codegenGIKsample/Trial/gikWBC9DOF/run_planner_codegen_wsl.sh"
+wsl bash -c "chmod +x /mnt/c/Users/yanbo/wSpace/codegenGIKsample/Trial/gikWBC9DOF/scripts/codegen/run_planner_codegen_wsl.sh"
 
 Write-Host "Starting Linux MATLAB codegen..." -ForegroundColor Yellow
 Write-Host "⏱️  Expected time: 5-15 minutes" -ForegroundColor Gray
 Write-Host ""
 
 # Run the script
-wsl bash -c "/mnt/c/Users/yanbo/wSpace/codegenGIKsample/Trial/gikWBC9DOF/run_planner_codegen_wsl.sh"
+wsl bash -c "/mnt/c/Users/yanbo/wSpace/codegenGIKsample/Trial/gikWBC9DOF/scripts/codegen/run_planner_codegen_wsl.sh"
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""
