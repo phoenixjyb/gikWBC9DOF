@@ -65,3 +65,19 @@ Logging + animation overlays
 - Collision-aware Stage C GIK to encourage a closer match to the JSON path without relying on large margins.
 - Increase controller rate (>10&nbsp;Hz) if hardware allows; reduces discretization errors in both base and arm motions.
 
+
+## Stage C per-cycle data flow (10 Hz)
+Each 100&nbsp;ms cycle executes the following steps:
+
+1. **Base sample selection** *(pure pursuit)*
+   - Input: refined base ribbon (`log.stageLogs.stageC.referenceBaseStates`) and latest executed pose.
+   - Output: desired base velocity commands `(Vx, Wz)`.
+2. **Base integration**
+   - Integrate `(Vx, Wz)` for `dt = 0.1 s` to get the new executed base pose; append to `execBaseStates`.
+3. **GIK solve** *(runTrajectoryControl step)*
+   - Input: executed base pose (locked), reference end-effector target from trajectory.
+   - Output: new joint configuration, end-effector pose (`log.stageLogs.stageC.eePositions`), solver diagnostics.
+4. **Logging/feedback**
+   - Errors and telemetry stored (EE error, wheel speeds, status); used for next pure pursuit iteration.
+
+Upstream, the refined base ribbon comes from the Stage&nbsp;B planner (Hybrid A* → RS → clothoid), and the reference EE target per waypoint is the JSON trajectory. stageC base refinement/runtime does not change during a single cycle; only one GIK solve occurs per 100&nbsp;ms loop (with up to `MaxIterations` internal solver iterations).
