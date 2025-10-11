@@ -180,19 +180,22 @@ end
 
 % Prepare desired and Stage C reference EE paths aligned with timeline
 stageCIdxRange = stageRanges{end};
-stageCFull = nan(numSteps, 3);
-stageCFirstIdx = NaN;
+stageCPath = [];  % Store Stage C reference path separately
+stageCFirstIdx = stageCIdxRange(1);  % Stage C starts at this frame
 if ~isempty(stageCRefPath)
     pathC = stageCRefPath;
     if size(pathC,2) ~= 3
         pathC = pathC.';
     end
-    L = min(size(pathC,1), numel(stageCIdxRange));
-    stageCFull(stageCIdxRange(1:L), :) = pathC(1:L, 1:3);
-    idxFirst = find(~any(isnan(stageCFull), 2), 1, 'first');
-    if ~isempty(idxFirst)
-        stageCFirstIdx = idxFirst;
-    end
+    % Store Stage C path directly (will be indexed relative to Stage C start)
+    stageCPath = pathC(:, 1:3);
+end
+
+% Legacy: keep stageCFull for compatibility but mark where Stage C data exists
+stageCFull = nan(numSteps, 3);
+if ~isempty(stageCPath)
+    L = min(size(stageCPath,1), numel(stageCIdxRange));
+    stageCFull(stageCIdxRange(1:L), :) = stageCPath(1:L, :);
 end
 
 desiredEEFull = [];
@@ -290,13 +293,15 @@ headingLinePersp = plot3(axPersp, [baseX(1), baseX(1)+headingLen*cos(baseYaw(1))
 headingLineTop = plot(axTop, [baseX(1), baseX(1)+headingLen*cos(baseYaw(1))], ...
                          [baseY(1), baseY(1)+headingLen*sin(baseYaw(1))], ...
                          '-', 'Color', executedColor, 'LineWidth', 2, 'HandleVisibility', 'off');
-if any(~isnan(stageCFull(:,1)))
-    firstRef = stageCIdxRange(find(~any(isnan(stageCFull(stageCIdxRange,:)),2),1,'first'));
-    if isempty(firstRef)
-        firstRef = stageCIdxRange(1);
-    end
-    eeMarkerPersp = plot3(axPersp, stageCFull(firstRef,1), stageCFull(firstRef,2), stageCFull(firstRef,3), 'ro', 'MarkerFaceColor', 'r', 'DisplayName', 'Stage C reference EE waypoint');
-    eeMarkerTop   = plot(axTop,   stageCFull(firstRef,1), stageCFull(firstRef,2), 'ro', 'MarkerFaceColor', 'r', 'HandleVisibility', 'off');
+% Initialize Stage C reference EE marker (red dot)
+% This should only appear during Stage C and track the Stage C reference
+if ~isempty(stageCPath)
+    % Start with first point of Stage C reference
+    eeMarkerPersp = plot3(axPersp, stageCPath(1,1), stageCPath(1,2), stageCPath(1,3), 'ro', 'MarkerFaceColor', 'r', 'DisplayName', 'Stage C reference EE waypoint');
+    eeMarkerTop   = plot(axTop,   stageCPath(1,1), stageCPath(1,2), 'ro', 'MarkerFaceColor', 'r', 'HandleVisibility', 'off');
+    % Initially hide it (will show when Stage C starts)
+    set(eeMarkerPersp, 'Visible', 'off');
+    set(eeMarkerTop, 'Visible', 'off');
 else
     eeMarkerPersp = [];
     eeMarkerTop   = [];
@@ -460,14 +465,24 @@ for k = 1:numSteps
     % Update markers
     updateMarkers(k);
 
-    if ~isempty(eeMarkerPersp)
-        idx = min(k, size(eePoses,1));
-        if all(~isnan(eePoses(idx,1:3)))
-            set(eeMarkerPersp, 'XData', eePoses(idx,1), 'YData', eePoses(idx,2), 'ZData', eePoses(idx,3));
-            set(eeMarkerTop,   'XData', eePoses(idx,1), 'YData', eePoses(idx,2));
+    % Update Stage C reference EE marker (red dot)
+    % Only show during Stage C, and index into stageCPath relative to Stage C start
+    if ~isempty(eeMarkerPersp) && ~isempty(stageCPath)
+        if k >= stageCFirstIdx && k <= stageCIdxRange(end)
+            % Calculate index into stageCPath (1-based, relative to Stage C start)
+            stageCLocalIdx = k - stageCFirstIdx + 1;
+            if stageCLocalIdx <= size(stageCPath, 1)
+                set(eeMarkerPersp, 'XData', stageCPath(stageCLocalIdx,1), 'YData', stageCPath(stageCLocalIdx,2), 'ZData', stageCPath(stageCLocalIdx,3), 'Visible', 'on');
+                set(eeMarkerTop,   'XData', stageCPath(stageCLocalIdx,1), 'YData', stageCPath(stageCLocalIdx,2), 'Visible', 'on');
+            else
+                % Beyond Stage C reference data
+                set(eeMarkerPersp, 'Visible', 'off');
+                set(eeMarkerTop, 'Visible', 'off');
+            end
         else
-            set(eeMarkerPersp, 'XData', NaN, 'YData', NaN, 'ZData', NaN);
-            set(eeMarkerTop,   'XData', NaN, 'YData', NaN);
+            % Not in Stage C yet or past it
+            set(eeMarkerPersp, 'Visible', 'off');
+            set(eeMarkerTop, 'Visible', 'off');
         end
     end
 

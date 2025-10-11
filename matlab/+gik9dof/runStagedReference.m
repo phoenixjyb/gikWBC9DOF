@@ -3,6 +3,9 @@ function result = runStagedReference(options)
 %   result = gik9dof.runStagedReference() runs the staged controller using
 %   the shared environment configuration, writes the log to a timestamped
 %   results folder, and returns metadata about the run. Name-value options:
+%       PipelineConfig   - Unified configuration struct loaded via
+%                          gik9dof.loadPipelineProfile('profile_name'). 
+%                          Recommended over individual parameters below.
 %       RunLabel         - Text appended to results folder name.
 %       ExecutionMode    - 'ppForIk' (default) or 'pureIk'.
 %       RateHz           - Control loop frequency (default 10 Hz).
@@ -28,11 +31,19 @@ function result = runStagedReference(options)
 %                                     -1 = take from chassis profile.
 %       SaveLog          - Save MAT file (default true).
 %
+%   Example (Recommended - Unified Config):
+%       cfg = gik9dof.loadPipelineProfile('aggressive');
+%       result = gik9dof.runStagedReference('PipelineConfig', cfg);
+%
+%   Example (Legacy - Individual Parameters):
+%       result = gik9dof.runStagedReference('StageBDesiredLinearVelocity', 0.8);
+%
 arguments
+    options.PipelineConfig struct = struct()  % NEW: Unified configuration from loadPipelineProfile
     options.RunLabel (1,1) string = "staged_reference"
     options.ExecutionMode (1,1) string {mustBeMember(options.ExecutionMode, ["ppForIk","pureIk"])} = "ppForIk"
     options.RateHz (1,1) double {mustBePositive} = 10
-    options.MaxIterations (1,1) double {mustBePositive} = 150
+    options.MaxIterations (1,1) double {mustBePositive} = 1500
     options.UseStageBHybridAStar (1,1) logical = true
     options.StageBMode (1,1) string {mustBeMember(options.StageBMode, ["gikInLoop","pureHyb"])} = "pureHyb"
     options.DistanceMargin double = NaN
@@ -58,6 +69,42 @@ arguments
     options.SaveLog (1,1) logical = true
 end
 
+% =========================================================================
+% Apply unified PipelineConfig if provided  
+% =========================================================================
+if ~isempty(fieldnames(options.PipelineConfig))
+    cfg = options.PipelineConfig;
+    % Extract Stage B parameters from config if not explicitly overridden
+    if isfield(cfg, 'stage_b')
+        sb = cfg.stage_b;
+        if isfield(sb, 'mode') && ismember('StageBMode', who('-file')), options.StageBMode = string(sb.mode); end
+        if isfield(sb, 'lookahead_distance'), options.StageBLookaheadDistance = sb.lookahead_distance; end
+        if isfield(sb, 'desired_linear_velocity'), options.StageBDesiredLinearVelocity = sb.desired_linear_velocity; end
+        if isfield(sb, 'max_angular_velocity'), options.StageBMaxAngularVelocity = sb.max_angular_velocity; end
+        if isfield(sb, 'hybrid_resolution'), options.StageBHybridResolution = sb.hybrid_resolution; end
+        if isfield(sb, 'hybrid_safety_margin'), options.StageBHybridSafetyMargin = sb.hybrid_safety_margin; end
+        if isfield(sb, 'hybrid_min_turning_radius'), options.StageBHybridMinTurningRadius = sb.hybrid_min_turning_radius; end
+        if isfield(sb, 'hybrid_motion_primitive_length'), options.StageBHybridMotionPrimitiveLength = sb.hybrid_motion_primitive_length; end
+        if isfield(sb, 'use_hybrid_astar'), options.UseStageBHybridAStar = sb.use_hybrid_astar; end
+        if isfield(sb, 'use_reeds_shepp'), options.StageBUseReedsShepp = sb.use_reeds_shepp; end
+        if isfield(sb, 'reeds_shepp_params'), options.StageBReedsSheppParams = sb.reeds_shepp_params; end
+        if isfield(sb, 'use_clothoid'), options.StageBUseClothoid = sb.use_clothoid; end
+        if isfield(sb, 'clothoid_params'), options.StageBClothoidParams = sb.clothoid_params; end
+        if isfield(sb, 'chassis_controller_mode'), options.StageBChassisControllerMode = sb.chassis_controller_mode; end
+    end
+    if isfield(cfg, 'stage_c')
+        sc = cfg.stage_c;
+        if isfield(sc, 'use_base_refinement'), options.StageCUseBaseRefinement = sc.use_base_refinement; end
+        if isfield(sc, 'chassis_controller_mode'), options.StageCChassisControllerMode = sc.chassis_controller_mode; end
+    end
+    if isfield(cfg, 'gik') && isfield(cfg.gik, 'max_iterations')
+        options.MaxIterations = cfg.gik.max_iterations;
+    end
+    if isfield(cfg, 'chassis')
+        options.ChassisOverrides = mergeStructs(options.ChassisOverrides, cfg.chassis);
+    end
+end
+
 env = gik9dof.environmentConfig();
 
 if ~isnan(options.DistanceMargin)
@@ -76,6 +123,7 @@ if ~isnan(options.StageBDockingYawTolerance)
 end
 
 log = gik9dof.trackReferenceTrajectory( ...
+    'PipelineConfig', options.PipelineConfig, ...  % Pass through unified config
     'Mode', 'staged', ...
     'RateHz', options.RateHz, ...
     'Verbose', false, ...
@@ -126,4 +174,29 @@ result.environment = env;
 result.executionMode = options.ExecutionMode;
 result.options = options;
 
+end
+
+%% Helper Functions
+function merged = mergeStructs(base, override)
+    %MERGESTRUCTS Deep merge two structures, with override taking precedence
+    %   merged = mergeStructs(base, override)
+    %   Fields in override will replace corresponding fields in base.
+    %   For nested structs, recursively merges.
+    
+    merged = base;
+    if isempty(override)
+        return;
+    end
+    
+    fields = fieldnames(override);
+    for i = 1:length(fields)
+        fname = fields{i};
+        if isfield(merged, fname) && isstruct(merged.(fname)) && isstruct(override.(fname))
+            % Recursively merge nested structs
+            merged.(fname) = mergeStructs(merged.(fname), override.(fname));
+        else
+            % Direct override
+            merged.(fname) = override.(fname);
+        end
+    end
 end

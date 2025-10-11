@@ -74,7 +74,7 @@ kFeedforward = getFieldWithDefault(followers, 'FeedforwardGain', ...
 
 vxMax = getFieldWithDefault(chassis, 'vx_max', 1.5);
 vxMin = getFieldWithDefault(chassis, 'vx_min', -0.4);
-track = getFieldWithDefault(chassis, 'track', 0.573);
+track = getFieldWithDefault(chassis, 'track', 0.574);
 wheelSpeedMax = getFieldWithDefault(chassis, 'wheel_speed_max', 3.3);
 wzMax = getFieldWithDefault(chassis, 'wz_max', 2.5);
 reverseEnabled = getFieldWithDefault(chassis, 'reverse_enabled', false);
@@ -152,7 +152,7 @@ chassis = mustGetChassis(followers);
 
 vxMax = getFieldWithDefault(chassis, 'vx_max', 1.5);
 vxMin = getFieldWithDefault(chassis, 'vx_min', -0.4);
-track = getFieldWithDefault(chassis, 'track', 0.573);
+track = getFieldWithDefault(chassis, 'track', 0.574);
 wheelSpeedMax = getFieldWithDefault(chassis, 'wheel_speed_max', 3.3);
 wzMax = getFieldWithDefault(chassis, 'wz_max', 2.5);
 

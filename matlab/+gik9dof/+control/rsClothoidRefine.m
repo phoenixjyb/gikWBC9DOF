@@ -23,7 +23,7 @@ if nStates < 2
     return
 end
 
-disc = getFieldWithDefault(params, 'discretizationDistance', 0.05);
+    disc = getFieldWithDefault(params, 'discretizationDistance', 0.08);
 if ~isfinite(disc) || disc <= 0
     disc = 0.05;
 end

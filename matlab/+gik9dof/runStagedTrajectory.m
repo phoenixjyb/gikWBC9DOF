@@ -10,6 +10,17 @@ function pipeline = runStagedTrajectory(robot, trajStruct, options)
 %       InitialConfiguration - Column vector of joint positions.
 %       ConfigTools         - configurationTools(robot) struct.
 %
+%   Recommended (NEW):
+%       PipelineConfig      - Unified configuration struct from
+%                             gik9dof.loadPipelineProfile(). When provided,
+%                             all Stage B/C parameters are loaded from the
+%                             profile. Example:
+%                               cfg = gik9dof.loadPipelineProfile('default');
+%                               pipeline = runStagedTrajectory(robot, traj, ...
+%                                   'PipelineConfig', cfg, ...
+%                                   'InitialConfiguration', q0, ...
+%                                   'ConfigTools', configTools);
+%
 %   Optional name-value:
 %       DistanceSpecs       - Distance constraint specs for Stage C (struct array).
 %       RateHz              - Control loop rate (default 10).
@@ -25,6 +36,7 @@ function pipeline = runStagedTrajectory(robot, trajStruct, options)
 arguments
     robot (1,1) rigidBodyTree
     trajStruct (1,1) struct
+    options.PipelineConfig struct = struct()  % NEW: Unified configuration from loadPipelineProfile
     options.InitialConfiguration (:,1) double
     options.ConfigTools (1,1) struct
     options.DistanceSpecs struct = struct([])
@@ -35,7 +47,7 @@ arguments
     options.FloorDiscs struct = struct([])
     options.UseStageBHybridAStar (1,1) logical = false
     options.StageBHybridResolution (1,1) double = 0.05
-    options.StageBHybridSafetyMargin (1,1) double = 0.15
+    options.StageBHybridSafetyMargin (1,1) double = 0.1
     options.StageBHybridMinTurningRadius (1,1) double = 0.5
     options.StageBHybridMotionPrimitiveLength (1,1) double = 0.2
     options.StageBUseReedsShepp (1,1) logical = false
@@ -56,14 +68,14 @@ arguments
     options.ChassisProfile (1,1) string = "wide_track"
     options.ChassisOverrides struct = struct()
     options.ExecutionMode (1,1) string {mustBeMember(options.ExecutionMode, ["pureIk","ppForIk"])} = "ppForIk"
-    options.StageCLookaheadDistance (1,1) double {mustBePositive} = 0.4
+    options.StageCLookaheadDistance (1,1) double {mustBePositive} = 0.8
     options.StageCLookaheadVelGain (1,1) double {mustBeNonnegative} = 0.2
     options.StageCLookaheadTimeGain (1,1) double {mustBeNonnegative} = 0.05
     options.StageCDesiredLinearVelocity (1,1) double = 1.0
     options.StageCMaxLinearSpeed (1,1) double {mustBePositive} = 1.5
     options.StageCMinLinearSpeed (1,1) double = -1.0
     options.StageCMaxAngularVelocity (1,1) double {mustBePositive} = 2.0
-    options.StageCTrackWidth (1,1) double {mustBePositive} = 0.674
+    options.StageCTrackWidth (1,1) double {mustBePositive} = 0.574
     options.StageCWheelBase (1,1) double {mustBePositive} = 0.36
     options.StageCMaxWheelSpeed (1,1) double {mustBePositive} = 2.0
     options.StageCWaypointSpacing (1,1) double {mustBePositive} = 0.15
@@ -72,8 +84,15 @@ arguments
     options.StageCInterpSpacing (1,1) double {mustBePositive} = 0.05
     options.StageCReverseEnabled (1,1) logical = true
     options.StageCChassisControllerMode (1,1) double {mustBeMember(options.StageCChassisControllerMode, [-1 0 1 2])} = -1
-    options.StageCUseBaseRefinement (1,1) logical = true
+    options.StageCUseBaseRefinement (1,1) logical = false
     options.MaxIterations (1,1) double {mustBePositive} = 1500
+end
+
+% =========================================================================
+% Apply unified PipelineConfig if provided
+% =========================================================================
+if ~isempty(fieldnames(options.PipelineConfig))
+    options = applyPipelineConfigToStaged(options, options.PipelineConfig);
 end
 
 configTools = options.ConfigTools;
@@ -486,6 +505,71 @@ logB.purePursuit.chassisParams = chassisStageB;
 logB.purePursuit.controllerMode = options.StageBChassisControllerMode;
 logB.planner = plannerInfo;
 
+% === PHASE 2: Enhanced Stage B Diagnostics ===
+stageBDiagnostics = struct();
+
+% Compute base ribbon metrics (curvature, cusps, smoothness)
+if size(baseStates, 1) >= 3
+    ribbonMetrics = gik9dof.computeBaseRibbonMetrics(baseStates);
+    stageBDiagnostics.baseCurvature = ribbonMetrics.curvature;
+    stageBDiagnostics.curvatureHistogram = ribbonMetrics.curvatureHistogram;
+    stageBDiagnostics.cuspLocations = ribbonMetrics.cuspLocations;
+    stageBDiagnostics.cuspCount = ribbonMetrics.cuspCount;
+    stageBDiagnostics.pathSmoothness = ribbonMetrics.pathSmoothness;
+    stageBDiagnostics.maxCurvature = ribbonMetrics.maxCurvature;
+    stageBDiagnostics.meanCurvature = ribbonMetrics.meanCurvature;
+else
+    stageBDiagnostics.baseCurvature = [];
+    stageBDiagnostics.curvatureHistogram = struct('low', 0, 'medium', 0, 'high', 0, 'veryHigh', 0);
+    stageBDiagnostics.cuspLocations = [];
+    stageBDiagnostics.cuspCount = 0;
+    stageBDiagnostics.pathSmoothness = 0;
+    stageBDiagnostics.maxCurvature = 0;
+    stageBDiagnostics.meanCurvature = 0;
+end
+
+% RS smoothing acceptance metrics
+if isfield(plannerInfo, 'rsSmoothing')
+    rsInfo = plannerInfo.rsSmoothing;
+    if isfield(rsInfo, 'improvements') && isfield(rsInfo, 'iterationsExecuted')
+        stageBDiagnostics.rsAcceptanceRate = double(rsInfo.improvements) / max(double(rsInfo.iterationsExecuted), 1);
+        stageBDiagnostics.rsImprovements = double(rsInfo.improvements);
+        stageBDiagnostics.rsIterations = double(rsInfo.iterationsExecuted);
+    else
+        stageBDiagnostics.rsAcceptanceRate = 0;
+        stageBDiagnostics.rsImprovements = 0;
+        stageBDiagnostics.rsIterations = 0;
+    end
+    
+    % Path length improvement
+    if isfield(rsInfo, 'initialLength') && isfield(rsInfo, 'finalLength')
+        stageBDiagnostics.rsPathLengthImprovement = rsInfo.initialLength - rsInfo.finalLength;
+    else
+        stageBDiagnostics.rsPathLengthImprovement = 0;
+    end
+else
+    stageBDiagnostics.rsAcceptanceRate = 0;
+    stageBDiagnostics.rsImprovements = 0;
+    stageBDiagnostics.rsIterations = 0;
+    stageBDiagnostics.rsPathLengthImprovement = 0;
+end
+
+% Clothoid smoothing success
+if isfield(plannerInfo, 'hcSmoothing')
+    hcInfo = plannerInfo.hcSmoothing;
+    stageBDiagnostics.clothoidApplied = isfield(hcInfo, 'applied') && hcInfo.applied;
+    stageBDiagnostics.clothoidSegments = getStructFieldOrDefault(hcInfo, 'fittedSegments', 0);
+else
+    stageBDiagnostics.clothoidApplied = false;
+    stageBDiagnostics.clothoidSegments = 0;
+end
+
+% Planner compute time (if available)
+stageBDiagnostics.plannerComputeTime = getStructFieldOrDefault(plannerInfo, 'computeTime', NaN);
+
+logB.diagnostics = stageBDiagnostics;
+% === End Stage B Diagnostics ===
+
 result = struct();
 result.log = logB;
 result.qFinal = qTraj(:, end);
@@ -496,6 +580,7 @@ result.mode = "pureHyb";
 result.cmdLog = logB.cmdLog;
 result.purePursuit = logB.purePursuit;
 result.planner = plannerInfo;
+result.diagnostics = stageBDiagnostics;
 end
 
 function logC = executeStageCPurePursuit(robot, trajStruct, qStart, baseIdx, armIdx, velLimits, chassisParams, alignmentInfo, options, stageBResult)
@@ -615,6 +700,116 @@ else
     logC.cmdLog = table('Size', [0 3], 'VariableTypes', {'double','double','double'}, ...
         'VariableNames', {'time','Vx','Wz'});
 end
+
+% === PHASE 2: Enhanced Stage C Diagnostics ===
+stageCDiagnostics = struct();
+
+% Solver iteration statistics per waypoint
+if isfield(logC, 'exitFlags') && ~isempty(logC.exitFlags) && isfield(logC, 'iterations')
+    exitFlags = logC.exitFlags;
+    solverIters = logC.iterations;
+    
+    % Iteration histogram (bins for visualization)
+    stageCDiagnostics.solverIterationsPerWaypoint = solverIters;
+    stageCDiagnostics.solverIterationsMean = mean(solverIters);
+    stageCDiagnostics.solverIterationsMax = max(solverIters);
+    stageCDiagnostics.solverIterationsStd = std(solverIters);
+    
+    % Exit flag distribution
+    stageCDiagnostics.exitFlagHistogram = struct();
+    stageCDiagnostics.exitFlagHistogram.success = sum(exitFlags == 1);
+    stageCDiagnostics.exitFlagHistogram.maxIters = sum(exitFlags == 0);
+    stageCDiagnostics.exitFlagHistogram.failed = sum(exitFlags < 0);
+else
+    stageCDiagnostics.solverIterationsPerWaypoint = [];
+    stageCDiagnostics.solverIterationsMean = 0;
+    stageCDiagnostics.solverIterationsMax = 0;
+    stageCDiagnostics.solverIterationsStd = 0;
+    stageCDiagnostics.exitFlagHistogram = struct('success', 0, 'maxIters', 0, 'failed', 0);
+end
+
+% EE error bins: excellent <0.05m, good 0.05-0.10m, acceptable 0.10-0.20m, poor >0.20m
+if isfield(logC, 'eePositions') && isfield(trajStruct, 'EndEffectorPositions')
+    desiredEE = trajStruct.EndEffectorPositions;
+    executedEE = logC.eePositions;
+    
+    % Handle dimension matching
+    nDesired = size(desiredEE, 2);
+    nExecuted = size(executedEE, 2);
+    nCommon = min(nDesired, nExecuted);
+    
+    if nCommon > 0
+        eeErrors = vecnorm(executedEE(:, 1:nCommon) - desiredEE(:, 1:nCommon), 2, 1);
+        
+        stageCDiagnostics.eeErrorPerWaypoint = eeErrors;
+        stageCDiagnostics.eeErrorBins = struct();
+        stageCDiagnostics.eeErrorBins.excellent = sum(eeErrors < 0.05);
+        stageCDiagnostics.eeErrorBins.good = sum(eeErrors >= 0.05 & eeErrors < 0.10);
+        stageCDiagnostics.eeErrorBins.acceptable = sum(eeErrors >= 0.10 & eeErrors < 0.20);
+        stageCDiagnostics.eeErrorBins.poor = sum(eeErrors >= 0.20);
+        stageCDiagnostics.eeErrorMean = mean(eeErrors);
+        stageCDiagnostics.eeErrorMax = max(eeErrors);
+    else
+        stageCDiagnostics.eeErrorPerWaypoint = [];
+        stageCDiagnostics.eeErrorBins = struct('excellent', 0, 'good', 0, 'acceptable', 0, 'poor', 0);
+        stageCDiagnostics.eeErrorMean = 0;
+        stageCDiagnostics.eeErrorMax = 0;
+    end
+else
+    stageCDiagnostics.eeErrorPerWaypoint = [];
+    stageCDiagnostics.eeErrorBins = struct('excellent', 0, 'good', 0, 'acceptable', 0, 'poor', 0);
+    stageCDiagnostics.eeErrorMean = 0;
+    stageCDiagnostics.eeErrorMax = 0;
+end
+
+% Base yaw drift from reference
+if isfield(logC, 'referenceBaseStates') && isfield(logC, 'execBaseStates')
+    refBase = logC.referenceBaseStates;
+    execBase = logC.execBaseStates;
+    
+    if size(refBase, 1) == size(execBase, 1) && ~isempty(refBase)
+        yawDrift = wrapToPi(execBase(:, 3) - refBase(:, 3));
+        stageCDiagnostics.baseYawDrift = yawDrift;
+        stageCDiagnostics.baseYawDriftMean = mean(abs(yawDrift));
+        stageCDiagnostics.baseYawDriftMax = max(abs(yawDrift));
+        
+        % Position deviation
+        posDeviation = vecnorm(execBase(:, 1:2) - refBase(:, 1:2), 2, 2);
+        stageCDiagnostics.basePosDeviationMean = mean(posDeviation);
+        stageCDiagnostics.basePosDeviationMax = max(posDeviation);
+    else
+        stageCDiagnostics.baseYawDrift = [];
+        stageCDiagnostics.baseYawDriftMean = 0;
+        stageCDiagnostics.baseYawDriftMax = 0;
+        stageCDiagnostics.basePosDeviationMean = 0;
+        stageCDiagnostics.basePosDeviationMax = 0;
+    end
+else
+    stageCDiagnostics.baseYawDrift = [];
+    stageCDiagnostics.baseYawDriftMean = 0;
+    stageCDiagnostics.baseYawDriftMax = 0;
+    stageCDiagnostics.basePosDeviationMean = 0;
+    stageCDiagnostics.basePosDeviationMax = 0;
+end
+
+% Refinement status and delta metrics
+stageCDiagnostics.refinementApplied = stageCRefinement.applied;
+if stageCRefinement.applied
+    stageCDiagnostics.refinementReason = getStructFieldOrDefault(stageCRefinement, 'reason', 'applied');
+    
+    % Extract delta metrics if available
+    if isfield(stageCRefinement, 'delta')
+        stageCDiagnostics.refinementDelta = stageCRefinement.delta;
+    else
+        stageCDiagnostics.refinementDelta = struct('pathLength', 0, 'eeErrorMean', 0, 'eeErrorMax', 0);
+    end
+else
+    stageCDiagnostics.refinementReason = getStructFieldOrDefault(stageCRefinement, 'reason', 'disabled');
+    stageCDiagnostics.refinementDelta = struct('pathLength', 0, 'eeErrorMean', 0, 'eeErrorMax', 0);
+end
+
+logC.diagnostics = stageCDiagnostics;
+% === End Stage C Diagnostics ===
 end
 
 function logC = executeStageCPureIk(robot, trajStruct, qStart, baseIdx, velLimits, options)
@@ -1807,3 +2002,76 @@ for idx = 1:numel(fieldsB)
     out.(key) = b.(key);
 end
 end
+
+function options = applyPipelineConfigToStaged(options, config)
+%APPLYPIPELINECONFIGTOSTAGED Map unified PipelineConfig to runStagedTrajectory options.
+%   Similar to trackReferenceTrajectory but for the staged execution pipeline.
+
+% Helper to set parameter only if using default value
+    function setParam(paramName, configValue)
+        % Simple approach: always apply config unless explicitly checking
+        % In practice, MATLAB arguments block handles defaults, so this
+        % just overwrites with config values
+        if ~isnan(configValue) && ~isempty(configValue)
+            options.(paramName) = configValue;
+        end
+    end
+
+% Map Stage B parameters
+if isfield(config, 'stage_b')
+    sb = config.stage_b;
+    if isfield(sb, 'mode'), options.StageBMode = string(sb.mode); end
+    if isfield(sb, 'lookahead_distance'), options.StageBLookaheadDistance = sb.lookahead_distance; end
+    if isfield(sb, 'desired_linear_velocity'), options.StageBDesiredLinearVelocity = sb.desired_linear_velocity; end
+    if isfield(sb, 'max_linear_speed'), options.StageBMaxLinearSpeed = sb.max_linear_speed; end
+    if isfield(sb, 'max_angular_velocity'), options.StageBMaxAngularVelocity = sb.max_angular_velocity; end
+    if isfield(sb, 'max_yaw_rate'), options.StageBMaxYawRate = sb.max_yaw_rate; end
+    if isfield(sb, 'max_joint_speed'), options.StageBMaxJointSpeed = sb.max_joint_speed; end
+    if isfield(sb, 'docking_position_tolerance'), options.StageBDockingPositionTolerance = sb.docking_position_tolerance; end
+    if isfield(sb, 'docking_yaw_tolerance'), options.StageBDockingYawTolerance = sb.docking_yaw_tolerance; end
+    if isfield(sb, 'use_hybrid_astar'), options.UseStageBHybridAStar = sb.use_hybrid_astar; end
+    if isfield(sb, 'hybrid_resolution'), options.StageBHybridResolution = sb.hybrid_resolution; end
+    if isfield(sb, 'hybrid_safety_margin'), options.StageBHybridSafetyMargin = sb.hybrid_safety_margin; end
+    if isfield(sb, 'hybrid_min_turning_radius'), options.StageBHybridMinTurningRadius = sb.hybrid_min_turning_radius; end
+    if isfield(sb, 'hybrid_motion_primitive_length'), options.StageBHybridMotionPrimitiveLength = sb.hybrid_motion_primitive_length; end
+    if isfield(sb, 'use_reeds_shepp'), options.StageBUseReedsShepp = sb.use_reeds_shepp; end
+    if isfield(sb, 'reeds_shepp_params'), options.StageBReedsSheppParams = sb.reeds_shepp_params; end
+    if isfield(sb, 'use_clothoid'), options.StageBUseClothoid = sb.use_clothoid; end
+    if isfield(sb, 'clothoid_params'), options.StageBClothoidParams = sb.clothoid_params; end
+    if isfield(sb, 'chassis_controller_mode'), options.StageBChassisControllerMode = sb.chassis_controller_mode; end
+end
+
+% Map Stage C parameters
+if isfield(config, 'stage_c')
+    sc = config.stage_c;
+    if isfield(sc, 'lookahead_distance'), options.StageCLookaheadDistance = sc.lookahead_distance; end
+    if isfield(sc, 'lookahead_vel_gain'), options.StageCLookaheadVelGain = sc.lookahead_vel_gain; end
+    if isfield(sc, 'lookahead_time_gain'), options.StageCLookaheadTimeGain = sc.lookahead_time_gain; end
+    if isfield(sc, 'desired_linear_velocity'), options.StageCDesiredLinearVelocity = sc.desired_linear_velocity; end
+    if isfield(sc, 'max_linear_speed'), options.StageCMaxLinearSpeed = sc.max_linear_speed; end
+    if isfield(sc, 'min_linear_speed'), options.StageCMinLinearSpeed = sc.min_linear_speed; end
+    if isfield(sc, 'max_angular_velocity'), options.StageCMaxAngularVelocity = sc.max_angular_velocity; end
+    if isfield(sc, 'track_width'), options.StageCTrackWidth = sc.track_width; end
+    if isfield(sc, 'wheel_base'), options.StageCWheelBase = sc.wheel_base; end
+    if isfield(sc, 'max_wheel_speed'), options.StageCMaxWheelSpeed = sc.max_wheel_speed; end
+    if isfield(sc, 'waypoint_spacing'), options.StageCWaypointSpacing = sc.waypoint_spacing; end
+    if isfield(sc, 'path_buffer_size'), options.StageCPathBufferSize = sc.path_buffer_size; end
+    if isfield(sc, 'goal_tolerance'), options.StageCGoalTolerance = sc.goal_tolerance; end
+    if isfield(sc, 'interp_spacing'), options.StageCInterpSpacing = sc.interp_spacing; end
+    if isfield(sc, 'reverse_enabled'), options.StageCReverseEnabled = sc.reverse_enabled; end
+    if isfield(sc, 'use_base_refinement'), options.StageCUseBaseRefinement = sc.use_base_refinement; end
+    if isfield(sc, 'chassis_controller_mode'), options.StageCChassisControllerMode = sc.chassis_controller_mode; end
+end
+
+% Map GIK parameters
+if isfield(config, 'gik') && isfield(config.gik, 'max_iterations')
+    options.MaxIterations = config.gik.max_iterations;
+end
+
+% Map Chassis parameters
+if isfield(config, 'chassis')
+    options.ChassisOverrides = mergeStructs(options.ChassisOverrides, config.chassis);
+end
+
+end
+

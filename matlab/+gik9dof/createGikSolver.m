@@ -53,7 +53,7 @@ arguments
     options.AimWeight (1,1) double = 0.1
     options.DistanceBody (1,1) string = ""
     options.DistanceReferenceBody (1,1) string = ""
-    options.DistanceBounds (1,2) double = [0.2 Inf]
+    options.DistanceBounds (1,2) double = [0.1 Inf]
     options.DistanceWeight (1,1) double = 0.5
     options.DistanceSpecs = struct([])
     options.MaxIterations (1,1) double {mustBePositive} = 1500

@@ -5,7 +5,7 @@ parser = inputParser;
 parser.FunctionName = mfilename;
 addParameter(parser, 'Robot', gik9dof.createRobotModel(), @(x) isa(x,'rigidBodyTree'));
 addParameter(parser, 'SampleStep', 1, @(x) isnumeric(x) && isscalar(x) && x >= 1);
-addParameter(parser, 'FrameRate', 30, @(x) isnumeric(x) && isscalar(x) && x > 0);
+addParameter(parser, 'FrameRate', 10, @(x) isnumeric(x) && isscalar(x) && x > 0);
 addParameter(parser, 'ExportVideo', "", @(x) ischar(x) || (isstring(x) && isscalar(x)));
 addParameter(parser, 'HelperOptions', struct(), @(x) isstruct(x));
 parse(parser, varargin{:});
@@ -40,19 +40,40 @@ if isfield(logStaged, 'referenceTrajectory') && isfield(logStaged.referenceTraje
 end
 
 eePathStageCRef = [];
+% Try to get Stage C reference EE path (desired trajectory for tracking)
 if isfield(logStaged, 'stageLogs') && isstruct(logStaged.stageLogs) && ...
-        isfield(logStaged.stageLogs, 'stageC') && ...
-        isfield(logStaged.stageLogs.stageC, 'referenceInitialIk') && ...
-        isfield(logStaged.stageLogs.stageC.referenceInitialIk, 'eePositions') && ...
-        ~isempty(logStaged.stageLogs.stageC.referenceInitialIk.eePositions)
-    eePathStageCRef = logStaged.stageLogs.stageC.referenceInitialIk.eePositions;
+        isfield(logStaged.stageLogs, 'stageC')
+    stageC = logStaged.stageLogs.stageC;
+    
+    % Priority 1: referenceInitialIk.eePositions (if available)
+    if isfield(stageC, 'referenceInitialIk') && ...
+            isfield(stageC.referenceInitialIk, 'eePositions') && ...
+            ~isempty(stageC.referenceInitialIk.eePositions)
+        eePathStageCRef = stageC.referenceInitialIk.eePositions;
+    % Priority 2: targetPositions (desired EE trajectory from JSON)
+    elseif isfield(stageC, 'targetPositions') && ~isempty(stageC.targetPositions)
+        eePathStageCRef = stageC.targetPositions;
+    % Priority 3: eePositions (actual Stage C EE, not reference but better than nothing)
+    elseif isfield(stageC, 'eePositions') && ~isempty(stageC.eePositions)
+        eePathStageCRef = stageC.eePositions;
+    end
 end
 
 if isempty(eePathStageCRef)
-    eePathStageCRef = computeEEPath(robot, qTraj(:, 1:opts.SampleStep:end));
+    % Last resort: Use full trajectory reference if available
+    if isfield(logStaged, 'referenceTrajectory') && ...
+            isfield(logStaged.referenceTrajectory, 'EndEffectorPositions') && ...
+            ~isempty(logStaged.referenceTrajectory.EndEffectorPositions)
+        eePathStageCRef = logStaged.referenceTrajectory.EndEffectorPositions;
+    end
 end
 
-eePoses = eePathStageCRef(:, 1:opts.SampleStep:end)';
+% Apply sampling
+if ~isempty(eePathStageCRef)
+    eePoses = eePathStageCRef(:, 1:opts.SampleStep:end)';
+else
+    eePoses = [];
+end
 
 helperArgs = {};
 if ~isempty(opts.ExportVideo)
@@ -65,7 +86,9 @@ if ~isempty(eePathDesired)
 else
     helperOptions.DesiredEEPath = [];
 end
-helperOptions.StageCReferenceEEPath = eePathStageCRef.';
+% CRITICAL: Pass the SAMPLED eePoses, not the full eePathStageCRef
+% The red dot position must match the animation frame indices
+helperOptions.StageCReferenceEEPath = eePoses;
 if isfield(logStaged, 'purePursuit') && isfield(logStaged.purePursuit, 'referencePath') && ...
         ~isempty(logStaged.purePursuit.referencePath)
     refPath = logStaged.purePursuit.referencePath;
@@ -104,6 +127,17 @@ for i = 1:numel(fields)
 end
 
 [stageBoundaries, stageLabels] = detectStageBoundaries(logStaged);
+% CRITICAL: Adjust stage boundaries for sampling
+% detectStageBoundaries returns boundaries in RAW frame space,
+% but we've already sampled the trajectories with SampleStep
+if opts.SampleStep > 1 && ~isempty(stageBoundaries)
+    % Convert cumulative boundaries to per-stage counts
+    stageCounts = [stageBoundaries(1), diff(stageBoundaries)];
+    % Apply sampling to each stage count
+    sampledCounts = arrayfun(@(c) length(1:opts.SampleStep:c), stageCounts);
+    % Reconstruct cumulative boundaries in sampled space
+    stageBoundaries = cumsum(sampledCounts);
+end
 helperArgs = [helperArgs, {'StageBoundaries', stageBoundaries}, {'StageLabels', stageLabels}];
 
 if isfield(logStaged, 'floorDiscs') && ~isempty(logStaged.floorDiscs)

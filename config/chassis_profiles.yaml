@@ -1,16 +1,16 @@
 # Chassis parameter presets for pure pursuit and unified control.
 profiles:
   wide_track:
-    track: 0.576                # m (measured track width)
+    track: 0.574                # m (measured track width)
     wheel_base: 0.36            # m
     wheel_speed_max: 3.3        # m/s per wheel (firmware clip 3.5)
     vx_max: 1.5                 # m/s forward cap
     vx_min: -0.4                # m/s reverse cap (disable reverse by setting 0)
     wz_max: 2.5                 # rad/s yaw cap
-    accel_limit: 1.2            # m/s^2
+    accel_limit: 0.8            # m/s^2
     decel_limit: 1.8            # m/s^2
     jerk_limit: 5.0             # m/s^3
-    lookahead_base: 0.60        # m
+    lookahead_base: 0.80        # m
     lookahead_vel_gain: 0.30    # s
     lookahead_time_gain: 0.05   # s^2
     heading_kp: 1.2

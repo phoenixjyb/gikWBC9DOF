@@ -1,4 +1,26 @@
-# Unified Chassis Controller — Holistic (GIK) + Staged (B/C)
+# Unified Ch  \]
+  \]
+  (Cl  (Clamp to zero if the RHS becomes ≤ 0.) Apply this **before** calling `Drive_Motor`.
+- **Typical rates:** global planner 0.5–2 Hz; local follower / unified controller **50–100 Hz**; firmware wheel PI **100 Hz**.
+- **Tracks you use:** 0.329 m (compact) or 0.574 m (wide). Choose one per run in the parameters.
+
+> **Design rule:** The unified controller **only** outputs (Vx, Wz). All wheel‑level details (ramp, saturation, PI) remain inside firmware.
+
+---
+
+## 1) Unified Command Schema (one message)ro if the RHS becomes ≤ 0.) Apply this **before** calling `Drive_Motor`.
+- **Typical rates:** global planner 0.5–2 Hz; local follower / unified controller **50–100 Hz**; firmware wheel PI **100 Hz**.
+- **Tracks you use:** 0.329 m (compact) or 0.574 m (wide). Choose one per run in the parameters.
+
+> **Design rule:** The unified controller **only** outputs (Vx, Wz). All wheel‑level details (ramp, saturation, PI) remain inside firmware.
+
+---
+
+## 1) Unified Command Schema (one message)o zero if the RHS becomes ≤ 0.) Apply this **before** calling `Drive_Motor`.
+- **Typical rates:** global planner 0.5–2 Hz; local follower / unified controller **50–100 Hz**; firmware wheel PI **100 Hz**.
+- **Tracks you use:** 0.329 m (compact) or 0.574 m (wide). Choose one per run in the parameters.
+
+> **Design rule:** The unified controller **only** outputs (Vx, Wz). All wheel‑level details (ramp, saturation, PI) remain inside firmware.Controller — Holistic (GIK) + Staged (B/C)
 **Goal:** One control layer that accepts motion from either (1) **Holistic** (9‑DOF GIK with a P‑P‑R base) or (2) **Staged** (B: chassis‑only path; C: full 9‑DOF akin to holistic), and **emits a single, safe command** to the existing base firmware: **(Vx, Vy=0, Wz)**.
 
 ---
@@ -224,7 +246,7 @@ params = gik9dof.control.loadChassisProfile("wide_track");
 
 | Field | `wide_track` | `compact_track` | Notes |
 |---|---:|---:|---|
-| `track` (m) | 0.573 | 0.329 | wheel separation |
+| `track` (m) | 0.574 | 0.329 | wheel separation |
 | `vx_max` (m/s) | 1.5 | 1.0 | forward clamp (firmware cap) |
 | `vx_min` (m/s) | –0.4 | –0.3 | reverse clamp (set 0 to disable) |
 | `wz_max` (rad/s) | 2.5 | 2.8 | yaw clamp before wheel limit |

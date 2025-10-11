@@ -8,6 +8,14 @@ function log = trackReferenceTrajectory(options)
 %
 %   log = GIK9DOF.TRACKREFERENCETRAJECTORY(options) accepts name-value
 %   options:
+%       PipelineConfig      - Unified configuration struct from 
+%                             gik9dof.loadPipelineProfile(). When provided,
+%                             all parameters are loaded from the profile
+%                             unless explicitly overridden. This is the
+%                             RECOMMENDED way to configure the pipeline.
+%                             Example:
+%                               cfg = gik9dof.loadPipelineProfile('default');
+%                               log = trackReferenceTrajectory('PipelineConfig', cfg);
 %       JsonPath            - Path to a trajectory JSON file. Defaults to
 %                             the project reference trajectory.
 %       BaseHome            - 1x3 vector [x y theta] specifying the planar
@@ -37,9 +45,10 @@ function log = trackReferenceTrajectory(options)
 %   See also gik9dof.runTrajectoryControl, jsondecode.
 
 arguments
+    options.PipelineConfig struct = struct()  % NEW: Unified configuration from loadPipelineProfile
     options.JsonPath (1,1) string = "1_pull_world_scaled.json"
     options.BaseHome (1,3) double = [-2 -2 0]
-    options.RateHz (1,1) double {mustBePositive} = 100
+    options.RateHz (1,1) double {mustBePositive} = 10
     options.Verbose (1,1) logical = true
     options.CommandFcn = []
     options.EnableAiming (1,1) logical = false
@@ -53,7 +62,7 @@ arguments
     options.RampMaxLinearSpeed (1,1) double = 1.5
     options.RampMaxYawRate (1,1) double = 3.0
     options.RampMaxJointSpeed (1,1) double = 1.0
-    options.UseStageBHybridAStar (1,1) logical = false
+    options.UseStageBHybridAStar (1,1) logical = true
     options.StageBHybridResolution (1,1) double = 0.05
     options.StageBHybridSafetyMargin (1,1) double = 0.15
     options.StageBHybridMinTurningRadius (1,1) double = 0.5
@@ -66,9 +75,9 @@ arguments
     options.StageBChassisControllerMode (1,1) double {mustBeMember(options.StageBChassisControllerMode, [-1 0 1 2])} = -1
     options.StageCChassisControllerMode (1,1) double {mustBeMember(options.StageCChassisControllerMode, [-1 0 1 2])} = -1
     options.StageBLookaheadDistance (1,1) double {mustBePositive} = 0.6
-    options.StageBDesiredLinearVelocity (1,1) double = 0.6
-    options.StageBMaxAngularVelocity (1,1) double {mustBePositive} = 2.5
-    options.StageBMode (1,1) string {mustBeMember(options.StageBMode, ["gikInLoop","pureHyb"])} = "gikInLoop"
+    options.StageBDesiredLinearVelocity (1,1) double = 0.5
+    options.StageBMaxAngularVelocity (1,1) double {mustBePositive} = 2.0
+    options.StageBMode (1,1) string {mustBeMember(options.StageBMode, ["gikInLoop","pureHyb"])} = "pureHyb"
     options.StageBDockingPositionTolerance (1,1) double {mustBeNonnegative} = 0.02
     options.StageBDockingYawTolerance (1,1) double {mustBeNonnegative} = 2*pi/180
     options.EnvironmentConfig (1,1) struct = gik9dof.environmentConfig()
@@ -80,7 +89,7 @@ arguments
     options.StageCMaxLinearSpeed (1,1) double {mustBePositive} = 1.5
     options.StageCMinLinearSpeed (1,1) double = -0.4
     options.StageCMaxAngularVelocity (1,1) double {mustBePositive} = 2.5
-    options.StageCTrackWidth (1,1) double {mustBePositive} = 0.573
+    options.StageCTrackWidth (1,1) double {mustBePositive} = 0.574
     options.StageCWheelBase (1,1) double {mustBePositive} = 0.36
     options.StageCMaxWheelSpeed (1,1) double {mustBePositive} = 3.3
     options.StageCWaypointSpacing (1,1) double {mustBePositive} = 0.15
@@ -90,6 +99,13 @@ arguments
     options.StageCReverseEnabled (1,1) logical = true
     options.ChassisProfile (1,1) string = "wide_track"
     options.ChassisOverrides struct = struct()
+end
+
+% =========================================================================
+% Apply unified PipelineConfig if provided
+% =========================================================================
+if ~isempty(fieldnames(options.PipelineConfig))
+    options = applyPipelineConfig(options, options.PipelineConfig);
 end
 
 % Resolve assets and instantiate robot.
@@ -573,5 +589,112 @@ if any(val == validModes)
     mode = val;
 else
     mode = 2;
+end
+end
+
+function options = applyPipelineConfig(options, config)
+%APPLYPIPELINECONFIG Map unified PipelineConfig to trackReferenceTrajectory options.
+%   This function maps fields from the unified pipeline configuration (loaded
+%   via gik9dof.loadPipelineProfile) to the legacy parameter names used by
+%   trackReferenceTrajectory. Only applies config values if the user didn't
+%   explicitly override them.
+%
+%   This maintains backward compatibility while enabling the new unified
+%   configuration system.
+
+% Track which parameters were explicitly provided by user
+providedParams = {};
+if isfield(options, 'UsingDefaults')
+    providedParams = setdiff(fieldnames(options), options.UsingDefaults);
+end
+
+% Helper function to set parameter only if not explicitly provided
+    function setIfNotProvided(paramName, configValue)
+        if isempty(providedParams) || ~ismember(paramName, providedParams)
+            options.(paramName) = configValue;
+        end
+    end
+
+% Map Stage B parameters
+if isfield(config, 'stage_b')
+    sb = config.stage_b;
+    if isfield(sb, 'mode'), setIfNotProvided('StageBMode', string(sb.mode)); end
+    if isfield(sb, 'lookahead_distance'), setIfNotProvided('StageBLookaheadDistance', sb.lookahead_distance); end
+    if isfield(sb, 'desired_linear_velocity'), setIfNotProvided('StageBDesiredLinearVelocity', sb.desired_linear_velocity); end
+    if isfield(sb, 'max_angular_velocity'), setIfNotProvided('StageBMaxAngularVelocity', sb.max_angular_velocity); end
+    if isfield(sb, 'docking_position_tolerance'), setIfNotProvided('StageBDockingPositionTolerance', sb.docking_position_tolerance); end
+    if isfield(sb, 'docking_yaw_tolerance'), setIfNotProvided('StageBDockingYawTolerance', sb.docking_yaw_tolerance); end
+    if isfield(sb, 'use_hybrid_astar'), setIfNotProvided('UseStageBHybridAStar', sb.use_hybrid_astar); end
+    if isfield(sb, 'hybrid_resolution'), setIfNotProvided('StageBHybridResolution', sb.hybrid_resolution); end
+    if isfield(sb, 'hybrid_safety_margin'), setIfNotProvided('StageBHybridSafetyMargin', sb.hybrid_safety_margin); end
+    if isfield(sb, 'hybrid_min_turning_radius'), setIfNotProvided('StageBHybridMinTurningRadius', sb.hybrid_min_turning_radius); end
+    if isfield(sb, 'hybrid_motion_primitive_length'), setIfNotProvided('StageBHybridMotionPrimitiveLength', sb.hybrid_motion_primitive_length); end
+    if isfield(sb, 'use_reeds_shepp'), setIfNotProvided('StageBUseReedsShepp', sb.use_reeds_shepp); end
+    if isfield(sb, 'reeds_shepp_params'), setIfNotProvided('StageBReedsSheppParams', sb.reeds_shepp_params); end
+    if isfield(sb, 'use_clothoid'), setIfNotProvided('StageBUseClothoid', sb.use_clothoid); end
+    if isfield(sb, 'clothoid_params'), setIfNotProvided('StageBClothoidParams', sb.clothoid_params); end
+    if isfield(sb, 'chassis_controller_mode'), setIfNotProvided('StageBChassisControllerMode', sb.chassis_controller_mode); end
+end
+
+% Map Stage C parameters
+if isfield(config, 'stage_c')
+    sc = config.stage_c;
+    if isfield(sc, 'lookahead_distance'), setIfNotProvided('StageCLookaheadDistance', sc.lookahead_distance); end
+    if isfield(sc, 'lookahead_vel_gain'), setIfNotProvided('StageCLookaheadVelGain', sc.lookahead_vel_gain); end
+    if isfield(sc, 'lookahead_time_gain'), setIfNotProvided('StageCLookaheadTimeGain', sc.lookahead_time_gain); end
+    if isfield(sc, 'desired_linear_velocity'), setIfNotProvided('StageCDesiredLinearVelocity', sc.desired_linear_velocity); end
+    if isfield(sc, 'max_linear_speed'), setIfNotProvided('StageCMaxLinearSpeed', sc.max_linear_speed); end
+    if isfield(sc, 'min_linear_speed'), setIfNotProvided('StageCMinLinearSpeed', sc.min_linear_speed); end
+    if isfield(sc, 'max_angular_velocity'), setIfNotProvided('StageCMaxAngularVelocity', sc.max_angular_velocity); end
+    if isfield(sc, 'track_width'), setIfNotProvided('StageCTrackWidth', sc.track_width); end
+    if isfield(sc, 'wheel_base'), setIfNotProvided('StageCWheelBase', sc.wheel_base); end
+    if isfield(sc, 'max_wheel_speed'), setIfNotProvided('StageCMaxWheelSpeed', sc.max_wheel_speed); end
+    if isfield(sc, 'waypoint_spacing'), setIfNotProvided('StageCWaypointSpacing', sc.waypoint_spacing); end
+    if isfield(sc, 'path_buffer_size'), setIfNotProvided('StageCPathBufferSize', sc.path_buffer_size); end
+    if isfield(sc, 'goal_tolerance'), setIfNotProvided('StageCGoalTolerance', sc.goal_tolerance); end
+    if isfield(sc, 'interp_spacing'), setIfNotProvided('StageCInterpSpacing', sc.interp_spacing); end
+    if isfield(sc, 'reverse_enabled'), setIfNotProvided('StageCReverseEnabled', sc.reverse_enabled); end
+    if isfield(sc, 'use_base_refinement'), setIfNotProvided('StageCUseBaseRefinement', sc.use_base_refinement); end
+    if isfield(sc, 'chassis_controller_mode'), setIfNotProvided('StageCChassisControllerMode', sc.chassis_controller_mode); end
+end
+
+% Map Holistic parameters
+if isfield(config, 'holistic')
+    hol = config.holistic;
+    if isfield(hol, 'use_ramp'), setIfNotProvided('UseHolisticRamp', hol.use_ramp); end
+    if isfield(hol, 'ramp_max_linear_speed'), setIfNotProvided('RampMaxLinearSpeed', hol.ramp_max_linear_speed); end
+    if isfield(hol, 'ramp_max_yaw_rate'), setIfNotProvided('RampMaxYawRate', hol.ramp_max_yaw_rate); end
+    if isfield(hol, 'ramp_max_joint_speed'), setIfNotProvided('RampMaxJointSpeed', hol.ramp_max_joint_speed); end
+end
+
+% Map GIK parameters
+if isfield(config, 'gik')
+    gik = config.gik;
+    if isfield(gik, 'max_iterations'), setIfNotProvided('MaxIterations', gik.max_iterations); end
+    if isfield(gik, 'distance_margin'), setIfNotProvided('DistanceMargin', gik.distance_margin); end
+end
+
+% Map Chassis parameters (will be used by loadChassisProfile)
+% Note: We don't override ChassisProfile/ChassisOverrides directly, but
+% these will be automatically picked up by the existing chassis loading logic
+if isfield(config, 'chassis')
+    % Store chassis config for potential use
+    if isempty(providedParams) || ~ismember('ChassisOverrides', providedParams)
+        % Merge chassis config into ChassisOverrides
+        options.ChassisOverrides = mergeStructs(options.ChassisOverrides, config.chassis);
+    end
+end
+
+end
+
+function merged = mergeStructs(base, overlay)
+%MERGESTRUCTS Shallow merge of two structs (overlay takes precedence).
+merged = base;
+if isempty(overlay)
+    return
+end
+overlayFields = fieldnames(overlay);
+for i = 1:numel(overlayFields)
+    merged.(overlayFields{i}) = overlay.(overlayFields{i});
 end
 end

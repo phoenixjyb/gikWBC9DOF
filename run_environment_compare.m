@@ -2,6 +2,12 @@
 %   Adjust the configuration block below as needed. The script adds the
 %   MATLAB utilities to the path, invokes gik9dof.runEnvironmentCompare, and
 %   stores the returned summary alongside the generated artifacts.
+%
+%   TODO: Migrate to unified config system (see UNIFIED_CONFIG_MIGRATION_COMPLETE.md)
+%     New recommended approach:
+%       cfg = gik9dof.loadPipelineProfile('default');  % or 'aggressive'
+%       summary = gik9dof.runEnvironmentCompare('PipelineConfig', cfg, ...);
+%     Benefits: Consistent parameters for both holistic and staged runs
 
 runLabel = "compare";            % appended to the timestamped results folder
 sampleStep = 4;                  % subsampling for animations

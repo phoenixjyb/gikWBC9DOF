@@ -2,6 +2,12 @@
 %   Adjust the configuration block below if you want to exercise different
 %   execution modes or base-planning parameters.
 
+% TODO: Migrate to unified config system (see UNIFIED_CONFIG_MIGRATION_COMPLETE.md)
+%   New recommended approach:
+%     cfg = gik9dof.loadPipelineProfile('default');  % or 'aggressive', 'conservative'
+%     result = gik9dof.runStagedReference('PipelineConfig', cfg, 'RunLabel', runLabel);
+%   Benefits: Single source of truth, consistent parameters across all functions
+
 runLabel = "staged_purehyb_iter150_margin30";
 executionMode = "ppForIk";            % "ppForIk" or "pureIk"
 rateHz = 30;

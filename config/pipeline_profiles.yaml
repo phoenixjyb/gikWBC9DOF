@@ -1,0 +1,227 @@
+# Unified Pipeline Configuration Profiles
+# Single source of truth for all mobile manipulator parameters
+
+profiles:
+  # =============================================================================
+  # DEFAULT PROFILE - Standard configuration for wide-track platform
+  # =============================================================================
+  default:
+    description: "Default configuration for wide-track mobile manipulator"
+    
+    # -------------------------------------------------------------------------
+    # CHASSIS PARAMETERS
+    # Kinematic and dynamic constraints of the differential-drive base
+    # -------------------------------------------------------------------------
+    chassis:
+      track: 0.574                    # m (wheel separation, measured)
+      wheel_base: 0.36                # m (wheelbase length)
+      wheel_radius: 0.076             # m (for future use)
+      wheel_speed_max: 3.3            # m/s per wheel (firmware clip at 3.5)
+      vx_max: 1.5                     # m/s forward velocity cap
+      vx_min: -0.4                    # m/s reverse velocity cap (set 0 to disable)
+      wz_max: 2.5                     # rad/s yaw rate cap
+      accel_limit: 0.8                # m/s^2 acceleration limit
+      decel_limit: 1.8                # m/s^2 deceleration limit
+      jerk_limit: 5.0                 # m/s^3 jerk limit
+      reverse_enabled: false          # Allow reverse motion in pure pursuit
+    
+    # -------------------------------------------------------------------------
+    # STAGE B PARAMETERS
+    # Path planning and execution for base navigation (approach to manipulation)
+    # -------------------------------------------------------------------------
+    stage_b:
+      # Execution mode
+      mode: "pureHyb"                 # "gikInLoop" (GIK-tracked) | "pureHyb" (pure path following)
+      
+      # Velocity and control
+      lookahead_distance: 0.6         # m (path follower lookahead)
+      desired_linear_velocity: 0.5    # m/s (target velocity, conservative)
+      max_linear_speed: 1.5           # m/s (velocity clamp)
+      max_angular_velocity: 2.5       # rad/s (angular velocity cap)
+      max_yaw_rate: 3.0               # rad/s (legacy, for ramp mode)
+      max_joint_speed: 1.0            # rad/s (arm joint speed during Stage B)
+      
+      # Docking tolerances (transition to Stage C)
+      docking_position_tolerance: 0.02   # m (XY position tolerance)
+      docking_yaw_tolerance: 0.0349      # rad (2 degrees, heading tolerance)
+      
+      # Hybrid A* path planner
+      use_hybrid_astar: true
+      hybrid_resolution: 0.05         # m (grid cell size)
+      hybrid_safety_margin: 0.15      # m (obstacle inflation for planning)
+      hybrid_min_turning_radius: 0.5  # m (kinematic constraint)
+      hybrid_motion_primitive_length: 0.2  # m (step size)
+      
+      # Path smoothing - Reeds-Shepp shortcutting
+      use_reeds_shepp: false
+      reeds_shepp_params:
+        Rmin: 0.5                     # m (min turning radius, overridden by chassis)
+        reverseCost: 5.0              # Cost multiplier for reverse motions
+        inflationRadius: -1.0         # m (obstacle inflation, -1 = auto from env)
+        validationDistance: 0.035     # m (collision check spacing)
+        step: 0.05                    # m (sampling step along RS segments)
+        iters: 200                    # Maximum shortcut attempts
+        maxSpan: 160                  # Maximum index span per shortcut
+        lambdaCusp: 1.0               # Penalty per gear change (meters)
+        seed: 0                       # RNG seed (0 = deterministic)
+        allowReverse: true            # Permit reverse segments
+      
+      # Path smoothing - Clothoid spline fitting
+      use_clothoid: false
+      clothoid_params:
+        discretizationDistance: 0.08  # m (output spacing along clothoid)
+        maxNumWaypoints: 0            # Max waypoints for fitting (0 = auto)
+      
+      # Controller mode
+      chassis_controller_mode: -1     # -1=auto (from profile), 0=legacy, 1=heading, 2=pure pursuit
+    
+    # -------------------------------------------------------------------------
+    # STAGE C PARAMETERS
+    # End-effector tracking with whole-body coordination
+    # -------------------------------------------------------------------------
+    stage_c:
+      # Lookahead strategy (adaptive)
+      lookahead_distance: 0.4         # m (base lookahead)
+      lookahead_vel_gain: 0.2         # s (velocity-dependent term)
+      lookahead_time_gain: 0.05       # s^2 (acceleration-dependent term)
+      
+      # Velocity control
+      desired_linear_velocity: 1.0    # m/s (target forward velocity)
+      max_linear_speed: 1.5           # m/s (forward velocity cap)
+      min_linear_speed: -0.4          # m/s (reverse velocity cap)
+      max_angular_velocity: 2.5       # rad/s (yaw rate cap)
+      
+      # Chassis kinematic parameters (should match chassis.* above)
+      track_width: 0.574              # m (wheel separation, consistency check)
+      wheel_base: 0.36                # m (wheelbase, consistency check)
+      max_wheel_speed: 3.3            # m/s (per-wheel limit, consistency check)
+      
+      # Path preprocessing
+      waypoint_spacing: 0.15          # m (reference path spacing)
+      path_buffer_size: 30.0          # m (lookahead buffer length)
+      goal_tolerance: 0.10            # m (goal reached tolerance)
+      interp_spacing: 0.05            # m (interpolation resolution)
+      reverse_enabled: true           # Allow reverse motion
+      
+      # Path refinement
+      use_base_refinement: true       # Apply RS/clothoid smoothing to base path
+      
+      # Controller mode
+      chassis_controller_mode: -1     # -1=auto (from profile), 0=legacy, 1=heading, 2=pure pursuit
+    
+    # -------------------------------------------------------------------------
+    # GIK (Generalized Inverse Kinematics) PARAMETERS
+    # -------------------------------------------------------------------------
+    gik:
+      max_iterations: 1500            # Maximum GIK solver iterations
+      tolerance: 1.0e-5               # Convergence tolerance
+      distance_margin: 0.02           # m (collision avoidance margin)
+      
+      # Stage-specific GIK parameters
+      stage_b:
+        max_iterations: 2000
+        tolerance: 1.0e-5
+        lambdas: {}                   # Task weights (struct, empty = defaults)
+      
+      stage_c:
+        max_iterations: 2000
+        tolerance: 1.0e-5
+        lambdas: {}
+    
+    # -------------------------------------------------------------------------
+    # PURE PURSUIT PARAMETERS
+    # Low-level path follower (used by Stage B/C controllers)
+    # -------------------------------------------------------------------------
+    pure_pursuit:
+      lookahead_base: 0.80            # m (base lookahead distance)
+      lookahead_vel_gain: 0.30        # s (velocity-dependent lookahead)
+      lookahead_time_gain: 0.05       # s^2 (acceleration-dependent lookahead)
+      heading_kp: 1.2                 # Proportional gain for heading control
+      heading_ki: 0.0                 # Integral gain (typically 0)
+      heading_kd: 0.1                 # Derivative gain
+      feedforward_gain: 0.9           # Feedforward gain for curvature
+      goal_tolerance: 0.10            # m (goal reached distance)
+      reverse_enabled: false          # Allow reverse motion in pure pursuit
+      interp_spacing_min: 0.05        # m (min path interpolation spacing)
+      interp_spacing_max: 0.20        # m (max path interpolation spacing)
+      discontinuity_threshold: 0.35   # m (path discontinuity detection)
+      curvature_slowdown:
+        kappa_threshold: 0.9          # 1/m (curvature threshold for slowdown)
+        vx_reduction: 0.6             # Velocity scale factor at high curvature
+    
+    # -------------------------------------------------------------------------
+    # HOLISTIC MODE PARAMETERS
+    # Whole-body control without staged execution
+    # -------------------------------------------------------------------------
+    holistic:
+      use_ramp: false                 # Use velocity ramping
+      ramp_max_linear_speed: 1.5      # m/s
+      ramp_max_yaw_rate: 3.0          # rad/s
+      ramp_max_joint_speed: 1.0       # rad/s
+  
+  # =============================================================================
+  # AGGRESSIVE PROFILE - Fast execution with tighter safety margins
+  # =============================================================================
+  aggressive:
+    description: "Fast execution for testing and demonstrations"
+    inherits: "default"
+    overrides:
+      chassis:
+        vx_max: 1.8
+        accel_limit: 1.2
+        decel_limit: 2.2
+      stage_b:
+        desired_linear_velocity: 0.8
+        max_linear_speed: 1.8
+        hybrid_safety_margin: 0.10
+      stage_c:
+        desired_linear_velocity: 1.2
+        max_linear_speed: 1.8
+        lookahead_distance: 0.5
+      pure_pursuit:
+        lookahead_base: 0.60
+        heading_kp: 1.5
+  
+  # =============================================================================
+  # CONSERVATIVE PROFILE - Slow, safe execution with large margins
+  # =============================================================================
+  conservative:
+    description: "Slow, safe execution for constrained environments"
+    inherits: "default"
+    overrides:
+      chassis:
+        vx_max: 0.8
+        accel_limit: 0.5
+        decel_limit: 1.0
+      stage_b:
+        desired_linear_velocity: 0.3
+        max_linear_speed: 0.8
+        hybrid_safety_margin: 0.25
+      stage_c:
+        desired_linear_velocity: 0.5
+        max_linear_speed: 0.8
+        lookahead_distance: 0.6
+      pure_pursuit:
+        lookahead_base: 1.0
+        heading_kp: 1.0
+  
+  # =============================================================================
+  # COMPACT_TRACK PROFILE - For narrow-track chassis variant
+  # =============================================================================
+  compact_track:
+    description: "Configuration for compact (narrow) track platform"
+    inherits: "default"
+    overrides:
+      chassis:
+        track: 0.329                  # m (narrow track)
+        vx_max: 1.0
+        wz_max: 2.8
+        accel_limit: 1.0
+        decel_limit: 1.4
+      stage_b:
+        desired_linear_velocity: 0.4
+        max_linear_speed: 1.0
+      stage_c:
+        track_width: 0.329
+        desired_linear_velocity: 0.8
+        max_linear_speed: 1.0
