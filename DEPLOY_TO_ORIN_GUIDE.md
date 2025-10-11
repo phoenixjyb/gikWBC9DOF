@@ -1,39 +1,46 @@
-# Deploy Chassis Path Follower to Orin - Quick Guide
+# Deploy to AGX Orin - Quick Guide
 
 ## Prerequisites
 
-1. **SSH access** to AGX Orin configured
+1. **SSH access** to AGX Orin configured (username: `cr`, remote path: `/home/nvidia/temp_gikrepo`)
 2. **Generated code** ready (run codegen first if not done)
 3. **Network connection** to Orin
 
 ## Quick Deploy
 
-### Option 1: Deploy + Build on Orin (Recommended)
+### Option 1: Deploy Complete Workspace (Recommended for first time)
 
 ```powershell
-.\scripts\deployment\deploy_chassis_to_orin.ps1 -OrinIP "192.168.100.150"
+# Deploy everything + auto-build on Orin
+.\scripts\deployment\deploy_to_orin.ps1 -OrinIP "192.168.100.150" -Mode Complete
 ```
 
 This will:
-- ✅ Transfer all files to Orin
-- ✅ Build the ROS2 package automatically
-- ✅ Verify the executable
+- ✅ Transfer entire ROS2 workspace, URDF, meshes, config
+- ✅ Build all packages automatically on Orin
+- ✅ Verify installation
 
-### Option 2: Deploy Only (Manual Build)
+### Option 2: Deploy Chassis Controller Only (Fast, for testing)
 
 ```powershell
-.\scripts\deployment\deploy_chassis_to_orin.ps1 -OrinIP "192.168.100.150" -BuildOnOrin:$false
+# Deploy only chassis path follower code
+.\scripts\deployment\deploy_to_orin.ps1 -OrinIP "192.168.100.150" -Mode ChassisOnly
 ```
 
-Then SSH to Orin and build manually.
+This will:
+- ✅ Transfer only MATLAB generated code + ROS2 wrapper
+- ✅ Much faster (~30 seconds vs. 2-5 minutes)
+- ✅ Perfect for iterative testing
 
-### Option 3: Custom Username/Path
+### Option 3: Custom Settings
 
 ```powershell
-.\scripts\deployment\deploy_chassis_to_orin.ps1 `
+# If you use different username or path (defaults are cr and /home/nvidia/temp_gikrepo)
+.\scripts\deployment\deploy_to_orin.ps1 `
     -OrinIP "192.168.100.150" `
     -Username "cr" `
-    -RemotePath "/home/cr/gikWBC9DOF"
+    -RemotePath "/home/nvidia/temp_gikrepo" `
+    -Mode Complete
 ```
 
 ## What Gets Deployed
@@ -59,7 +66,7 @@ Then SSH to Orin and build manually.
 ### Directory Structure on Orin
 
 ```
-/home/nvidia/gikWBC9DOF/
+/home/nvidia/temp_gikrepo/
 └── ros2/
     └── gik9dof_controllers/
         ├── CMakeLists.txt
@@ -82,10 +89,10 @@ Then SSH to Orin and build manually.
 
 ```bash
 # SSH to Orin
-ssh nvidia@192.168.100.150
+ssh cr@192.168.100.150
 
 # Navigate to workspace
-cd /home/nvidia/gikWBC9DOF/ros2
+cd /home/nvidia/temp_gikrepo/ros2
 
 # Source ROS2
 source /opt/ros/humble/setup.bash
@@ -192,7 +199,7 @@ wsl bash scripts/codegen/run_chassis_path_codegen_wsl.sh
    ```
 3. Clean and rebuild:
    ```bash
-   cd /home/nvidia/gikWBC9DOF/ros2
+   cd /home/nvidia/temp_gikrepo/ros2
    rm -rf build/ install/ log/
    colcon build --packages-select gik9dof_controllers
    ```
@@ -254,12 +261,15 @@ ps aux | grep chassis_path_follower_node
 ## Quick Commands Reference
 
 ```bash
-# Deploy from Windows
-.\scripts\deployment\deploy_chassis_to_orin.ps1 -OrinIP "192.168.100.150"
+# Deploy from Windows (complete workspace)
+.\scripts\deployment\deploy_to_orin.ps1 -OrinIP "192.168.100.150" -Mode Complete
+
+# Deploy from Windows (chassis only, faster)
+.\scripts\deployment\deploy_to_orin.ps1 -OrinIP "192.168.100.150" -Mode ChassisOnly
 
 # On Orin: Source and launch
 source /opt/ros/humble/setup.bash
-cd /home/nvidia/gikWBC9DOF/ros2
+cd /home/nvidia/temp_gikrepo/ros2
 source install/setup.bash
 ros2 launch gik9dof_controllers chassis_path_follower_launch.py
 
@@ -298,9 +308,14 @@ If you encounter issues:
 
 ---
 
-**Quick Deploy Command**:
+**One Unified Script for Everything!** 🎯
+
 ```powershell
-.\scripts\deployment\deploy_chassis_to_orin.ps1 -OrinIP "192.168.100.150"
+# Complete workspace (first deployment)
+.\scripts\deployment\deploy_to_orin.ps1 -OrinIP "192.168.100.150" -Mode Complete
+
+# Chassis only (fast updates)
+.\scripts\deployment\deploy_to_orin.ps1 -OrinIP "192.168.100.150" -Mode ChassisOnly
 ```
 
 That's it! 🚀
