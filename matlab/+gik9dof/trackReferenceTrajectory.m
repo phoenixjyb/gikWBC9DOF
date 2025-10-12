@@ -299,6 +299,21 @@ switch options.Mode
             'MaxJointSpeed', options.RampMaxJointSpeed);
         switch options.ExecutionMode
             case "ppForIk"
+                % ===================================================================
+                % HOLISTIC MODE: Pure Pursuit for IK (Three-Pass Architecture)
+                % ===================================================================
+                % This implementation is IDENTICAL to Staged Stage C (ppForIk mode).
+                % See projectDiagnosis.md: "Critical Equivalence" section.
+                %
+                % Three-Pass Algorithm:
+                %   Pass 1: GIK reference → ideal base trajectory (may not be feasible)
+                %   Pass 2: Chassis simulation → realistic executed base trajectory
+                %   Pass 3: GIK with fixed base → final arm motion with realistic base
+                %
+                % This ensures kinematically feasible base motion while tracking EE targets.
+                % ===================================================================
+                
+                % Pass 1: Generate reference base path from IK
                 bundleRef = gik9dof.createGikSolver(robot, ...
                     "EnableAiming", options.EnableAiming, ...
                     "DistanceSpecs", distanceSpecs, ...
@@ -314,6 +329,8 @@ switch options.Mode
 
                 baseReferenceTail = logRef.qTraj(baseIdx, 2:end).';
                 baseReference = [q0(baseIdx).'; baseReferenceTail];
+                
+                % Pass 2: Simulate chassis controller with kinematic constraints
                 chassisHolistic = chassisParams;
                 chassisHolistic.vx_max = options.RampMaxLinearSpeed;
                 chassisHolistic.vx_min = max(chassisHolistic.vx_min, -options.RampMaxLinearSpeed);
@@ -335,10 +352,11 @@ switch options.Mode
                     'HeadingKp', getStructFieldOrDefault(chassisHolistic, 'heading_kp', 1.2), ...
                     'FeedforwardGain', getStructFieldOrDefault(chassisHolistic, 'feedforward_gain', 0.9));
 
-                simRes = gik9dof.control.simulateChassisController(baseReference, ...
+                simRes = gik9dof.control.simulateChassisExecution(baseReference, ...
                     'SampleTime', 1/options.RateHz, 'FollowerOptions', followerOptions, ...
                     'ControllerMode', stageCControllerMode);
 
+                % Pass 3: Final IK with base locked to executed trajectory
                 bundleFinal = gik9dof.createGikSolver(robot, ...
                     "EnableAiming", options.EnableAiming, ...
                     "DistanceSpecs", distanceSpecs, ...

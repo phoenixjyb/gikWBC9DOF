@@ -279,7 +279,7 @@ if options.UseStageBHybridAStar
 
     if ~isempty(plannerStates)
         plannerReference = plannerStates;
-        simResStageB = gik9dof.control.simulateChassisController(plannerStates, ...
+        simResStageB = gik9dof.control.simulateChassisExecution(plannerStates, ...
             'SampleTime', dt, 'FollowerOptions', followerOptions, ...
             'ControllerMode', options.StageBChassisControllerMode);
         simResStageB = ensureDocking(simResStageB, goalBase, followerOptions, dt, ...
@@ -435,7 +435,7 @@ followerOptions = struct( ...
     'HeadingKp', getStructFieldOrDefault(chassisStageB, 'heading_kp', 1.2), ...
     'FeedforwardGain', getStructFieldOrDefault(chassisStageB, 'feedforward_gain', 0.9));
 
-    simRes = gik9dof.control.simulateChassisController(plannerStates, ...
+    simRes = gik9dof.control.simulateChassisExecution(plannerStates, ...
         'SampleTime', dt, 'FollowerOptions', followerOptions, ...
         'ControllerMode', options.StageBChassisControllerMode);
 simRes = ensureDocking(simRes, goalBase, followerOptions, dt, ...
@@ -585,6 +585,20 @@ end
 
 function logC = executeStageCPurePursuit(robot, trajStruct, qStart, baseIdx, armIdx, velLimits, chassisParams, alignmentInfo, options, stageBResult)
 %EXECUTESTAGECPUREPURSUIT Track Stage C using pure pursuit driven chassis.
+%   This function implements the EXACT SAME algorithm as Holistic mode ppForIk.
+%   See projectDiagnosis.md: "Critical Equivalence" section.
+%
+%   Three-Pass Architecture (IDENTICAL to Holistic ppForIk):
+%     Pass 1: GIK reference → ideal base trajectory
+%     Pass 2: Chassis simulation → realistic executed base trajectory  
+%     Pass 3: GIK with fixed base → final arm motion with realistic base
+%
+%   Key Difference: Stage C starts from qStart (after Stage B docking),
+%                   while Holistic starts from q0 (initial configuration).
+%                   The algorithm and parameters are otherwise identical.
+%
+%   This is the default mode for Stage C when ExecutionMode='ppForIk'.
+
 eeName = trajStruct.EndEffectorName;
 dt = 1 / options.RateHz;
 
@@ -595,7 +609,10 @@ if nargin < 10 || isempty(stageBResult)
     stageBResult = struct();
 end
 
-% First pass: GIK reference used as pure pursuit path seed.
+% ===================================================================
+% STAGE C (ppForIk): Three-Pass Architecture
+% ===================================================================
+% Pass 1: Generate reference base path from IK
 bundleRef = gik9dof.createGikSolver(robot, ...
     'DistanceSpecs', options.DistanceSpecs, ...
     'MaxIterations', options.MaxIterations);
@@ -610,9 +627,10 @@ logRef = gik9dof.runTrajectoryControl(bundleRef, trajStruct, ...
 baseReferenceTail = logRef.qTraj(baseIdx, 2:end).';
 baseReference = [qStart(baseIdx).'; baseReferenceTail];
 
+% Optional: Apply base path refinement (Reeds-Shepp + Clothoid smoothing)
 [baseReference, logRef, stageCRefinement] = stageCApplyBaseRefinement(baseReference, logRef, qStart, baseIdx, options, stageBResult, bundleRef, trajStruct, velLimits);
 
-% Pure pursuit integration honouring chassis constraints.
+% Pass 2: Simulate chassis controller with kinematic constraints
 chassisStageC = chassisParams;
 chassisStageC.vx_max = options.StageCMaxLinearSpeed;
 chassisStageC.vx_min = options.StageCMinLinearSpeed;
@@ -634,7 +652,7 @@ followerOptions = struct( ...
     'HeadingKp', getStructFieldOrDefault(chassisStageC, 'heading_kp', 1.2), ...
     'FeedforwardGain', getStructFieldOrDefault(chassisStageC, 'feedforward_gain', 0.9));
 
-simRes = gik9dof.control.simulateChassisController(baseReference, ...
+simRes = gik9dof.control.simulateChassisExecution(baseReference, ...
     'SampleTime', dt, 'FollowerOptions', followerOptions, ...
     'ControllerMode', options.StageCChassisControllerMode);
 
@@ -659,7 +677,7 @@ if isempty(executedBase)
     executedBase = baseReference(2:end, :);
 end
 
-% Second pass: execute GIK with chassis locked to executed path.
+% Pass 3: Final IK with base locked to executed trajectory
 bundle = gik9dof.createGikSolver(robot, ...
     'DistanceSpecs', options.DistanceSpecs, ...
     'MaxIterations', options.MaxIterations);
@@ -673,7 +691,7 @@ logC = gik9dof.runTrajectoryControl(bundle, trajStruct, ...
     'VelocityLimits', velLimits, ...
     'FixedJointTrajectory', fixedTrajectory);
 
-% Attach pure pursuit artefacts and command logs.
+% Attach pure pursuit artifacts and command logs
 logC.purePursuit.referencePath = baseReference;
 logC.purePursuit.executedPath = executedBase;
 logC.purePursuit.sampleTime = dt;
@@ -1540,7 +1558,7 @@ if posError <= max(posTol, 1e-3) && yawError <= max(yawTol, 1e-3)
 end
 
 alignPath = [finalPose; goalBase];
-alignRes = gik9dof.control.simulateChassisController(alignPath, ...
+alignRes = gik9dof.control.simulateChassisExecution(alignPath, ...
     'SampleTime', sampleTime, 'FollowerOptions', followerOptions, ...
     'ControllerMode', controllerMode);
 

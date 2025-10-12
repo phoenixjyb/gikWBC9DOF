@@ -45,17 +45,21 @@ if isfield(logStaged, 'stageLogs') && isstruct(logStaged.stageLogs) && ...
         isfield(logStaged.stageLogs, 'stageC')
     stageC = logStaged.stageLogs.stageC;
     
-    % Priority 1: referenceInitialIk.eePositions (if available)
-    if isfield(stageC, 'referenceInitialIk') && ...
-            isfield(stageC.referenceInitialIk, 'eePositions') && ...
-            ~isempty(stageC.referenceInitialIk.eePositions)
-        eePathStageCRef = stageC.referenceInitialIk.eePositions;
+    % Priority 1: eePositions (Pass 3 actual trajectory - CORRECT!)
+    % This shows what the system actually achieved after chassis simulation
+    if isfield(stageC, 'eePositions') && ~isempty(stageC.eePositions)
+        eePathStageCRef = stageC.eePositions;
     % Priority 2: targetPositions (desired EE trajectory from JSON)
     elseif isfield(stageC, 'targetPositions') && ~isempty(stageC.targetPositions)
         eePathStageCRef = stageC.targetPositions;
-    % Priority 3: eePositions (actual Stage C EE, not reference but better than nothing)
-    elseif isfield(stageC, 'eePositions') && ~isempty(stageC.eePositions)
-        eePathStageCRef = stageC.eePositions;
+    % Priority 3: referenceInitialIk.eePositions (Pass 1 ideal - for debug only)
+    % This is the ideal trajectory before chassis constraints, should rarely be used
+    elseif isfield(stageC, 'referenceInitialIk') && ...
+            isfield(stageC.referenceInitialIk, 'eePositions') && ...
+            ~isempty(stageC.referenceInitialIk.eePositions)
+        eePathStageCRef = stageC.referenceInitialIk.eePositions;
+        warning('gik9dof:animation:usingPass1Ideal', ...
+            'Using Pass 1 ideal EE trajectory (no stageC.eePositions found). This may show unrealistic reference.');
     end
 end
 

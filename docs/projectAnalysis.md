@@ -17,7 +17,7 @@ This guide expands the concise notes in our other design documents and details h
 - When `StageBMode="pureHyb"`, the planner output is promoted directly into `log.stageLogs.stageB` via a synthetic log builder so post-processing can analyse curvature, cusp counts, and smoothing acceptance rates (`matlab/+gik9dof/runStagedTrajectory.m:420`). These diagnostics feed RS tuning studies documented elsewhere.
 
 ### Stage C – Pure pursuit integration and locked-base GIK
-- Stage C starts by generating a fresh reference using GIK with the base free, then optionally refines the base ribbon with RS and clothoids through `stageCApplyBaseRefinement` (`matlab/+gik9dof/runStagedTrajectory.m:567`). The refined ribbon drives `gik9dof.control.simulateChassisController`, providing `purePursuit` command logs, wheel speeds, and status traces (`matlab/+gik9dof/runStagedTrajectory.m:618`).
+- Stage C starts by generating a fresh reference using GIK with the base free, then optionally refines the base ribbon with RS and clothoids through `stageCApplyBaseRefinement` (`matlab/+gik9dof/runStagedTrajectory.m:567`). The refined ribbon drives `gik9dof.control.simulateChassisExecution`, providing `purePursuit` command logs, wheel speeds, and status traces (`matlab/+gik9dof/runStagedTrajectory.m:618`).
 - The executed base states are injected back into `runTrajectoryControl` through `FixedJointTrajectory`, forcing a second GIK solve with the chassis locked while the arm chases the JSON poses (`matlab/+gik9dof/runStagedTrajectory.m:644`). `log.stageLogs.stageC` therefore contains both the reference ribbon and the executed base path, solver iteration statistics, end-effector errors, base deviation metrics, and stage-specific diagnostics (`matlab/+gik9dof/runStagedTrajectory.m:685`).
 
 ### Shared control-loop instrumentation
@@ -53,12 +53,12 @@ flowchart TD
         G --> SC[Stage C: pure pursuit + IK]
         SA --> K(runTrajectoryControl)
         SB --> RS[RS refine (rsRefinePath / temp\_ref\_rs\_refine)]
-        RS --> SimB(simulateChassisController)
+        RS --> SimB(simulateChassisExecution)
         SimB --> PP[purePursuitFollower]
         SimB --> K
         SimB --> Metrics(computeBaseRibbonMetrics / evaluate*)
         SC --> Ref(stageCApplyBaseRefinement)
-        Ref --> SimC(simulateChassisController)
+        Ref --> SimC(simulateChassisExecution)
         SimC --> PP
         SimC --> K
     end
@@ -81,8 +81,8 @@ flowchart TD
 - `matlab/+gik9dof/createGikSolver.m:1` wraps `generalizedInverseKinematics` with pose, joint, aiming, and distance constraints, returning the solver bundle consumed by `runTrajectoryControl`.
 - `matlab/+gik9dof/runStagedTrajectory.m:1` splits execution into Stage A/B/C, calling sub-helpers such as `executeStageBGikInLoop`, `executeStageBPureHyb`, `stageCApplyBaseRefinement`, and aggregating `stageLogs`, planner diagnostics, and pure-pursuit telemetry.
 - `matlab/+gik9dof/runTrajectoryControl.m:1` is the waypoint loop that logs `qTraj`, solver iterations/exit flags, EE poses, tracking error, and base velocity estimates for every stage.
-- `matlab/+gik9dof/+control/purePursuitFollower.m:1` computes adaptive lookahead and steering commands; it is instantiated by Stage B/Stage C when `simulateChassisController` runs in pure-pursuit mode.
-- `matlab/+gik9dof/+control/simulateChassisController.m:1` integrates SE(2) ribbons (planner outputs or refined paths) to produce executed base states, velocity commands, wheel speeds, and controller status.
+- `matlab/+gik9dof/+control/purePursuitFollower.m:1` computes adaptive lookahead and steering commands; it is instantiated by Stage B/Stage C when `simulateChassisExecution` runs in pure-pursuit mode.
+- `matlab/+gik9dof/+control/simulateChassisExecution.m:1` integrates SE(2) ribbons (planner outputs or refined paths) to produce executed base states, velocity commands, wheel speeds, and controller status.
 - `matlab/+gik9dof/+control/rsRefinePath.m:1` and `temp_ref_rs_refine.m:1` apply Reeds–Shepp shortcutting; their acceptance metrics are logged in Stage B/Stage C diagnostics.
 - `matlab/+gik9dof/computeBaseRibbonMetrics.m:1`, `matlab/+gik9dof/evaluatePathSmoothness.m:1`, `matlab/+gik9dof/evaluateCollisionIntrusion.m:1`, and `matlab/+gik9dof/evaluateChassisConstraints.m:1` post-process base paths and logs to quantify curvature, cusps, smoothness, and clearance.
 - `matlab/+gik9dof/animateStagedWithHelper.m:1` samples the staged log, resolves Stage C reference paths, obstacles, and stage boundaries, and relays them to the visualiser.

@@ -1,4 +1,29 @@
 # Chassis parameter presets for pure pursuit and unified control.
+#
+# ⚠️  DEPRECATION NOTICE - Consider using pipeline_profiles.yaml instead!
+#
+# This file is maintained for backward compatibility with legacy code that calls:
+#   gik9dof.control.loadChassisProfile("wide_track")
+#
+# RECOMMENDED APPROACH (New Code):
+#   Use the unified configuration system which includes chassis parameters
+#   plus all Stage B/C/GIK/holistic parameters in a single file:
+#
+#   cfg = gik9dof.loadPipelineProfile('default');  % or 'aggressive', 'conservative'
+#   chassisParams = cfg.chassis;  % Extract chassis parameters if needed
+#
+# Benefits of pipeline_profiles.yaml:
+#   - Single source of truth for ALL parameters
+#   - Profile inheritance (aggressive/conservative from default)
+#   - Automatic validation (e.g., track_width consistency)
+#   - All parameters (chassis + stages + GIK) in one place
+#
+# This file (chassis_profiles.yaml) contains ONLY chassis parameters.
+# For new code, use config/pipeline_profiles.yaml instead.
+#
+# See: UNIFIED_CONFIG_MIGRATION_COMPLETE.md for migration guide
+# -----------------------------------------------------------------------------
+
 profiles:
   wide_track:
     track: 0.574                # m (measured track width)

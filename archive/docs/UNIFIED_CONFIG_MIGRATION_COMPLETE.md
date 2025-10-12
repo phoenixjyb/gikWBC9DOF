@@ -228,6 +228,18 @@ my_experiment:
 - **Implementation Summary**: `docs/UNIFIED_CONFIG_IMPLEMENTATION.md`
 - **System Architecture**: `projectDiagnosis.md` - Section 6
 - **Test Script**: `test_pipeline_profiles.m`
+- **Chassis Profiles Deprecation**: `CHASSIS_VS_PIPELINE_CONFIG.md` ⚠️ Important!
+- **Quick Reference**: `UNIFIED_CONFIG_QUICK_REF.md`
+- **Migration TODO List**: `TODO_MIGRATE_TO_UNIFIED_CONFIG.md`
+
+## ⚠️ Note on chassis_profiles.yaml
+
+The old `config/chassis_profiles.yaml` file is now **deprecated** (but kept for backward compatibility). 
+
+- ❌ **Don't use:** `gik9dof.control.loadChassisProfile("wide_track")`
+- ✅ **Use instead:** `cfg = gik9dof.loadPipelineProfile('default')`
+
+See `CHASSIS_VS_PIPELINE_CONFIG.md` for detailed comparison and migration guidance.
 
 ---
 

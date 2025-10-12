@@ -1,6 +1,6 @@
-function result = simulateChassisController(pathStates, options)
-%SIMULATECHASSISCONTROLLER Integrate chassis using selectable control modes.
-%   result = gik9dof.control.simulateChassisController(pathStates, opts)
+function result = simulateChassisExecution(pathStates, options)
+%SIMULATECHASSISEXECUTION Integrate chassis using selectable control modes.
+%   result = gik9dof.control.simulateChassisExecution(pathStates, opts)
 %   runs one of the supported chassis controllers against PATHSTATES (Nx3
 %   [x y yaw]) with an integration step of opts.SampleTime.  Supported modes:
 %       0 - Legacy five-point differentiation (feedforward replay)
@@ -198,7 +198,7 @@ end
 % -------------------------------------------------------------------------
 function chassis = mustGetChassis(followers)
 if ~isfield(followers, 'ChassisParams') || isempty(followers.ChassisParams)
-    error("gik9dof:simulateChassisController:MissingChassisParams", ...
+    error("gik9dof:simulateChassisExecution:MissingChassisParams", ...
         "FollowerOptions must include a ChassisParams struct.");
 end
 chassis = followers.ChassisParams;
