@@ -67,7 +67,7 @@ arguments
     options.StageBDockingYawTolerance (1,1) double {mustBeNonnegative} = 2*pi/180
     options.ChassisProfile (1,1) string = "wide_track"
     options.ChassisOverrides struct = struct()
-    options.ExecutionMode (1,1) string {mustBeMember(options.ExecutionMode, ["pureIk","ppForIk"])} = "ppForIk"
+    options.ExecutionMode (1,1) string {mustBeMember(options.ExecutionMode, ["pureIk","ppForIk","ppFirst"])} = "ppForIk"
     options.StageCLookaheadDistance (1,1) double {mustBePositive} = 0.8
     options.StageCLookaheadVelGain (1,1) double {mustBeNonnegative} = 0.2
     options.StageCLookaheadTimeGain (1,1) double {mustBeNonnegative} = 0.05
@@ -192,6 +192,8 @@ if ~isempty(trajC.Poses)
             logC = executeStageCPurePursuit(robot, trajC, qB_end, baseIdx, armIdx, velLimits, chassisParams, alignmentInfo, options, stageBResult);
         case "pureIk"
             logC = executeStageCPureIk(robot, trajC, qB_end, baseIdx, velLimits, options);
+        case "ppFirst"
+            logC = executeStageCPPFirst(robot, trajC, qB_end, baseIdx, armIdx, velLimits, chassisParams, alignmentInfo, options, stageBResult);
         otherwise
             error('gik9dof:runStagedTrajectory:UnsupportedExecutionMode', ...
                 'Unknown execution mode "%s".', string(options.ExecutionMode));
@@ -849,6 +851,155 @@ logC.execBaseStates = baseStates;
 logC.referenceBaseStates = baseStates;
 logC.cmdLog = table('Size', [0 3], 'VariableTypes', {'double','double','double'}, ...
     'VariableNames', {'time','Vx','Wz'});
+end
+
+function logC = executeStageCPPFirst(robot, trajStruct, qStart, baseIdx, armIdx, velLimits, chassisParams, alignmentInfo, options, stageBResult)
+%EXECUTESTAGECPPFIRST Stage C execution using PP-First method (Method 4).
+%   Wrapper function that integrates runStageCPPFirst into the staged pipeline.
+%   This method uses Pure Pursuit to generate feasible base motion predictions,
+%   then constrains GIK to stay within a yaw corridor around the prediction.
+%
+%   Architecture: PREDICT (PP) → CONSTRAIN (yaw corridor) → SOLVE (GIK) → FALLBACK (arm-only)
+
+% Extract PP-First specific parameters from options
+ppFirstOpts = struct();
+ppFirstOpts.ChassisParams = chassisParams;
+ppFirstOpts.MaxIterations = options.MaxIterations;
+ppFirstOpts.SampleTime = 1.0 / options.RateHz;
+ppFirstOpts.BaseIndices = baseIdx;
+ppFirstOpts.ArmIndices = armIdx;
+ppFirstOpts.EndEffector = trajStruct.EndEffectorName;
+ppFirstOpts.DistanceSpecs = options.DistanceSpecs;
+ppFirstOpts.VerboseLevel = double(options.Verbose);
+
+% Pure Pursuit parameters from StageC options
+ppFirstOpts.LookaheadDistance = options.StageCLookaheadDistance;
+ppFirstOpts.DesiredVelocity = options.StageCDesiredLinearVelocity;
+
+% Method 4 specific: yaw tolerance (corridor half-width) and position tolerance
+ppFirstOpts.YawTolerance = deg2rad(15);  % ±15° corridor around PP prediction
+ppFirstOpts.PositionTolerance = 0.15;   % ±15cm box around PP prediction
+ppFirstOpts.EEErrorTolerance = 0.01;    % 10mm threshold for fallback trigger
+
+% Apply refinement only if requested
+ppFirstOpts.ApplyRefinement = options.StageCUseBaseRefinement;
+
+% Call the main PP-First implementation with name-value pairs
+rawLog = gik9dof.runStageCPPFirst(robot, trajStruct, qStart, ...
+    'ChassisParams', ppFirstOpts.ChassisParams, ...
+    'MaxIterations', ppFirstOpts.MaxIterations, ...
+    'SampleTime', ppFirstOpts.SampleTime, ...
+    'BaseIndices', ppFirstOpts.BaseIndices, ...
+    'ArmIndices', ppFirstOpts.ArmIndices, ...
+    'EndEffector', ppFirstOpts.EndEffector, ...
+    'DistanceSpecs', ppFirstOpts.DistanceSpecs, ...
+    'VerboseLevel', ppFirstOpts.VerboseLevel, ...
+    'LookaheadDistance', ppFirstOpts.LookaheadDistance, ...
+    'DesiredVelocity', ppFirstOpts.DesiredVelocity, ...
+    'YawTolerance', ppFirstOpts.YawTolerance, ...
+    'PositionTolerance', ppFirstOpts.PositionTolerance, ...
+    'EEErrorTolerance', ppFirstOpts.EEErrorTolerance, ...
+    'ApplyRefinement', ppFirstOpts.ApplyRefinement);
+
+% Transform raw log into format compatible with runStagedTrajectory expectations
+N = size(rawLog.qTraj, 2);
+logC = struct();
+logC.qTraj = rawLog.qTraj;
+logC.timestamps = rawLog.timestamps;
+logC.time = rawLog.timestamps;  % Required for mergeStageLogs
+logC.successMask = rawLog.successMask;  % GIK convergence flags
+logC.exitFlags = double(rawLog.successMask);  % Synthetic: 1=success, 0=fail
+logC.iterations = rawLog.gikIterations;  % GIK iterations per waypoint
+logC.constraintViolationMax = zeros(1, N);  % TODO: Add to runStageCPPFirst
+logC.positionError = rawLog.positionError;
+logC.positionErrorNorm = rawLog.positionErrorNorm;
+logC.orientationErrorQuat = zeros(4, N);  % TODO: Add orientation tracking
+logC.orientationErrorAngle = zeros(1, N);  % TODO: Add orientation tracking
+logC.targetPositions = rawLog.targetPositions;
+logC.eePositions = rawLog.eePositions;
+logC.eeOrientations = zeros(4, N);  % Quaternions [w x y z], TODO: Add tracking
+logC.solutionInfo = rawLog.solutionInfo;
+logC.execBaseStates = rawLog.baseActual';  % [N x 3] from runStageCPPFirst
+logC.referenceBaseStates = rawLog.basePredicted';  % PP predictions as reference
+logC.cmdLog = table(rawLog.timestamps(:), rawLog.ppCommands(:,1), rawLog.ppCommands(:,2), ...
+    'VariableNames', {'time', 'Vx', 'Wz'});
+
+% Reconstruct targetPoses and eePoses from trajectory and robot FK
+logC.targetPoses = zeros(4, 4, N);
+logC.eePoses = zeros(4, 4, N);
+logC.targetOrientations = zeros(4, N);  % Target orientations as quaternions
+for i = 1:N
+    logC.targetPoses(:, :, i) = trajStruct.Poses(:, :, i);
+    % Extract target orientation
+    R_target = trajStruct.Poses(1:3, 1:3, i);
+    quat_target = rotm2quat(R_target);
+    logC.targetOrientations(:, i) = quat_target';
+    
+    T_ee = getTransform(robot, rawLog.qTraj(:, i), char(trajStruct.EndEffectorName));
+    logC.eePoses(:, :, i) = T_ee;
+    % Extract orientation as quaternion [w x y z]
+    R_ee = T_ee(1:3, 1:3);
+    quat_ee = rotm2quat(R_ee);  % Returns [w x y z]
+    logC.eeOrientations(:, i) = quat_ee';
+end
+
+% Build diagnostics matching executeStageCPurePursuit format
+stageCDiagnostics = struct();
+stageCDiagnostics.method = 'ppFirst';
+stageCDiagnostics.fallbackRate = rawLog.fallbackRate;
+stageCDiagnostics.avgEEError = rawLog.avgEEError;
+stageCDiagnostics.maxEEError = rawLog.maxEEError;
+stageCDiagnostics.meanSolveTime = mean(rawLog.solveTime);
+stageCDiagnostics.meanIterations = mean(rawLog.gikIterations);
+stageCDiagnostics.convergenceRate = sum(rawLog.successMask) / numel(rawLog.successMask);
+
+% EE error bins for histogram analysis
+eeErrorNorms = rawLog.positionErrorNorm;
+stageCDiagnostics.eeErrorBins = struct(...
+    'excellent', sum(eeErrorNorms < 0.005), ...
+    'good', sum(eeErrorNorms >= 0.005 & eeErrorNorms < 0.01), ...
+    'acceptable', sum(eeErrorNorms >= 0.01 & eeErrorNorms < 0.02), ...
+    'poor', sum(eeErrorNorms >= 0.02));
+
+% Base deviation from PP prediction
+baseYawActual = rawLog.baseActual(3,:);
+baseYawPredicted = rawLog.basePredicted(3,:);
+yawDrift = wrapToPi(baseYawActual - baseYawPredicted);
+stageCDiagnostics.baseYawDrift = struct(...
+    'mean', mean(abs(yawDrift)), ...
+    'max', max(abs(yawDrift)), ...
+    'std', std(yawDrift));
+
+stageCDiagnostics.solverIterations = struct(...
+    'mean', mean(rawLog.gikIterations), ...
+    'max', max(rawLog.gikIterations), ...
+    'min', min(rawLog.gikIterations));
+
+stageCDiagnostics.refinementApplied = ppFirstOpts.ApplyRefinement;
+
+% Store additional Method 4 specific diagnostics
+stageCDiagnostics.ppFirst = struct();
+stageCDiagnostics.ppFirst.fallbackCount = sum(rawLog.fallbackUsed);
+stageCDiagnostics.ppFirst.totalWaypoints = numel(rawLog.fallbackUsed);
+stageCDiagnostics.ppFirst.gikOnlyCount = sum(~rawLog.fallbackUsed);
+
+logC.diagnostics = stageCDiagnostics;
+
+% Verbose summary
+if options.Verbose
+    fprintf('  [PP-First Method 4] Stage C Summary:\n');
+    fprintf('    Waypoints: %d | Fallback: %.1f%% | Convergence: %.1f%%\n', ...
+        stageCDiagnostics.ppFirst.totalWaypoints, ...
+        stageCDiagnostics.fallbackRate * 100, ...
+        stageCDiagnostics.convergenceRate * 100);
+    fprintf('    EE Error: mean=%.2fmm max=%.2fmm | Solve: %.0fms/wp\n', ...
+        stageCDiagnostics.avgEEError * 1000, ...
+        stageCDiagnostics.maxEEError * 1000, ...
+        stageCDiagnostics.meanSolveTime * 1000);
+    fprintf('    Yaw Drift from PP: mean=%.1f° max=%.1f°\n', ...
+        rad2deg(stageCDiagnostics.baseYawDrift.mean), ...
+        rad2deg(stageCDiagnostics.baseYawDrift.max));
+end
 end
 
 function [goalBase, goalInfo] = computeStageBGoalBase(robot, qStart, baseIdx, targetPose, eeName, maxIterations)

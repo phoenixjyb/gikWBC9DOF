@@ -1,0 +1,60 @@
+═══════════════════════════════════════════════════════════════
+  METHOD 1 vs METHOD 4 COMPARISON - HOW TO RUN
+═══════════════════════════════════════════════════════════════
+
+OPTION 1: Full Comparison Script (Recommended)
+──────────────────────────────────────────────
+Open MATLAB, navigate to project folder, then run:
+
+    compare_method1_vs_method4
+
+This will:
+- Run both Method 1 and Method 4
+- Generate comparison plots
+- Save detailed report to results/<timestamp>_method_comparison/
+- Expected time: 5-10 minutes
+
+
+OPTION 2: Quick Comparison (Faster)
+────────────────────────────────────
+Open MATLAB, navigate to project folder, then run:
+
+    quick_comparison
+
+This will:
+- Run both methods
+- Show comparison table
+- Display quick plots
+- Expected time: 5-10 minutes
+
+
+OPTION 3: Manual Commands (Most Direct)
+────────────────────────────────────────
+Copy-paste this into MATLAB command window:
+
+clear; clc;
+env = gik9dof.environmentConfig();
+fprintf('Running Method 1...\n'); tic;
+log1 = gik9dof.trackReferenceTrajectory('Mode','staged','RateHz',10,'Verbose',false,'EnvironmentConfig',env,'FloorDiscs',env.FloorDiscs,'DistanceMargin',env.DistanceMargin,'DistanceWeight',env.DistanceWeight,'UseStageBHybridAStar',true,'StageBMode','pureHyb','StageCExecutionMode','ppForIk');
+t1=toc; fprintf('Method 1: %.1f min, EE error: %.2f mm\n',t1/60,mean(log1.stageLogs.stageC.positionErrorNorm)*1000);
+fprintf('Running Method 4...\n'); tic;
+log4 = gik9dof.trackReferenceTrajectory('Mode','staged','RateHz',10,'Verbose',false,'EnvironmentConfig',env,'FloorDiscs',env.FloorDiscs,'DistanceMargin',env.DistanceMargin,'DistanceWeight',env.DistanceWeight,'UseStageBHybridAStar',true,'StageBMode','pureHyb','StageCExecutionMode','ppFirst');
+t4=toc; fprintf('Method 4: %.1f min, EE error: %.2f mm, Delta: %+.2f mm\n',t4/60,mean(log4.stageLogs.stageC.positionErrorNorm)*1000,(mean(log4.stageLogs.stageC.positionErrorNorm)-mean(log1.stageLogs.stageC.positionErrorNorm))*1000);
+
+
+TROUBLESHOOTING:
+────────────────
+If MATLAB hangs:
+1. Close VS Code (to release MATLAB Language Server)
+2. Open standalone MATLAB app
+3. Navigate to: /Users/yanbo/Projects/gikWBC9DOF
+4. Run one of the options above
+
+If you see "StageCExecutionMode not recognized":
+- Check that trackReferenceTrajectory.m has been updated
+- Or use 'ExecutionMode' instead of 'StageCExecutionMode'
+
+Expected output:
+- Method 1: ~3-5 minutes, EE error ~6-8 mm
+- Method 4: ~3-5 minutes, EE error ~6-8 mm (similar)
+- Fallback rate for Method 4: ~15-20%
