@@ -1,0 +1,203 @@
+{
+  "profiles": {
+    "default": {
+      "description": "Default configuration for wide-track mobile manipulator",
+      "chassis": {
+        "track": 0.574,
+        "wheel_base": 0.36,
+        "wheel_radius": 0.076,
+        "wheel_speed_max": 3.3,
+        "vx_max": 1.5,
+        "vx_min": -0.4,
+        "wz_max": 2.5,
+        "accel_limit": 0.8,
+        "decel_limit": 1.8,
+        "jerk_limit": 5.0,
+        "reverse_enabled": false
+      },
+      "stage_b": {
+        "mode": "pureHyb",
+        "lookahead_distance": 0.6,
+        "desired_linear_velocity": 0.5,
+        "max_linear_speed": 1.5,
+        "max_angular_velocity": 2.5,
+        "max_yaw_rate": 3.0,
+        "max_joint_speed": 1.0,
+        "docking_position_tolerance": 0.02,
+        "docking_yaw_tolerance": 0.0349,
+        "use_hybrid_astar": true,
+        "hybrid_resolution": 0.05,
+        "hybrid_safety_margin": 0.15,
+        "hybrid_min_turning_radius": 0.5,
+        "hybrid_motion_primitive_length": 0.2,
+        "use_reeds_shepp": false,
+        "reeds_shepp_params": {
+          "Rmin": 0.5,
+          "reverseCost": 5.0,
+          "inflationRadius": -1.0,
+          "validationDistance": 0.035,
+          "step": 0.05,
+          "iters": 200,
+          "maxSpan": 160,
+          "lambdaCusp": 1.0,
+          "seed": 0,
+          "allowReverse": true
+        },
+        "use_clothoid": false,
+        "clothoid_params": {
+          "discretizationDistance": 0.08,
+          "maxNumWaypoints": 0
+        },
+        "chassis_controller_mode": -1
+      },
+      "stage_c": {
+        "lookahead_distance": 0.4,
+        "lookahead_vel_gain": 0.2,
+        "lookahead_time_gain": 0.05,
+        "desired_linear_velocity": 1.0,
+        "max_linear_speed": 1.5,
+        "min_linear_speed": -0.4,
+        "max_angular_velocity": 2.5,
+        "track_width": 0.574,
+        "wheel_base": 0.36,
+        "max_wheel_speed": 3.3,
+        "waypoint_spacing": 0.15,
+        "path_buffer_size": 30.0,
+        "goal_tolerance": 0.1,
+        "interp_spacing": 0.05,
+        "reverse_enabled": true,
+        "use_base_refinement": true,
+        "chassis_controller_mode": -1,
+        "ppfirst": {
+          "yaw_corridor_deg": 15.0,
+          "position_tolerance": 0.15,
+          "ee_error_threshold": 0.01,
+          "enable_refinement": false,
+          "adaptive_corridor": false,
+          "adaptive_scale_factor": 2.0
+        }
+      },
+      "gik": {
+        "max_iterations": 1500,
+        "tolerance": 1e-05,
+        "distance_margin": 0.02,
+        "stage_b": {
+          "max_iterations": 2000,
+          "tolerance": 1e-05,
+          "lambdas": {}
+        },
+        "stage_c": {
+          "max_iterations": 2000,
+          "tolerance": 1e-05,
+          "lambdas": {}
+        }
+      },
+      "pure_pursuit": {
+        "lookahead_base": 0.8,
+        "lookahead_vel_gain": 0.3,
+        "lookahead_time_gain": 0.05,
+        "heading_kp": 1.2,
+        "heading_ki": 0.0,
+        "heading_kd": 0.1,
+        "feedforward_gain": 0.9,
+        "goal_tolerance": 0.1,
+        "reverse_enabled": false,
+        "interp_spacing_min": 0.05,
+        "interp_spacing_max": 0.2,
+        "discontinuity_threshold": 0.35,
+        "curvature_slowdown": {
+          "kappa_threshold": 0.9,
+          "vx_reduction": 0.6
+        }
+      },
+      "holistic": {
+        "use_ramp": false,
+        "ramp_max_linear_speed": 1.5,
+        "ramp_max_yaw_rate": 3.0,
+        "ramp_max_joint_speed": 1.0
+      }
+    },
+    "aggressive": {
+      "description": "Fast execution for testing and demonstrations",
+      "inherits": "default",
+      "overrides": {
+        "chassis": {
+          "vx_max": 1.8,
+          "accel_limit": 1.2,
+          "decel_limit": 2.2
+        },
+        "stage_b": {
+          "desired_linear_velocity": 0.8,
+          "max_linear_speed": 1.8,
+          "hybrid_safety_margin": 0.1
+        },
+        "stage_c": {
+          "desired_linear_velocity": 1.2,
+          "max_linear_speed": 1.8,
+          "lookahead_distance": 0.5,
+          "ppfirst": {
+            "yaw_corridor_deg": 20.0,
+            "position_tolerance": 0.2,
+            "ee_error_threshold": 0.015
+          }
+        },
+        "pure_pursuit": {
+          "lookahead_base": 0.6,
+          "heading_kp": 1.5
+        }
+      }
+    },
+    "conservative": {
+      "description": "Slow, safe execution for constrained environments",
+      "inherits": "default",
+      "overrides": {
+        "chassis": {
+          "vx_max": 0.8,
+          "accel_limit": 0.5,
+          "decel_limit": 1.0
+        },
+        "stage_b": {
+          "desired_linear_velocity": 0.3,
+          "max_linear_speed": 0.8,
+          "hybrid_safety_margin": 0.25
+        },
+        "stage_c": {
+          "desired_linear_velocity": 0.5,
+          "max_linear_speed": 0.8,
+          "lookahead_distance": 0.6,
+          "ppfirst": {
+            "yaw_corridor_deg": 10.0,
+            "position_tolerance": 0.1,
+            "ee_error_threshold": 0.008
+          }
+        },
+        "pure_pursuit": {
+          "lookahead_base": 1.0,
+          "heading_kp": 1.0
+        }
+      }
+    },
+    "compact_track": {
+      "description": "Configuration for compact (narrow) track platform",
+      "inherits": "default",
+      "overrides": {
+        "chassis": {
+          "track": 0.329,
+          "vx_max": 1.0,
+          "wz_max": 2.8,
+          "accel_limit": 1.0,
+          "decel_limit": 1.4
+        },
+        "stage_b": {
+          "desired_linear_velocity": 0.4,
+          "max_linear_speed": 1.0
+        },
+        "stage_c": {
+          "track_width": 0.329,
+          "desired_linear_velocity": 0.8,
+          "max_linear_speed": 1.0
+        }
+      }
+    }
+  }
+}

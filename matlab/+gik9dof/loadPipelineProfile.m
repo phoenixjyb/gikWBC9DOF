@@ -47,13 +47,22 @@ else
     yamlPath = fullfile(gik9dof.internal.projectRoot(), "config", "pipeline_profiles.yaml");
 end
 
-if ~isfile(yamlPath)
-    error("gik9dof:loadPipelineProfile:MissingFile", ...
-        "Pipeline profile YAML not found: %s", yamlPath);
+% Convert YAML path to JSON path
+[folder, name, ~] = fileparts(yamlPath);
+jsonPath = fullfile(folder, name + ".json");
+
+% Check if JSON exists, if not provide helpful error
+if ~isfile(jsonPath)
+    error("gik9dof:loadPipelineProfile:MissingJSON", ...
+        ["JSON configuration file not found: %s\n\n" ...
+         "Please run the YAML-to-JSON converter:\n" ...
+         "  python3 utils/yaml_to_json.py\n\n" ...
+         "This converts config/pipeline_profiles.yaml to pipeline_profiles.json"], ...
+        jsonPath);
 end
 
-% Load YAML file
-profileData = readYamlFile(yamlPath);
+% Load JSON file
+profileData = readJsonFile(jsonPath);
 
 if ~isfield(profileData, "profiles")
     error("gik9dof:loadPipelineProfile:MissingProfiles", ...
@@ -238,140 +247,22 @@ config.meta.validationWarnings = warnings;
 
 end
 
-function data = readYamlFile(yamlPath)
-%READYAMLFILE Load YAML file using available mechanisms.
+function data = readJsonFile(jsonPath)
+%READJSONFILE Load JSON configuration file.
+%   Uses MATLAB's built-in jsondecode function to read JSON configuration.
+%   The JSON file should be generated from YAML using utils/yaml_to_json.py
 
-if exist("yamlread", "file") == 2
-    data = yamlread(yamlPath);
-elseif exist("matlab.internal.yaml.loadFile", "file") == 2
-    data = matlab.internal.yaml.loadFile(yamlPath);
-else
-    % Fallback: use simple parser from loadChassisProfile
-    data = readYamlSimple(yamlPath);
+try
+    jsonText = fileread(jsonPath);
+    data = jsondecode(jsonText);
+catch ME
+    error("gik9dof:loadPipelineProfile:InvalidJson", ...
+        "Failed to parse JSON file %s: %s", jsonPath, ME.message);
 end
 
 if ~isstruct(data)
-    error("gik9dof:loadPipelineProfile:InvalidYaml", ...
-        "Unexpected data type returned when loading %s.", yamlPath);
-end
-
-end
-
-function data = readYamlSimple(yamlPath)
-%READYAMLSIMPLE Minimal parser for hierarchical YAML (supports nesting).
-%   This is a simplified parser that handles the structure of pipeline_profiles.yaml.
-%   It supports:
-%     - Multi-level nesting (profiles -> default -> chassis -> track: 0.574)
-%     - Comments (lines starting with #)
-%     - Scalar values (numbers, strings, booleans)
-%   It does NOT support:
-%     - Lists/arrays
-%     - Multi-line strings
-%     - Anchors/aliases
-%     - Complex YAML features
-
-rawLines = string(splitlines(fileread(yamlPath)));
-data = struct('profiles', struct());
-
-% Parse hierarchically using indentation levels
-stack = {}; % Stack of (indent_level, struct_ref, key) tuples
-currentStruct = data;
-currentKey = "";
-currentIndent = -1;
-
-for i = 1:numel(rawLines)
-    rawLine = rawLines(i);
-    line = strtrim(rawLine);
-    
-    % Skip empty lines and comments
-    if line == "" || startsWith(line, "#")
-        continue
-    end
-    
-    % Calculate indentation (count leading spaces)
-    indent = strlength(rawLine) - strlength(strip(rawLine, 'left'));
-    
-    % Check if this is a key-value pair or just a key
-    if contains(line, ":")
-        parts = split(line, ':', 2);
-        key = strtrim(parts(1));
-        
-        if numel(parts) == 2 && strtrim(parts(2)) ~= ""
-            % Key-value pair: "key: value"
-            valueStr = strtrim(parts(2));
-            value = parseScalarValue(valueStr);
-            
-            % Navigate to correct struct level
-            [currentStruct, ~] = navigateToIndentLevel(stack, data, indent);
-            currentStruct.(key) = value;
-        else
-            % Just a key: "key:" (nested struct)
-            [parentStruct, parentKey] = navigateToIndentLevel(stack, data, indent);
-            
-            % Create nested struct if needed
-            if ~isfield(parentStruct, key)
-                parentStruct.(key) = struct();
-            end
-            
-            % Push this level onto stack
-            stack{end+1} = struct('indent', indent, 'struct', parentStruct, 'key', key);
-        end
-    end
-end
-
-end
-
-function [targetStruct, targetKey] = navigateToIndentLevel(stack, rootData, targetIndent)
-%NAVIGATETOINDENTLEVEL Navigate to the struct at the given indentation level.
-
-% Pop stack until we're at the right level
-while ~isempty(stack) && stack{end}.indent >= targetIndent
-    stack(end) = [];
-end
-
-if isempty(stack)
-    targetStruct = rootData;
-    targetKey = "";
-else
-    % Get parent from stack
-    parent = stack{end};
-    targetStruct = parent.struct.(parent.key);
-    targetKey = parent.key;
-end
-
-end
-
-function value = parseScalarValue(valueStr)
-%PARSESCALARVALUE Convert string to appropriate MATLAB type.
-
-% Remove inline comments
-hashPos = strfind(valueStr, '#');
-if ~isempty(hashPos)
-    valueStr = strtrim(extractBefore(valueStr, hashPos(1)));
-end
-
-% Parse booleans
-if valueStr == "true"
-    value = true;
-    return
-elseif valueStr == "false"
-    value = false;
-    return
-end
-
-% Parse numbers
-numVal = str2double(valueStr);
-if ~isnan(numVal)
-    value = numVal;
-    return
-end
-
-% Parse strings (remove quotes if present)
-if (startsWith(valueStr, '"') && endsWith(valueStr, '"')) || ...
-   (startsWith(valueStr, "'") && endsWith(valueStr, "'"))
-    value = string(extractBetween(valueStr, 2, strlength(valueStr)-1));
-else
-    value = string(valueStr);
+    error("gik9dof:loadPipelineProfile:InvalidJson", ...
+        "JSON file %s did not produce a struct.", jsonPath);
 end
 
 end
