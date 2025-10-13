@@ -186,9 +186,18 @@ constraintParams.wheel_max = nmpcParams.constraints.wheel_max;
 nlobj.Optimization.CustomIneqConFcn = @(X,U,data) ...
     gik9dof.mpc.wheelSpeedConstraints(X, U, data, constraintParams);
 
-% Solver options
-nlobj.Optimization.SolverOptions.MaxIterations = nmpcParams.solver.max_iterations;
-nlobj.Optimization.SolverOptions.ConstraintTolerance = nmpcParams.solver.constraint_tolerance;
+% Solver options (convert strings to numbers if needed)
+maxIter = nmpcParams.solver.max_iterations;
+if isstring(maxIter) || ischar(maxIter)
+    maxIter = str2double(maxIter);
+end
+nlobj.Optimization.SolverOptions.MaxIterations = maxIter;
+
+constraintTol = nmpcParams.solver.constraint_tolerance;
+if isstring(constraintTol) || ischar(constraintTol)
+    constraintTol = str2double(constraintTol);
+end
+nlobj.Optimization.SolverOptions.ConstraintTolerance = constraintTol;
 
 if verbose
     fprintf('  Whole-body NMPC controller created:\n');

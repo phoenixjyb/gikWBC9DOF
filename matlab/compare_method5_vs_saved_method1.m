@@ -34,54 +34,29 @@ end
 fprintf('\nStep 2: Running Method 5 (pureMPC)...\n');
 addpath(genpath('matlab'));
 
-% Create robot and load trajectory
-robot = gik9dof.createRobotModel();
-jsonPath = fullfile(projectRoot, '1_pull_world_scaled.json');
-
-% Read JSON trajectory using the internal function
-jsonText = fileread(jsonPath);
-trajData = jsondecode(jsonText);
-numWaypoints = numel(trajData.poses);
-poses = repmat(eye(4), 1, 1, numWaypoints);
-
-for k = 1:numWaypoints
-    entry = trajData.poses(k);
-    position = reshape(entry.position, [], 1);
-    quatXYZW = reshape(entry.orientation, 1, []);
-    quatWXYZ = [quatXYZW(4), quatXYZW(1:3)];
-    quatWXYZ = quatWXYZ ./ norm(quatWXYZ);
-    T = quat2tform(quatWXYZ);
-    T(1:3,4) = position;
-    poses(:,:,k) = T;
-end
-
-traj = struct('Poses', poses);
-
-% Load configuration and get initial state from Method 1
+% Load pureMPC configuration profile
 pipelineConfig = gik9dof.loadPipelineProfile('pureMPC');
-q0 = logC1.qTraj(:, 1);
 
-% Get Stage B result from Method 1 log to skip re-running Stage B
-if isfield(log1, 'stageLogs') && isfield(log1.stageLogs, 'stageB')
-    stageBResult = log1.stageLogs.stageB;
-else
-    error('Method 1 log missing Stage B data - cannot skip Stage B');
-end
+% Setup environment (disable obstacles for cleaner comparison)
+env = gik9dof.environmentConfig();
+env.FloorDiscs = struct([]);
 
-fprintf('  Using Method 1 Stage B result to skip planning\n');
-fprintf('  Running Stage C with pureMPC...\n');
+fprintf('  Running staged pipeline with pureMPC for Stage C...\n');
 
 tic;
-% Call runStagedTrajectory with Stage B already completed
-pipeline5 = gik9dof.runStagedTrajectory(robot, traj, ...
+% Call trackReferenceTrajectory with pureMPC execution mode and config
+log5 = gik9dof.trackReferenceTrajectory( ...
+    'Mode', 'staged', ...
     'ExecutionMode', 'pureMPC', ...
     'PipelineConfig', pipelineConfig, ...
-    'InitialConfiguration', q0, ...
-    'StageBResult', stageBResult, ...
-    'Verbose', true);
+    'RateHz', 10, ...
+    'Verbose', true, ...
+    'EnvironmentConfig', env, ...
+    'UseStageBHybridAStar', true, ...
+    'StageBMode', 'pureHyb');
 time5 = toc;
 
-logC5 = pipeline5.logC;
+logC5 = log5.stageLogs.stageC;
 fprintf('\n  ✅ Method 5 complete: %.1f s\n', time5);
 
 %% Extract metrics
