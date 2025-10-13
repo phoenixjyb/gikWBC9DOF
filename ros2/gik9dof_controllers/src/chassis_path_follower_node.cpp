@@ -21,7 +21,8 @@ public:
   : Node("chassis_path_follower"),
     controller_initialized_(false),
     path_received_(false),
-    pose_received_(false)
+    pose_received_(false),
+    goal_reached_(false)
   {
     // Declare parameters
     declare_parameters();
@@ -49,7 +50,7 @@ public:
       std::bind(&ChassisPathFollowerNode::control_loop, this));
     
     RCLCPP_INFO(get_logger(), "Chassis Path Follower Node initialized");
-    RCLCPP_INFO(get_logger(), "Controller Mode: %d (0=diff, 1=heading, 2=pure pursuit)",
+    RCLCPP_INFO(get_logger(), "Controller Mode: %.0f (0=diff, 1=heading, 2=pure pursuit)",
                 params_.ControllerMode);
   }
 
@@ -98,61 +99,59 @@ private:
   void initialize_controller()
   {
     // Get parameters from ROS2 parameter server
-    params_.ControllerMode = get_parameter("controller_mode").as_int();
-    
-    params_.VxMax = get_parameter("vx_max").as_double();
-    params_.VxMin = get_parameter("vx_min").as_double();
-    params_.WzMax = get_parameter("wz_max").as_double();
-    
-    params_.AccelMax = get_parameter("accel_max").as_double();
-    params_.DecelMax = get_parameter("decel_max").as_double();
-    params_.JerkLimit = get_parameter("jerk_limit").as_double();
+    params_.ControllerMode = get_parameter("controller_mode").as_double();
+    params_.ReverseEnabled = get_parameter("reverse_enabled").as_bool();
     
     params_.LookaheadBase = get_parameter("lookahead_base").as_double();
-    params_.LookaheadGain = get_parameter("lookahead_gain").as_double();
-    params_.LookaheadMin = get_parameter("lookahead_min").as_double();
-    params_.LookaheadMax = get_parameter("lookahead_max").as_double();
+    params_.LookaheadVelGain = get_parameter("lookahead_gain").as_double();
+    params_.LookaheadAccelGain = 0.0;  // Not exposed in ROS params yet
+    
+    params_.HeadingKp = get_parameter("heading_kp").as_double();
+    params_.HeadingKi = 0.0;  // Not exposed in ROS params yet
+    params_.HeadingKd = 0.0;  // Not exposed in ROS params yet
+    params_.FeedforwardGain = get_parameter("feedforward_gain").as_double();
     
     params_.KappaThreshold = get_parameter("kappa_threshold").as_double();
     params_.VxReduction = get_parameter("vx_reduction").as_double();
     
-    params_.HeadingKp = get_parameter("heading_kp").as_double();
-    params_.FeedforwardGain = get_parameter("feedforward_gain").as_double();
-    
-    params_.Chassis.TrackWidth = get_parameter("track_width").as_double();
-    params_.Chassis.WheelRadius = get_parameter("wheel_radius").as_double();
-    params_.Chassis.WheelSpeedMax = get_parameter("wheel_speed_max").as_double();
-    
     params_.GoalTolerance = get_parameter("goal_tolerance").as_double();
-    params_.ReverseEnabled = get_parameter("reverse_enabled").as_bool();
     
-    // Initialize PathInfo arrays (will be populated from path message)
-    params_.PathInfo_X_size[0] = 0;
-    params_.PathInfo_X_size[1] = 1;
-    params_.PathInfo_Y_size[0] = 0;
-    params_.PathInfo_Y_size[1] = 1;
-    params_.PathInfo_Theta_size[0] = 0;
-    params_.PathInfo_Theta_size[1] = 1;
-    params_.PathInfo_Curvature_size[0] = 0;
-    params_.PathInfo_Curvature_size[1] = 1;
-    params_.PathInfo_DistanceRemaining_size[0] = 0;
-    params_.PathInfo_DistanceRemaining_size[1] = 1;
+    // Chassis parameters (struct2_T)
+    params_.Chassis.track = get_parameter("track_width").as_double();
+    params_.Chassis.wheel_speed_max = get_parameter("wheel_speed_max").as_double();
+    params_.Chassis.vx_max = get_parameter("vx_max").as_double();
+    params_.Chassis.vx_min = get_parameter("vx_min").as_double();
+    params_.Chassis.wz_max = get_parameter("wz_max").as_double();
+    params_.Chassis.accel_limit = get_parameter("accel_max").as_double();
+    params_.Chassis.decel_limit = get_parameter("decel_max").as_double();
+    params_.Chassis.jerk_limit = get_parameter("jerk_limit").as_double();
+    params_.Chassis.wheel_base = 0.0;  // Not used for differential drive
+    params_.Chassis.reverse_enabled = get_parameter("reverse_enabled").as_bool();
+    
+    // Initialize PathInfo arrays to empty
+    params_.PathInfo_States.size[0] = 0;
+    params_.PathInfo_States.size[1] = 3;
+    params_.PathInfo_Curvature.size[0] = 0;
+    params_.PathInfo_ArcLength.size[0] = 0;
+    params_.PathInfo_DistanceRemaining.size[0] = 0;
     
     // Initialize state
+    state_.PathNumPoints = 0.0;
+    state_.CurrentIndex = 0.0;
     state_.LastVelocity = 0.0;
     state_.LastAcceleration = 0.0;
+    state_.LastHeadingError = 0.0;
+    state_.IntegralHeadingError = 0.0;
     state_.PreviousPose[0] = 0.0;
     state_.PreviousPose[1] = 0.0;
     state_.PreviousPose[2] = 0.0;
-    state_.PathIndex = 0;
     state_.DistanceTraveled = 0.0;
-    state_.TimeElapsed = 0.0;
-    state_.IsActive = false;
-    state_.GoalReached = false;
+    
+    goal_reached_ = false;
     
     controller_initialized_ = true;
     
-    RCLCPP_INFO(get_logger(), "Controller initialized with mode %d", params_.ControllerMode);
+    RCLCPP_INFO(get_logger(), "Controller initialized with mode %.0f", params_.ControllerMode);
   }
   
   void path_callback(const nav_msgs::msg::Path::SharedPtr msg)
@@ -165,48 +164,67 @@ private:
     // Limit to 500 points (max in codegen)
     size_t num_points = std::min(msg->poses.size(), size_t(500));
     
-    // Extract path data
+    // Extract path states [x, y, theta] into PathInfo_States
+    // PathInfo_States is bounded_array<double, 1500U, 2U> with size 500x3
     for (size_t i = 0; i < num_points; ++i) {
-      params_.PathInfo_X_data[i] = msg->poses[i].pose.position.x;
-      params_.PathInfo_Y_data[i] = msg->poses[i].pose.position.y;
+      params_.PathInfo_States.data[i * 3 + 0] = msg->poses[i].pose.position.x;
+      params_.PathInfo_States.data[i * 3 + 1] = msg->poses[i].pose.position.y;
       
       // Extract yaw from quaternion
       auto& q = msg->poses[i].pose.orientation;
       double siny_cosp = 2.0 * (q.w * q.z + q.x * q.y);
       double cosy_cosp = 1.0 - 2.0 * (q.y * q.y + q.z * q.z);
-      params_.PathInfo_Theta_data[i] = std::atan2(siny_cosp, cosy_cosp);
-      
-      // Curvature and distance remaining (placeholder - should be computed)
-      params_.PathInfo_Curvature_data[i] = 0.0;
-      params_.PathInfo_DistanceRemaining_data[i] = 0.0;
+      params_.PathInfo_States.data[i * 3 + 2] = std::atan2(siny_cosp, cosy_cosp);
     }
     
-    // Update array sizes
-    params_.PathInfo_X_size[0] = num_points;
-    params_.PathInfo_Y_size[0] = num_points;
-    params_.PathInfo_Theta_size[0] = num_points;
-    params_.PathInfo_Curvature_size[0] = num_points;
-    params_.PathInfo_DistanceRemaining_size[0] = num_points;
+    // Set PathInfo_States size [num_points, 3]
+    params_.PathInfo_States.size[0] = static_cast<int>(num_points);
+    params_.PathInfo_States.size[1] = 3;
+    
+    // Initialize other path arrays
+    for (size_t i = 0; i < num_points; ++i) {
+      params_.PathInfo_Curvature.data[i] = 0.0;
+      params_.PathInfo_ArcLength.data[i] = 0.0;
+      params_.PathInfo_DistanceRemaining.data[i] = 0.0;
+    }
+    
+    // Compute arc length (cumulative distance from start)
+    if (num_points > 0) {
+      params_.PathInfo_ArcLength.data[0] = 0.0;
+      for (size_t i = 1; i < num_points; ++i) {
+        double dx = params_.PathInfo_States.data[i * 3 + 0] - params_.PathInfo_States.data[(i - 1) * 3 + 0];
+        double dy = params_.PathInfo_States.data[i * 3 + 1] - params_.PathInfo_States.data[(i - 1) * 3 + 1];
+        double seg_dist = std::sqrt(dx * dx + dy * dy);
+        params_.PathInfo_ArcLength.data[i] = params_.PathInfo_ArcLength.data[i - 1] + seg_dist;
+      }
+    }
     
     // Compute distance remaining (backwards from goal)
     if (num_points > 0) {
-      params_.PathInfo_DistanceRemaining_data[num_points - 1] = 0.0;
+      params_.PathInfo_DistanceRemaining.data[num_points - 1] = 0.0;
       for (int i = num_points - 2; i >= 0; --i) {
-        double dx = params_.PathInfo_X_data[i + 1] - params_.PathInfo_X_data[i];
-        double dy = params_.PathInfo_Y_data[i + 1] - params_.PathInfo_Y_data[i];
+        double dx = params_.PathInfo_States.data[(i + 1) * 3 + 0] - params_.PathInfo_States.data[i * 3 + 0];
+        double dy = params_.PathInfo_States.data[(i + 1) * 3 + 1] - params_.PathInfo_States.data[i * 3 + 1];
         double seg_dist = std::sqrt(dx * dx + dy * dy);
-        params_.PathInfo_DistanceRemaining_data[i] = 
-          params_.PathInfo_DistanceRemaining_data[i + 1] + seg_dist;
+        params_.PathInfo_DistanceRemaining.data[i] = 
+          params_.PathInfo_DistanceRemaining.data[i + 1] + seg_dist;
       }
     }
     
     // Compute curvature (3-point method)
     if (num_points >= 3) {
       for (size_t i = 1; i < num_points - 1; ++i) {
-        double dx1 = params_.PathInfo_X_data[i] - params_.PathInfo_X_data[i - 1];
-        double dy1 = params_.PathInfo_Y_data[i] - params_.PathInfo_Y_data[i - 1];
-        double dx2 = params_.PathInfo_X_data[i + 1] - params_.PathInfo_X_data[i];
-        double dy2 = params_.PathInfo_Y_data[i + 1] - params_.PathInfo_Y_data[i];
+        double x0 = params_.PathInfo_States.data[(i - 1) * 3 + 0];
+        double y0 = params_.PathInfo_States.data[(i - 1) * 3 + 1];
+        double x1 = params_.PathInfo_States.data[i * 3 + 0];
+        double y1 = params_.PathInfo_States.data[i * 3 + 1];
+        double x2 = params_.PathInfo_States.data[(i + 1) * 3 + 0];
+        double y2 = params_.PathInfo_States.data[(i + 1) * 3 + 1];
+        
+        double dx1 = x1 - x0;
+        double dy1 = y1 - y0;
+        double dx2 = x2 - x1;
+        double dy2 = y2 - y1;
         
         double dtheta = std::atan2(dy2, dx2) - std::atan2(dy1, dx1);
         // Wrap to [-pi, pi]
@@ -214,17 +232,25 @@ private:
         while (dtheta < -M_PI) dtheta += 2.0 * M_PI;
         
         double ds = std::sqrt(dx2 * dx2 + dy2 * dy2);
-        params_.PathInfo_Curvature_data[i] = (ds > 1e-6) ? (dtheta / ds) : 0.0;
+        params_.PathInfo_Curvature.data[i] = (ds > 1e-6) ? (dtheta / ds) : 0.0;
       }
       // Endpoints use neighbor values
-      params_.PathInfo_Curvature_data[0] = params_.PathInfo_Curvature_data[1];
-      params_.PathInfo_Curvature_data[num_points - 1] = 
-        params_.PathInfo_Curvature_data[num_points - 2];
+      params_.PathInfo_Curvature.data[0] = params_.PathInfo_Curvature.data[1];
+      params_.PathInfo_Curvature.data[num_points - 1] = 
+        params_.PathInfo_Curvature.data[num_points - 2];
     }
     
+    // Set sizes for other arrays
+    params_.PathInfo_Curvature.size[0] = static_cast<int>(num_points);
+    params_.PathInfo_ArcLength.size[0] = static_cast<int>(num_points);
+    params_.PathInfo_DistanceRemaining.size[0] = static_cast<int>(num_points);
+    
+    // Update state with path info
+    state_.PathNumPoints = static_cast<double>(num_points);
+    state_.CurrentIndex = 0.0;
+    
     path_received_ = true;
-    state_.IsActive = true;
-    state_.GoalReached = false;
+    goal_reached_ = false;
     
     RCLCPP_INFO(get_logger(), "Received path with %zu points", num_points);
   }
@@ -249,8 +275,8 @@ private:
       return;
     }
     
-    if (!state_.IsActive || state_.GoalReached) {
-      // Publish zero velocity when inactive
+    if (goal_reached_) {
+      // Publish zero velocity when goal is reached
       geometry_msgs::msg::Twist cmd;
       cmd.linear.x = 0.0;
       cmd.angular.z = 0.0;
@@ -261,12 +287,11 @@ private:
     // Call MATLAB Coder generated function
     double dt = 0.01;  // 100 Hz control rate
     double vx_cmd, wz_cmd;
-    struct0_T status;
+    struct3_T status;
     
-    gik9dof::ChassisPathFollower controller;
-    controller.chassisPathFollowerCodegen(
+    controller_.chassisPathFollowerCodegen(
       current_pose_, dt, &state_, &params_,
-      &vx_cmd, &wz_cmd, &state_, &status);
+      &vx_cmd, &wz_cmd, &status);
     
     // Publish velocity command
     geometry_msgs::msg::Twist cmd;
@@ -281,20 +306,21 @@ private:
     
     // Update goal reached flag
     if (status.isFinished) {
-      state_.GoalReached = true;
-      state_.IsActive = false;
+      goal_reached_ = true;
       RCLCPP_INFO(get_logger(), "Goal reached!");
     }
   }
   
   // Member variables
-  ChassisPathParams params_;
-  ChassisPathState state_;
+  ChassisPathFollower controller_;
+  struct1_T params_;  // Parameters structure
+  struct0_T state_;   // State structure
   double current_pose_[3];
   
   bool controller_initialized_;
   bool path_received_;
   bool pose_received_;
+  bool goal_reached_;
   
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub_;
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr status_pub_;
