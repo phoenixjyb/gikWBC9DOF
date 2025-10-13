@@ -1,9 +1,24 @@
 # Project Diagnosis: gikWBC9DOF - Comprehensive System Analysis
 
 **Generated:** October 12, 2025  
-**Last Updated:** October 12, 2025  
+**Last Updated:** October 13, 2025  
 **Focus:** Staged Mode Data Flow, File Relationships, and System Architecture  
 **Project:** gikWBC9DOF = **G**eneralized **I**nverse **K**inematics **W**hole **B**ody **C**ontrol for **9 DOF** mobile manipulator
+
+---
+
+## 📚 Related Documentation
+
+**Stage C Methods Analysis:**
+- **[STAGE_C_METHODS_COMPLETE_ANALYSIS.md](STAGE_C_METHODS_COMPLETE_ANALYSIS.md)** - Comprehensive comparison of all Stage C methods (0, 1, 4, MPC) including the newly implemented Method 4 (ppFirst) and proposed MPC approach
+- **[MPC_IMPLEMENTATION_ANALYSIS.md](MPC_IMPLEMENTATION_ANALYSIS.md)** - Deep dive into Methods 2 & 3 from Section 10 of this document, plus detailed MPC implementation plan
+- **[g5wbcMpcDesign.md](g5wbcMpcDesign.md)** - Mathematical formulation and design of true NMPC approach for nonholonomic mobile manipulator
+- **[docs/METHOD_NUMBERING_GUIDE.md](docs/METHOD_NUMBERING_GUIDE.md)** - Complete reference guide for all Stage C methods with usage examples
+
+**October 2025 Updates:**
+- ✅ Method 4 (ppFirst) implementation merged from `origin/main`
+- ✅ MPC design document added for future development
+- ✅ Comprehensive analysis documents created for all approaches
 
 ---
 
@@ -4388,6 +4403,8 @@ Waypoint k:
 
 **Status:** 💡 PROPOSED (Not Yet Implemented)
 
+> **📚 See Also:** [MPC_IMPLEMENTATION_ANALYSIS.md](MPC_IMPLEMENTATION_ANALYSIS.md) for detailed analysis of this approach, comparison with Method 4 (ppFirst), and implementation recommendations.
+
 **Important Note: Offline Planning vs. Real-Time Execution**
 
 ⚠️ **All three passes are OFFLINE planning** - the robot does NOT move during Pass 1/2/3!
@@ -4580,6 +4597,10 @@ The iterative feedback approach represents a **Model Predictive Control (MPC)** 
 ### Stage C Method 3: Differential Inverse Kinematics
 
 **Status:** 🚧 PROPOSED (Under Discussion - October 12, 2025)
+
+> **📚 See Also:** 
+> - [MPC_IMPLEMENTATION_ANALYSIS.md](MPC_IMPLEMENTATION_ANALYSIS.md) for detailed analysis and comparison with true MPC approach
+> - [g5wbcMpcDesign.md](g5wbcMpcDesign.md) for full NMPC formulation that supersedes this approach
 
 #### Motivation
 
