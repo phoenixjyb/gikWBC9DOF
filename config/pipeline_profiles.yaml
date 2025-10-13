@@ -246,3 +246,66 @@ profiles:
         track_width: 0.329
         desired_linear_velocity: 0.8
         max_linear_speed: 1.0
+
+  # =============================================================================
+  # PURE MPC PROFILE - Method 5: True receding horizon NMPC
+  # =============================================================================
+  pureMPC:
+    description: "Method 5 - True receding horizon NMPC using MATLAB MPC Toolbox"
+    inherits: "default"
+    
+    # Override Stage C parameters for MPC
+    overrides:
+      stage_c:
+        # NMPC-specific parameters
+        nmpc:
+          horizon: 20                   # Prediction horizon steps
+          control_horizon: 10           # Control horizon steps (reduces DOF)
+          sample_time: 0.1              # s (control period, 10 Hz)
+          control_rate: 10              # Hz (1/sample_time)
+          
+          # State: [x, y, theta]
+          # Inputs: [v, omega]
+          
+          # Cost weights
+          weights:
+            tracking: 100.0             # Position tracking weight (x, y)
+            tracking_theta: 10.0        # Heading tracking weight (less important)
+            input_v: 1.0                # Linear velocity input weight
+            input_omega: 10.0           # Angular velocity input weight (penalize turning)
+            rate_v: 2.0                 # Linear velocity rate weight (smoothness)
+            rate_omega: 20.0            # Angular velocity rate weight (smoothness)
+            terminal: 500.0             # Terminal cost weight (optional)
+          
+          # Constraints
+          constraints:
+            v_max: 0.5                  # m/s (linear velocity limit)
+            v_min: -0.2                 # m/s (allow limited reverse)
+            omega_max: 0.8              # rad/s (angular velocity limit)
+            omega_min: -0.8             # rad/s
+            wheel_max: 0.6              # m/s (individual wheel speed limit)
+            track_width: 0.574          # m (must match chassis.track)
+          
+          # Solver options
+          solver:
+            max_iterations: 100         # Maximum optimization iterations
+            constraint_tolerance: 1e-4  # Constraint violation tolerance
+            optimality_tolerance: 1e-5  # Optimality tolerance
+            
+          # Collision avoidance (future enhancement)
+          collision:
+            enabled: false              # Enable obstacle avoidance
+            safety_radius: 0.3          # m (robot safety radius)
+            obstacle_zones: []          # List of [x, y, r] obstacles
+        
+        # Arm IK parameters for MPC
+        arm_ik:
+          max_iterations: 100           # Arm IK max iterations
+          tolerance: 1e-3               # m (position tolerance)
+          weights: [1, 1, 1, 1, 1, 1]   # IK weights [pos_x, pos_y, pos_z, rot_x, rot_y, rot_z]
+        
+        # Override velocity params (MPC controls these)
+        desired_linear_velocity: 0.5    # m/s (initial guess/reference)
+        max_linear_speed: 0.5           # m/s (conservative for MPC)
+        max_angular_velocity: 0.8       # rad/s
+

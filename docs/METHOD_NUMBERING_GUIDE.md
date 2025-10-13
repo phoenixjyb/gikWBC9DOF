@@ -14,6 +14,7 @@
 | **2** | Iterative MPC | *(not assigned)* | ❌ Not Implemented | Per-waypoint projection | N/A |
 | **3** | Differential IK QP | *(not assigned)* | ❌ Not Implemented | Unified QP solver | N/A |
 | **4** | PP-First | `'ppFirst'` | ✅ **Implemented** | Predict→Constrain→Solve | ~276 lines |
+| **5** | Pure MPC | `'pureMPC'` | 🚧 **In Development** | Receding horizon NMPC | TBD |
 
 ---
 
@@ -500,6 +501,83 @@ compareResults(result_m1, result_m4);
 
 ---
 
+---
+
+## Method 5: Pure MPC (`'pureMPC'`)
+
+**Status:** 🚧 In Development (October 2025)  
+**Location:** `matlab/+gik9dof/runStageCPureMPC.m` (planned)  
+**Design Document:** `g5wbcMpcDesign.md`, `METHOD5_IMPLEMENTATION_PLAN.md`
+
+#### Architecture
+```
+Receding Horizon Loop (10-20 Hz):
+  1. Get reference trajectory segment [k:k+N]
+  2. Solve NMPC over horizon N steps:
+     - Decision vars: [v, ω](k:k+N-1), s(k:k+N)
+     - Minimize: tracking + input + terminal cost
+     - Subject to: unicycle dynamics, wheel limits, collisions
+  3. Extract first control [v*, ω*](k)
+  4. Simulate one step: x(k+1) = f(x(k), [v*, ω*])
+  5. Solve arm IK for fixed base at x(k+1)
+  6. Advance horizon
+```
+
+#### Characteristics
+- **True MPC**: Online receding horizon optimization (unlike Methods 1-4 which are offline)
+- **Fundamental constraint**: Nonholonomic embedded in dynamics - **cannot request sideways motion**
+- **Lookahead**: N=20 steps (2 seconds @ dt=0.1s)
+- **Control rate**: 10-20 Hz (compute-intensive)
+- **Dependencies**: CasADi + IPOPT solver
+- **Use case**: Online control, dynamic environments, guaranteed constraint satisfaction
+
+#### Key Differences from Methods 1-4
+| Aspect | Methods 0-4 | Method 5 (pureMPC) |
+|--------|-------------|-------------------|
+| Planning | Offline | Online |
+| Constraint handling | Post-hoc correction | Embedded in dynamics |
+| Sideways motion | Can request → correct | Cannot request by design |
+| Solve frequency | Once per trajectory | 10-20 Hz during execution |
+| Adaptability | Static | Dynamic (reacts to disturbances) |
+
+#### Configuration
+```yaml
+pureMPC:
+  executionMode: 'pureMPC'
+  nmpc:
+    horizon: 20
+    dt: 0.1
+    control_rate: 10  # Hz
+  weights:
+    tracking: 100.0
+    input_v: 1.0
+    input_omega: 10.0
+    terminal: 500.0
+  constraints:
+    v_max: 0.5
+    omega_max: 0.8
+    wheel_max: 0.6
+    track_width: 0.574
+```
+
+#### Usage (When Ready)
+```matlab
+pipeline = gik9dof.runStagedTrajectory(robot, trajWaypoints, ...
+    'ExecutionMode', 'pureMPC', ...
+    'ConfigTools', configTools, ...
+    'ChassisProfile', 'wide_track', ...
+    'Verbose', true);
+```
+
+#### Implementation Plan
+See `METHOD5_IMPLEMENTATION_PLAN.md` for detailed phases:
+- **Phase 1 (Weeks 1-2):** Foundation, dependencies, configuration
+- **Phase 2 (Weeks 3-5):** Core NMPC implementation
+- **Phase 3 (Weeks 6-8):** Integration & testing
+- **Phase 4 (Weeks 9-12):** Optimization & tuning
+
+---
+
 ## Summary
 
 | Method | Best For | Status |
@@ -509,10 +587,14 @@ compareResults(result_m1, result_m4);
 | **2 (MPC)** | *(skipped - flawed approach)* | ❌ Not planned |
 | **3 (Diff IK QP)** | Future research | ⏳ Not started |
 | **4 (ppFirst)** | New production alternative | ✅ Ready |
+| **5 (pureMPC)** | Online control, true MPC | 🚧 In Development |
 
 **Current Recommendation:** 
 - Start with **Method 1** (ppForIk) - proven and stable
 - Switch to **Method 4** (ppFirst) if encountering tracking failures
+- Use **Method 5** (pureMPC) when online control with guaranteed constraints is required
 - Use **Method 0** (pureIk) only for debugging
 
-**October 2025 Status:** Methods 0, 1, and 4 fully implemented and tested. ✅
+**October 2025 Status:** 
+- Methods 0, 1, 4: ✅ Fully implemented and tested
+- Method 5: 🚧 Implementation in progress (8-12 weeks estimated)

@@ -67,7 +67,7 @@ arguments
     options.StageBDockingYawTolerance (1,1) double {mustBeNonnegative} = 2*pi/180
     options.ChassisProfile (1,1) string = "wide_track"
     options.ChassisOverrides struct = struct()
-    options.ExecutionMode (1,1) string {mustBeMember(options.ExecutionMode, ["pureIk","ppForIk","ppFirst"])} = "ppForIk"
+    options.ExecutionMode (1,1) string {mustBeMember(options.ExecutionMode, ["pureIk","ppForIk","ppFirst","pureMPC"])} = "ppForIk"
     options.StageCLookaheadDistance (1,1) double {mustBePositive} = 0.8
     options.StageCLookaheadVelGain (1,1) double {mustBeNonnegative} = 0.2
     options.StageCLookaheadTimeGain (1,1) double {mustBeNonnegative} = 0.05
@@ -194,6 +194,8 @@ if ~isempty(trajC.Poses)
             logC = executeStageCPureIk(robot, trajC, qB_end, baseIdx, velLimits, options);
         case "ppFirst"
             logC = executeStageCPPFirst(robot, trajC, qB_end, baseIdx, armIdx, velLimits, chassisParams, alignmentInfo, options, stageBResult);
+        case "pureMPC"
+            logC = executeStageCPureMPC(robot, trajC, qB_end, baseIdx, armIdx, velLimits, chassisParams, alignmentInfo, options, stageBResult);
         otherwise
             error('gik9dof:runStagedTrajectory:UnsupportedExecutionMode', ...
                 'Unknown execution mode "%s".', string(options.ExecutionMode));
@@ -999,6 +1001,129 @@ if options.Verbose
     fprintf('    Yaw Drift from PP: mean=%.1f° max=%.1f°\n', ...
         rad2deg(stageCDiagnostics.baseYawDrift.mean), ...
         rad2deg(stageCDiagnostics.baseYawDrift.max));
+end
+end
+
+function logC = executeStageCPureMPC(robot, trajStruct, qStart, baseIdx, armIdx, ~, chassisParams, ~, options, ~)
+%EXECUTESTAGECPUREMPC Stage C execution using Pure MPC method (Method 5).
+%   Wrapper function that integrates runStageCPureMPC into the staged pipeline.
+%   This method uses true receding horizon Nonlinear MPC with MATLAB MPC Toolbox
+%   to control the differential drive base while solving arm IK at each step.
+%
+%   Architecture: BUILD NMPC → LOOP: [Solve NMPC → Simulate base → Solve arm IK]
+
+% Extract NMPC parameters from options.PipelineConfig
+% Assumes PipelineConfig was loaded with pureMPC profile
+if isfield(options, 'PipelineConfig') && isfield(options.PipelineConfig, 'stage_c')
+    stageCConfig = options.PipelineConfig.stage_c;
+    if isfield(stageCConfig, 'nmpc')
+        nmpcParams = stageCConfig.nmpc;
+    else
+        error('gik9dof:executeStageCPureMPC:NoNMPCConfig', ...
+            'pureMPC profile must contain stage_c.nmpc configuration. Use loadPipelineProfile(''pureMPC'').');
+    end
+    if isfield(stageCConfig, 'arm_ik')
+        armIKParams = stageCConfig.arm_ik;
+    else
+        armIKParams = struct('max_iterations', 100, 'tolerance', 1e-3, 'weights', [1 1 1 1 1 1]);
+    end
+else
+    error('gik9dof:executeStageCPureMPC:NoPipelineConfig', ...
+        'pureMPC execution requires PipelineConfig with pureMPC profile loaded.');
+end
+
+% Build NMPC options
+mpcOpts = struct();
+mpcOpts.NMPCParams = nmpcParams;
+mpcOpts.ArmIKParams = armIKParams;
+mpcOpts.BaseIndices = baseIdx;
+mpcOpts.ArmIndices = armIdx;
+mpcOpts.EndEffector = trajStruct.EndEffectorName;
+mpcOpts.VerboseLevel = double(options.Verbose);
+
+% Call the main pureMPC implementation
+rawLog = gik9dof.runStageCPureMPC(robot, trajStruct, qStart, ...
+    'NMPCParams', mpcOpts.NMPCParams, ...
+    'ArmIKParams', mpcOpts.ArmIKParams, ...
+    'BaseIndices', mpcOpts.BaseIndices, ...
+    'ArmIndices', mpcOpts.ArmIndices, ...
+    'EndEffector', mpcOpts.EndEffector, ...
+    'VerboseLevel', mpcOpts.VerboseLevel);
+
+% Transform raw log into format compatible with runStagedTrajectory expectations
+N = size(rawLog.qTraj, 2);
+logC = struct();
+logC.qTraj = rawLog.qTraj;
+logC.timestamps = rawLog.timestamps;
+logC.time = rawLog.timestamps;  % Required for mergeStageLogs
+logC.successMask = rawLog.armIKSuccess;  % Arm IK success flags
+logC.exitFlags = double(rawLog.mpcExitFlag);  % MPC solver exit flags
+logC.iterations = rawLog.mpcIterations;  % MPC iterations per step
+logC.constraintViolationMax = zeros(1, N);  % TODO: Extract from MPC solver
+logC.positionError = rawLog.positionError;
+logC.positionErrorNorm = rawLog.positionErrorNorm;
+logC.orientationErrorQuat = zeros(4, N);  % TODO: Add orientation tracking
+logC.orientationErrorAngle = zeros(1, N);
+logC.targetPositions = rawLog.targetPositions;
+logC.eePositions = rawLog.eePositions;
+logC.eeOrientations = zeros(4, N);  % TODO: Add orientation tracking
+logC.execBaseStates = rawLog.baseActual';  % [N x 3]
+logC.referenceBaseStates = rawLog.basePredicted';  % Reference from trajectory
+logC.cmdLog = table(rawLog.timestamps(:), rawLog.baseCommands(:,1), rawLog.baseCommands(:,2), ...
+    'VariableNames', {'time', 'v', 'omega'});
+
+% Reconstruct poses from trajectory and FK
+logC.targetPoses = zeros(4, 4, N);
+logC.eePoses = zeros(4, 4, N);
+logC.targetOrientations = zeros(4, N);
+for i = 1:N
+    logC.targetPoses(:, :, i) = trajStruct.Poses(:, :, i);
+    R_target = trajStruct.Poses(1:3, 1:3, i);
+    logC.targetOrientations(:, i) = rotm2quat(R_target)';
+    
+    T_ee = getTransform(robot, rawLog.qTraj(:, i), char(trajStruct.EndEffectorName));
+    logC.eePoses(:, :, i) = T_ee;
+    logC.eeOrientations(:, i) = rotm2quat(T_ee(1:3, 1:3))';
+end
+
+% Build diagnostics
+stageCDiagnostics = struct();
+stageCDiagnostics.method = 'pureMPC';
+stageCDiagnostics.nWaypoints = N;
+stageCDiagnostics.meanEEError = rawLog.avgEEError;
+stageCDiagnostics.maxEEError = rawLog.maxEEError;
+stageCDiagnostics.meanSolveTime = rawLog.avgSolveTime;
+stageCDiagnostics.controlFrequency = rawLog.controlFrequency;
+stageCDiagnostics.armIKSuccessRate = sum(rawLog.armIKSuccess) / N;
+stageCDiagnostics.mpcConvergenceRate = sum(rawLog.mpcExitFlag > 0) / N;
+stageCDiagnostics.meanMPCIterations = mean(rawLog.mpcIterations(rawLog.mpcExitFlag > 0));
+stageCDiagnostics.meanMPCCost = mean(rawLog.mpcCost(rawLog.mpcExitFlag > 0));
+
+% Compute base tracking error (MPC prediction vs actual)
+baseErrors = rawLog.baseActual - rawLog.basePredicted;
+stageCDiagnostics.baseTrackingError = struct();
+stageCDiagnostics.baseTrackingError.meanXY = mean(vecnorm(baseErrors(1:2, :)));
+stageCDiagnostics.baseTrackingError.maxXY = max(vecnorm(baseErrors(1:2, :)));
+stageCDiagnostics.baseTrackingError.meanTheta = mean(abs(baseErrors(3, :)));
+stageCDiagnostics.baseTrackingError.maxTheta = max(abs(baseErrors(3, :)));
+
+logC.stageCDiagnostics = stageCDiagnostics;
+logC.simulationMode = 'pureMPC';
+logC.nmpcParams = nmpcParams;
+logC.armIKParams = armIKParams;
+
+if options.Verbose
+    fprintf('  === Method 5 (pureMPC) Stage C Summary ===\n');
+    fprintf('    Waypoints: %d\n', N);
+    fprintf('    Mean EE error: %.2f mm (max: %.2f mm)\n', ...
+        stageCDiagnostics.meanEEError * 1000, stageCDiagnostics.maxEEError * 1000);
+    fprintf('    Mean solve time: %.1f ms (%.1f Hz)\n', ...
+        stageCDiagnostics.meanSolveTime * 1000, stageCDiagnostics.controlFrequency);
+    fprintf('    Arm IK success: %.1f%%\n', stageCDiagnostics.armIKSuccessRate * 100);
+    fprintf('    MPC convergence: %.1f%%\n', stageCDiagnostics.mpcConvergenceRate * 100);
+    fprintf('    Base tracking: mean=%.2f cm, max=%.2f cm\n', ...
+        stageCDiagnostics.baseTrackingError.meanXY * 100, ...
+        stageCDiagnostics.baseTrackingError.maxXY * 100);
 end
 end
 
