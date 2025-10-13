@@ -288,8 +288,8 @@ for i = 1:numel(rawLines)
         continue
     end
     
-    % Calculate indentation
-    indent = strlength(rawLine) - strlength(lstrip(rawLine));
+    % Calculate indentation (count leading spaces)
+    indent = strlength(rawLine) - strlength(strip(rawLine, 'left'));
     
     % Check if this is a key-value pair or just a key
     if contains(line, ":")
