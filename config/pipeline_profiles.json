@@ -198,6 +198,70 @@
           "max_linear_speed": 1.0
         }
       }
+    },
+    "pureMPC": {
+      "description": "Method 5 - Whole-body NMPC using MATLAB MPC Toolbox (Redesigned)",
+      "inherits": "default",
+      "overrides": {
+        "stage_c": {
+          "nmpc": {
+            "horizon": 20,
+            "control_horizon": 10,
+            "sample_time": 0.1,
+            "control_rate": 10,
+            "weights": {
+              "position": 100.0,
+              "orientation": 50.0,
+              "input_v": 1.0,
+              "input_omega": 10.0,
+              "input_arm": 0.01,
+              "rate_v": 2.0,
+              "rate_omega": 20.0,
+              "rate_arm": 0.1,
+              "terminal": 5.0
+            },
+            "constraints": {
+              "v_max": 0.5,
+              "v_min": -0.2,
+              "omega_max": 0.8,
+              "omega_min": -0.8,
+              "wheel_max": 0.6,
+              "track_width": 0.574,
+              "q_dot_arm_min": -0.5,
+              "q_dot_arm_max": 0.5,
+              "q_arm_min": [
+                -2.8798,
+                0.0,
+                -3.3161,
+                -2.8798,
+                -1.6581,
+                -2.8798
+              ],
+              "q_arm_max": [
+                2.8798,
+                3.2289,
+                0.0,
+                2.8798,
+                1.6581,
+                2.8798
+              ]
+            },
+            "solver": {
+              "max_iterations": 100,
+              "constraint_tolerance": "1e-4",
+              "optimality_tolerance": "1e-5"
+            },
+            "collision": {
+              "enabled": false,
+              "safety_radius": 0.3,
+              "obstacle_zones": []
+            }
+          },
+          "desired_linear_velocity": 0.5,
+          "max_linear_speed": 0.5,
+          "max_angular_velocity": 0.8
+        }
+      }
     }
   }
 }

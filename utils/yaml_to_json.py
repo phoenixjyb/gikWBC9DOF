@@ -37,17 +37,17 @@ def yaml_to_json(yaml_path: Path, json_path: Optional[Path] = None, indent: int 
         json_path: Path to output JSON file (default: same name with .json extension)
         indent: JSON indentation level for readability
     """
-    # Read YAML
-    with open(yaml_path, 'r') as f:
+    # Read YAML with explicit UTF-8 encoding
+    with open(yaml_path, 'r', encoding='utf-8') as f:
         data = yaml.safe_load(f)
     
     # Determine output path
     if json_path is None:
         json_path = yaml_path.with_suffix('.json')
     
-    # Write JSON
-    with open(json_path, 'w') as f:
-        json.dump(data, f, indent=indent)
+    # Write JSON with explicit UTF-8 encoding
+    with open(json_path, 'w', encoding='utf-8') as f:
+        json.dump(data, f, indent=indent, ensure_ascii=False)
     
     print(f"✅ Converted {yaml_path} -> {json_path}")
     print(f"   Size: {yaml_path.stat().st_size} bytes (YAML) -> {json_path.stat().st_size} bytes (JSON)")
