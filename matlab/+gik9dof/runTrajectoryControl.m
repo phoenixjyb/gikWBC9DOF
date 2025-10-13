@@ -28,6 +28,8 @@ function log = runTrajectoryControl(bundle, trajectory, options)
 %                              continues.
 %       Verbose              - If true print per-step summaries (default
 %                              false).
+%       DistanceUpdateFcn    - Optional @(info) callback invoked before each
+%                              solve step to refresh distance-bound geometry.
 %
 %   The returned log struct contains:
 %       qTraj          - Joint configurations (nJoints x N+1) including the
@@ -54,6 +56,7 @@ arguments
     options.Verbose (1,1) logical = false
     options.VelocityLimits struct = struct()
     options.FixedJointTrajectory struct = struct()
+    options.DistanceUpdateFcn = []
 end
 
 poses = trajectory.Poses;
@@ -64,6 +67,12 @@ commandFcn = options.CommandFcn;
 if ~isempty(commandFcn) && ~isa(commandFcn, 'function_handle')
     error("gik9dof:runTrajectoryControl:InvalidCommandFcn", ...
         "CommandFcn must be a function handle or empty.");
+end
+
+distanceUpdateFcn = options.DistanceUpdateFcn;
+if ~isempty(distanceUpdateFcn) && ~isa(distanceUpdateFcn, 'function_handle')
+    error("gik9dof:runTrajectoryControl:InvalidDistanceUpdateFcn", ...
+        "DistanceUpdateFcn must be a function handle or empty.");
 end
 
 % Optional trajectory overlays.
@@ -185,6 +194,25 @@ sampleTime = 1 / options.RateHz;
 for k = 1:numWaypoints
     currentPose = poses(:,:,k);
     solveArgs = {"TargetPose", currentPose};
+
+    if ~isempty(distanceUpdateFcn)
+        updateInfo = struct( ...
+            'Step', k, ...
+            'TargetPose', currentPose, ...
+            'Configuration', q, ...
+            'DistanceConstraints', bundle.constraints.distance, ...
+            'SelfCollisionConstraint', []);
+        if isfield(bundle.constraints, 'self')
+            updateInfo.SelfCollisionConstraint = bundle.constraints.self;
+        end
+        updateInfo.ElapsedTime = (k-1) * sampleTime;
+        try
+            distanceUpdateFcn(updateInfo);
+        catch updateErr
+            warning("gik9dof:runTrajectoryControl:DistanceUpdateFailed", ...
+                "DistanceUpdateFcn threw an error at step %d: %s", k, updateErr.message);
+        end
+    end
 
     if useFixedTrajectory
         valuesStep = fixedValues(:,k);

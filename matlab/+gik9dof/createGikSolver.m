@@ -55,6 +55,9 @@ arguments
     options.DistanceReferenceBody (1,1) string = ""
     options.DistanceBounds (1,2) double = [0.2 Inf]
     options.DistanceWeight (1,1) double = 0.5
+    options.EnableSelfCollision (1,1) logical = false
+    options.SelfCollisionSafetyDistance (1,1) double {mustBeNonnegative} = 0.0
+    options.SelfCollisionWeight (1,1) double {mustBeNonnegative} = 1.0
     options.DistanceSpecs = struct([])
     options.MaxIterations (1,1) double {mustBePositive} = 1500
 end
@@ -99,6 +102,33 @@ if ~isempty(distanceConst)
     constraintInputs = [constraintInputs, repmat({'distance'}, 1, numel(distanceConst))]; %#ok<AGROW>
 end
 
+selfConst = [];
+if options.EnableSelfCollision
+    try
+        tmpSelf = constraintSelfCollision(robot);
+        if isprop(tmpSelf, 'SafetyDistance')
+            tmpSelf.SafetyDistance = options.SelfCollisionSafetyDistance;
+        elseif options.SelfCollisionSafetyDistance > 0
+            warning('gik9dof:createGikSolver:SelfCollisionSafetyUnsupported', ...
+                'Self-collision constraint does not expose SafetyDistance; ignoring requested value %.3f.', ...
+                options.SelfCollisionSafetyDistance);
+        end
+        if isprop(tmpSelf, 'Weights')
+            tmpSelf.Weights = options.SelfCollisionWeight;
+        elseif options.SelfCollisionWeight ~= 1
+            warning('gik9dof:createGikSolver:SelfCollisionWeightUnsupported', ...
+                'Self-collision constraint does not expose Weights; ignoring requested weight %.3f.', ...
+                options.SelfCollisionWeight);
+        end
+        selfConst = tmpSelf;
+        constraintInputs{end+1} = 'selfcollision'; %#ok<AGROW>
+    catch selfErr
+        warning('gik9dof:createGikSolver:SelfCollisionInitFailed', ...
+            'Failed to create self-collision constraint: %s', selfErr.message);
+        selfConst = [];
+    end
+end
+
 % Configure core solver now that constraint sequence is known.
 gik = generalizedInverseKinematics( ...
     'RigidBodyTree', robot, ...
@@ -120,6 +150,7 @@ bundle.constraints.pose = poseTgt;
 bundle.constraints.joint = jointConst;
 bundle.constraints.aim = aimConst;
 bundle.constraints.distance = distanceConst;
+bundle.constraints.self = selfConst;
 bundle.distanceSpecs = distanceSpecs;
 
 bundle.tools.home = @() configTools.homeConfig();
@@ -135,8 +166,11 @@ bundle.setAimWeight = @(w) setAimWeight(aimConst, w);
 bundle.setDistanceBounds = @(bounds, idx) setDistanceBounds(distanceConst, bounds, idx);
 bundle.setDistanceReference = @(ref, idx) setDistanceReference(distanceConst, ref, idx);
 bundle.setDistanceWeight = @(w, idx) setDistanceWeight(distanceConst, w, idx);
+bundle.setSelfCollisionEnabled = @(flag) setSelfCollisionEnabled(selfConst, flag);
+bundle.setSelfCollisionSafety = @(dist) setSelfCollisionSafety(selfConst, dist);
+bundle.setSelfCollisionWeight = @(w) setSelfCollisionWeight(selfConst, w);
 
-bundle.solve = @(q0, varargin) solveStep(gik, q0, poseTgt, jointConst, aimConst, distanceConst, varargin{:});
+bundle.solve = @(q0, varargin) solveStep(gik, q0, poseTgt, jointConst, aimConst, distanceConst, selfConst, varargin{:});
 end
 
 function setPrimaryTarget(poseTgt, target)
@@ -260,6 +294,55 @@ for k = 1:numel(idxList)
 end
 end
 
+function setSelfCollisionEnabled(selfConst, flag)
+if isempty(selfConst)
+    return
+end
+validateattributes(flag, {'logical','numeric'}, {'scalar'}, mfilename, 'flag');
+try
+    selfConst.Enabled = logical(flag);
+catch selfErr
+    warning('gik9dof:createGikSolver:SelfCollisionEnableFailed', ...
+        'Failed to update self-collision enabled state: %s', selfErr.message);
+end
+end
+
+function setSelfCollisionSafety(selfConst, dist)
+if isempty(selfConst)
+    return
+end
+if ~isprop(selfConst, 'SafetyDistance')
+    warning('gik9dof:createGikSolver:SelfCollisionSafetyUnavailable', ...
+        'Self-collision constraint does not support SafetyDistance updates.');
+    return
+end
+validateattributes(dist, {'double'}, {'scalar', 'nonnegative', 'finite'}, mfilename, 'dist');
+try
+    selfConst.SafetyDistance = dist;
+catch selfErr
+    warning('gik9dof:createGikSolver:SelfCollisionSafetyFailed', ...
+        'Failed to update self-collision safety distance: %s', selfErr.message);
+end
+end
+
+function setSelfCollisionWeight(selfConst, weight)
+if isempty(selfConst)
+    return
+end
+if ~isprop(selfConst, 'Weights')
+    warning('gik9dof:createGikSolver:SelfCollisionWeightUnavailable', ...
+        'Self-collision constraint does not support weight updates.');
+    return
+end
+validateattributes(weight, {'double'}, {'scalar', 'nonnegative', 'finite'}, mfilename, 'weight');
+try
+    selfConst.Weights = weight;
+catch selfErr
+    warning('gik9dof:createGikSolver:SelfCollisionWeightFailed', ...
+        'Failed to update self-collision weight: %s', selfErr.message);
+end
+end
+
 function idxList = resolveDistanceIndices(distanceConst, idx)
 if isempty(distanceConst)
     idxList = [];
@@ -373,7 +456,7 @@ catch
 end
 end
 
-function [qNext, info] = solveStep(gik, q0, poseTgt, jointConst, aimConst, distanceConst, varargin)
+function [qNext, info] = solveStep(gik, q0, poseTgt, jointConst, aimConst, distanceConst, selfConst, varargin)
 %SOLVESTEP Wrapper that updates constraint targets before invoking GIK.
 parser = inputParser;
 parser.FunctionName = 'gik9dof:createGikSolver';
@@ -405,6 +488,9 @@ if ~isempty(aimConst)
 end
 if ~isempty(distanceConst)
     constraints = [constraints, distanceConst]; %#ok<*AGROW>
+end
+if ~isempty(selfConst)
+    constraints{end+1} = selfConst;
 end
 
 [qNext, info] = gik(q0, constraints{:});
