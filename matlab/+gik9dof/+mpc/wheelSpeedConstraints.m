@@ -10,7 +10,7 @@ function cineq = wheelSpeedConstraints(X, U, data, params)
 %
 % Inputs:
 %   X      - [nx x (p+1)] Predicted state trajectory (not used here)
-%   U      - [nu x p] Predicted control trajectory [v; omega]
+%   U      - [nu x p] Predicted control trajectory [v; omega; q_dot_arm(6)]
 %   data   - Additional data from nlmpcmove (not used here)
 %   params - struct with fields:
 %            .track_width: Distance between wheels (m)
@@ -26,7 +26,7 @@ function cineq = wheelSpeedConstraints(X, U, data, params)
 
 % Author: GitHub Copilot + User
 % Date: October 13, 2025
-% Method: Method 5 (pureMPC)
+% Method: Method 5 (pureMPC) - Whole-body MPC
 
 %% Extract parameters
 W = params.track_width;
@@ -41,8 +41,10 @@ cineq = zeros(2*p, 1);
 
 %% Apply constraints for each prediction step
 for k = 1:p
+    % Extract base velocities (first 2 inputs)
     v = U(1, k);
     omega = U(2, k);
+    % Note: U(3:8, k) are arm joint velocities, not used for wheel constraints
     
     % Compute individual wheel speeds
     v_left = v - omega * W/2;

@@ -248,13 +248,13 @@ profiles:
         max_linear_speed: 1.0
 
   # =============================================================================
-  # PURE MPC PROFILE - Method 5: True receding horizon NMPC
+  # PURE MPC PROFILE - Method 5: Whole-Body Receding Horizon NMPC
   # =============================================================================
   pureMPC:
-    description: "Method 5 - True receding horizon NMPC using MATLAB MPC Toolbox"
+    description: "Method 5 - Whole-body NMPC using MATLAB MPC Toolbox (Redesigned)"
     inherits: "default"
     
-    # Override Stage C parameters for MPC
+    # Override Stage C parameters for whole-body MPC
     overrides:
       stage_c:
         # NMPC-specific parameters
@@ -264,27 +264,40 @@ profiles:
           sample_time: 0.1              # s (control period, 10 Hz)
           control_rate: 10              # Hz (1/sample_time)
           
-          # State: [x, y, theta]
-          # Inputs: [v, omega]
+          # States: [x, y, theta, q_arm(6)] - 9 DOF
+          # Inputs: [v, omega, q_dot_arm(6)] - 8 DOF
+          # Outputs: [p_ee(3), R_ee_vec(9)] - 12 DOF (EE pose)
           
-          # Cost weights
+          # Cost weights (used in custom cost function eeTrackingCostFcn)
           weights:
-            tracking: 100.0             # Position tracking weight (x, y)
-            tracking_theta: 10.0        # Heading tracking weight (less important)
+            position: 100.0             # EE position tracking weight
+            orientation: 50.0           # EE orientation tracking weight (Frobenius norm)
             input_v: 1.0                # Linear velocity input weight
-            input_omega: 10.0           # Angular velocity input weight (penalize turning)
+            input_omega: 10.0           # Angular velocity input weight
+            input_arm: 0.01             # Arm joint velocity input weight (per joint)
             rate_v: 2.0                 # Linear velocity rate weight (smoothness)
-            rate_omega: 20.0            # Angular velocity rate weight (smoothness)
-            terminal: 500.0             # Terminal cost weight (optional)
+            rate_omega: 20.0            # Angular velocity rate weight
+            rate_arm: 0.1               # Arm joint acceleration weight (per joint)
+            terminal: 5.0               # Terminal cost multiplier
           
           # Constraints
           constraints:
+            # Base constraints
             v_max: 0.5                  # m/s (linear velocity limit)
             v_min: -0.2                 # m/s (allow limited reverse)
             omega_max: 0.8              # rad/s (angular velocity limit)
             omega_min: -0.8             # rad/s
             wheel_max: 0.6              # m/s (individual wheel speed limit)
             track_width: 0.574          # m (must match chassis.track)
+            
+            # Arm joint velocity constraints (rad/s)
+            q_dot_arm_min: -0.5         # rad/s (conservative for all joints)
+            q_dot_arm_max: 0.5          # rad/s
+            
+            # Arm joint position limits (rad, from URDF)
+            # Order: [shoulder_pan, shoulder_lift, elbow, wrist_1, wrist_2, wrist_3]
+            q_arm_min: [-2.8798, 0.0, -3.3161, -2.8798, -1.6581, -2.8798]
+            q_arm_max: [2.8798, 3.2289, 0.0, 2.8798, 1.6581, 2.8798]
           
           # Solver options
           solver:
@@ -297,12 +310,6 @@ profiles:
             enabled: false              # Enable obstacle avoidance
             safety_radius: 0.3          # m (robot safety radius)
             obstacle_zones: []          # List of [x, y, r] obstacles
-        
-        # Arm IK parameters for MPC
-        arm_ik:
-          max_iterations: 100           # Arm IK max iterations
-          tolerance: 1e-3               # m (position tolerance)
-          weights: [1, 1, 1, 1, 1, 1]   # IK weights [pos_x, pos_y, pos_z, rot_x, rot_y, rot_z]
         
         # Override velocity params (MPC controls these)
         desired_linear_velocity: 0.5    # m/s (initial guess/reference)
