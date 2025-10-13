@@ -108,6 +108,19 @@ profiles:
       
       # Controller mode
       chassis_controller_mode: -1     # -1=auto (from profile), 0=legacy, 1=heading, 2=pure pursuit
+      
+      # -----------------------------------------------------------------------
+      # PP-FIRST (METHOD 4) PARAMETERS
+      # Pure Pursuit prediction with constrained GIK refinement
+      # Architecture: PREDICT (PP) → CONSTRAIN (corridor) → SOLVE (GIK) → FALLBACK
+      # -----------------------------------------------------------------------
+      ppfirst:
+        yaw_corridor_deg: 15.0        # ±15° corridor around PP prediction (degrees)
+        position_tolerance: 0.15      # ±0.15m box around PP position (m)
+        ee_error_threshold: 0.010     # 10mm EE error threshold for fallback trigger (m)
+        enable_refinement: false      # Apply RS+Clothoid smoothing to base seed path
+        adaptive_corridor: false      # Scale corridor width by path curvature (future)
+        adaptive_scale_factor: 2.0    # Curvature-to-corridor multiplier (future)
     
     # -------------------------------------------------------------------------
     # GIK (Generalized Inverse Kinematics) PARAMETERS
@@ -178,6 +191,10 @@ profiles:
         desired_linear_velocity: 1.2
         max_linear_speed: 1.8
         lookahead_distance: 0.5
+        ppfirst:
+          yaw_corridor_deg: 20.0      # Wider corridor for faster motion
+          position_tolerance: 0.20    # Larger position box
+          ee_error_threshold: 0.015   # More tolerant fallback (15mm)
       pure_pursuit:
         lookahead_base: 0.60
         heading_kp: 1.5
@@ -201,6 +218,10 @@ profiles:
         desired_linear_velocity: 0.5
         max_linear_speed: 0.8
         lookahead_distance: 0.6
+        ppfirst:
+          yaw_corridor_deg: 10.0      # Tighter corridor for precision
+          position_tolerance: 0.10    # Smaller position box
+          ee_error_threshold: 0.008   # Stricter fallback threshold (8mm)
       pure_pursuit:
         lookahead_base: 1.0
         heading_kp: 1.0
