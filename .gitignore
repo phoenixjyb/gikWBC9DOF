@@ -18,3 +18,11 @@ external_plot_outputs.mat
 
 # OS artifacts
 .DS_Store
+
+# Python virtual environment
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
