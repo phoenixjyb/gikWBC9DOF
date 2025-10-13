@@ -21,8 +21,13 @@ gikWBC9DOF/
 │       └── *.m                      # Core functions
 │
 ├── config/                           # Configuration files
-│   ├── pipeline_profiles.yaml       # ⭐ Pipeline configuration profiles
+│   ├── pipeline_profiles.yaml       # ⭐ Source of truth (edit this)
+│   ├── pipeline_profiles.json       # Auto-generated from YAML
 │   └── chassis_profiles.yaml        # Chassis controller parameters
+│
+├── utils/                            # Python utilities
+│   ├── yaml_to_json.py              # Convert YAML → JSON for MATLAB
+│   └── README.md                    # Utilities documentation
 │
 ├── scripts/                          # Utility scripts
 │   ├── run_*.m                      # Execution scripts
@@ -73,21 +78,35 @@ cd /path/to/gikWBC9DOF
 scripts/run_fresh_sim_with_animation
 
 % 2. Run with specific pipeline profile
-profile = gik9dof.config.loadPipelineProfile('ppForIk_tuned');
-log = gik9dof.trackReferenceTrajectory('refEETrajs/1_pull_world_scaled.json', ...
-                                        'PipelineConfig', profile);
+cfg = gik9dof.loadPipelineProfile('aggressive');
+log = gik9dof.trackReferenceTrajectory('PipelineConfig', cfg);
 
 % 3. Generate animation from existing log
 gik9dof.animateStagedWithHelper(log);
 ```
 
-### Configuration Profiles
+### Configuration Management
 
-Located in `config/pipeline_profiles.yaml`:
-- **`ppForIk_default`** - Standard 3-pass IK pipeline
-- **`ppForIk_tuned`** - Optimized parameters (recommended)
-- **`pureIk_default`** - Holistic full-body IK
-- **`pureHyb_default`** - Pure pursuit with Hybrid A*
+**YAML is the source of truth, JSON is for MATLAB:**
+
+```bash
+# 1. Edit YAML configuration
+vim config/pipeline_profiles.yaml
+
+# 2. Convert to JSON (required for MATLAB)
+python3 utils/yaml_to_json.py
+
+# 3. Use in MATLAB
+matlab -batch "cfg = gik9dof.loadPipelineProfile('aggressive');"
+```
+
+**Available profiles** (in `config/pipeline_profiles.yaml`):
+- **`default`** - Balanced parameters for wide-track platform
+- **`aggressive`** - Wider tolerances for faster execution (Method 4)
+- **`conservative`** - Tighter constraints for precision
+- **`compact_track`** - Adapted for narrow-wheelbase robots
+
+See `utils/README.md` for details on the YAML→JSON workflow.
 
 ## 📚 Key Documentation
 
