@@ -1008,9 +1008,10 @@ function logC = executeStageCPureMPC(robot, trajStruct, qStart, baseIdx, armIdx,
 %EXECUTESTAGECPUREMPC Stage C execution using Pure MPC method (Method 5).
 %   Wrapper function that integrates runStageCPureMPC into the staged pipeline.
 %   This method uses true receding horizon Nonlinear MPC with MATLAB MPC Toolbox
-%   to control the differential drive base while solving arm IK at each step.
+%   to control the entire mobile manipulator (base + arm simultaneously).
 %
-%   Architecture: BUILD NMPC → LOOP: [Solve NMPC → Simulate base → Solve arm IK]
+%   Architecture: BUILD NMPC → LOOP: [Solve whole-body NMPC → Simulate full state]
+%   Note: Uses forward kinematics in cost function (no separate IK step)
 
 % Extract NMPC parameters from options.PipelineConfig
 % Assumes PipelineConfig was loaded with pureMPC profile
@@ -1022,29 +1023,22 @@ if isfield(options, 'PipelineConfig') && isfield(options.PipelineConfig, 'stage_
         error('gik9dof:executeStageCPureMPC:NoNMPCConfig', ...
             'pureMPC profile must contain stage_c.nmpc configuration. Use loadPipelineProfile(''pureMPC'').');
     end
-    if isfield(stageCConfig, 'arm_ik')
-        armIKParams = stageCConfig.arm_ik;
-    else
-        armIKParams = struct('max_iterations', 100, 'tolerance', 1e-3, 'weights', [1 1 1 1 1 1]);
-    end
 else
     error('gik9dof:executeStageCPureMPC:NoPipelineConfig', ...
         'pureMPC execution requires PipelineConfig with pureMPC profile loaded.');
 end
 
-% Build NMPC options
+% Build NMPC options (no ArmIKParams - whole-body MPC doesn't use IK)
 mpcOpts = struct();
 mpcOpts.NMPCParams = nmpcParams;
-mpcOpts.ArmIKParams = armIKParams;
 mpcOpts.BaseIndices = baseIdx;
 mpcOpts.ArmIndices = armIdx;
 mpcOpts.EndEffector = trajStruct.EndEffectorName;
 mpcOpts.VerboseLevel = double(options.Verbose);
 
-% Call the main pureMPC implementation
+% Call the main pureMPC implementation (whole-body MPC)
 rawLog = gik9dof.runStageCPureMPC(robot, trajStruct, qStart, ...
     'NMPCParams', mpcOpts.NMPCParams, ...
-    'ArmIKParams', mpcOpts.ArmIKParams, ...
     'BaseIndices', mpcOpts.BaseIndices, ...
     'ArmIndices', mpcOpts.ArmIndices, ...
     'EndEffector', mpcOpts.EndEffector, ...
@@ -1056,59 +1050,75 @@ logC = struct();
 logC.qTraj = rawLog.qTraj;
 logC.timestamps = rawLog.timestamps;
 logC.time = rawLog.timestamps;  % Required for mergeStageLogs
-logC.successMask = rawLog.armIKSuccess;  % Arm IK success flags
+logC.successMask = true(1, N);  % Whole-body MPC doesn't have separate IK success
 logC.exitFlags = double(rawLog.mpcExitFlag);  % MPC solver exit flags
 logC.iterations = rawLog.mpcIterations;  % MPC iterations per step
 logC.constraintViolationMax = zeros(1, N);  % TODO: Extract from MPC solver
 logC.positionError = rawLog.positionError;
 logC.positionErrorNorm = rawLog.positionErrorNorm;
-logC.orientationErrorQuat = zeros(4, N);  % TODO: Add orientation tracking
-logC.orientationErrorAngle = zeros(1, N);
 logC.targetPositions = rawLog.targetPositions;
 logC.eePositions = rawLog.eePositions;
-logC.eeOrientations = zeros(4, N);  % TODO: Add orientation tracking
-logC.execBaseStates = rawLog.baseActual';  % [N x 3]
-logC.referenceBaseStates = rawLog.basePredicted';  % Reference from trajectory
-logC.cmdLog = table(rawLog.timestamps(:), rawLog.baseCommands(:,1), rawLog.baseCommands(:,2), ...
-    'VariableNames', {'time', 'v', 'omega'});
 
-% Reconstruct poses from trajectory and FK
+% Extract base states from full configuration
+logC.execBaseStates = rawLog.qTraj(baseIdx, :)';  % [N x 3]
+logC.referenceBaseStates = zeros(N, 3);  % No separate base reference in whole-body MPC
+
+% Extract base and arm commands
+logC.cmdLog = table(rawLog.timestamps(:), ...
+    rawLog.baseCommands(:,1), rawLog.baseCommands(:,2), ...
+    'VariableNames', {'time', 'v', 'omega'});
+logC.armCommands = rawLog.armCommands;  % [N x 6] arm joint velocities
+
+% Reconstruct poses from trajectory and actual EE poses
 logC.targetPoses = zeros(4, 4, N);
 logC.eePoses = zeros(4, 4, N);
 logC.targetOrientations = zeros(4, N);
+logC.eeOrientations = zeros(4, N);
+logC.orientationErrorQuat = zeros(4, N);
+logC.orientationErrorAngle = zeros(1, N);
+
 for i = 1:N
+    % Target pose
     logC.targetPoses(:, :, i) = trajStruct.Poses(:, :, i);
     R_target = trajStruct.Poses(1:3, 1:3, i);
-    logC.targetOrientations(:, i) = rotm2quat(R_target)';
+    q_target = rotm2quat(R_target)';
+    logC.targetOrientations(:, i) = q_target;
     
+    % Actual EE pose (from whole-body MPC)
     T_ee = getTransform(robot, rawLog.qTraj(:, i), char(trajStruct.EndEffectorName));
     logC.eePoses(:, :, i) = T_ee;
-    logC.eeOrientations(:, i) = rotm2quat(T_ee(1:3, 1:3))';
+    R_ee = T_ee(1:3, 1:3);
+    q_ee = rotm2quat(R_ee)';
+    logC.eeOrientations(:, i) = q_ee;
+    
+    % Orientation error (quaternion difference)
+    q_err = quatMultiply(quatInverse(q_target'), q_ee');
+    logC.orientationErrorQuat(:, i) = q_err';
+    w = max(min(q_err(1), 1), -1);
+    logC.orientationErrorAngle(i) = 2 * acos(w);
 end
 
 % Build diagnostics
 stageCDiagnostics = struct();
-stageCDiagnostics.method = 'pureMPC';
+stageCDiagnostics.method = 'pureMPC_wholebody';
+stageCDiagnostics.architecture = 'whole-body MPC (9 states, 8 inputs)';
 stageCDiagnostics.nWaypoints = N;
-stageCDiagnostics.meanEEError = rawLog.avgEEError;
-stageCDiagnostics.maxEEError = rawLog.maxEEError;
+stageCDiagnostics.meanEEPosError = rawLog.avgEEPosError;
+stageCDiagnostics.maxEEPosError = rawLog.maxEEPosError;
+stageCDiagnostics.meanEEOriError = rawLog.avgEEOriError;
+stageCDiagnostics.maxEEOriError = rawLog.maxEEOriError;
 stageCDiagnostics.meanSolveTime = rawLog.avgSolveTime;
 stageCDiagnostics.controlFrequency = rawLog.controlFrequency;
-stageCDiagnostics.armIKSuccessRate = sum(rawLog.armIKSuccess) / N;
 stageCDiagnostics.mpcConvergenceRate = sum(rawLog.mpcExitFlag > 0) / N;
 stageCDiagnostics.meanMPCIterations = mean(rawLog.mpcIterations(rawLog.mpcExitFlag > 0));
 stageCDiagnostics.meanMPCCost = mean(rawLog.mpcCost(rawLog.mpcExitFlag > 0));
 
-% Compute base tracking error (MPC prediction vs actual)
-baseErrors = rawLog.baseActual - rawLog.basePredicted;
-stageCDiagnostics.baseTrackingError = struct();
-stageCDiagnostics.baseTrackingError.meanXY = mean(vecnorm(baseErrors(1:2, :)));
-stageCDiagnostics.baseTrackingError.maxXY = max(vecnorm(baseErrors(1:2, :)));
-stageCDiagnostics.baseTrackingError.meanTheta = mean(abs(baseErrors(3, :)));
-stageCDiagnostics.baseTrackingError.maxTheta = max(abs(baseErrors(3, :)));
-
 logC.stageCDiagnostics = stageCDiagnostics;
-logC.simulationMode = 'pureMPC';
+logC.simulationMode = 'pureMPC_wholebody';
+
+% Optional: Add NMPC configuration to log for reference
+logC.nmpcConfig = nmpcParams;
+
 logC.nmpcParams = nmpcParams;
 logC.armIKParams = armIKParams;
 
