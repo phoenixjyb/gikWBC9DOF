@@ -47,6 +47,17 @@ if ~isempty(e) && any(e ~= 0)
     J = J + 1e3 * sum(e.^2);  % Penalize constraint violations
 end
 
+%% DEBUG: Check if cost function is being called properly
+% Remove this after debugging
+persistent call_count;
+if isempty(call_count)
+    call_count = 0;
+end
+call_count = call_count + 1;
+if call_count <= 3
+    fprintf('  [DEBUG] eeTrackingCostFcn called: p=%d, weights.position=%.1f\n', p, weights.position);
+end
+
 %% Extract reference trajectory
 % data.References is passed by nlmpc as [(p+1) x 12]:
 %   Columns 1-3: p_ref (position)
@@ -135,6 +146,11 @@ try
     J = J + J_terminal;
 catch
     J = J + 1e6;
+end
+
+%% DEBUG: Print cost breakdown for first few calls  
+if call_count <= 3
+    fprintf('  [DEBUG] Final cost J=%.2e\n', J);
 end
 
 end

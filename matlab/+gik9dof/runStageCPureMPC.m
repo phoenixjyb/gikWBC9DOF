@@ -145,6 +145,10 @@ nlobj.Jacobian.StateFcn = @(x, u) gik9dof.mpc.unicycleStateJacobian(x, u, Ts);  
 outputParams = struct('robot', robot, 'eeBodyName', options.EndEffector);
 nlobj.Model.OutputFcn = @(x, u, ~) computeEEPoseOutput(x, outputParams.robot, outputParams.eeBodyName);
 
+% OPTION B: Add analytical Jacobian for output function (major speedup!)
+% This avoids numerical differentiation of FK, which is very expensive
+nlobj.Jacobian.OutputFcn = @(x, u) gik9dof.mpc.eeOutputJacobian(x, u, outputParams.robot, outputParams.eeBodyName);
+
 % Custom cost function: FK-based EE tracking
 % This replaces the separate IK step - MPC optimizes all DOF simultaneously
 costParams = struct();
