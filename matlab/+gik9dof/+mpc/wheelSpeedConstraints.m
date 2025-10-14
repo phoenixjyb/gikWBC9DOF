@@ -1,4 +1,4 @@
-function cineq = wheelSpeedConstraints(X, U, data, params)
+function cineq = wheelSpeedConstraints(X, U, e, data, params)
 % WHEELSPEEDCONSTRAINTS Custom inequality constraints for differential drive
 %
 % Implements wheel speed limits for a differential drive robot:
@@ -11,6 +11,7 @@ function cineq = wheelSpeedConstraints(X, U, data, params)
 % Inputs:
 %   X      - [nx x (p+1)] Predicted state trajectory (not used here)
 %   U      - [nu x p] Predicted control trajectory [v; omega; q_dot_arm(6)]
+%   e      - Slack variable (not used for hard constraints)
 %   data   - Additional data from nlmpcmove (not used here)
 %   params - struct with fields:
 %            .track_width: Distance between wheels (m)
@@ -19,8 +20,8 @@ function cineq = wheelSpeedConstraints(X, U, data, params)
 % Output:
 %   cineq - [2*p x 1] Constraint vector (must satisfy cineq ≤ 0)
 %
-% For nlmpc: nlobj.Optimization.CustomIneqConFcn = @(X,U,data) ...
-%                wheelSpeedConstraints(X, U, data, params);
+% For nlmpc: nlobj.Optimization.CustomIneqConFcn = @(X,U,e,data) ...
+%                wheelSpeedConstraints(X, U, e, data, params);
 %
 % See also: nlmpc
 

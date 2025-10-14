@@ -41,11 +41,18 @@ p = size(U, 2);  % Prediction horizon length
 %% Initialize cost
 J = 0;
 
+%% Slack variable penalty (to satisfy nlmpc requirement when using custom constraints)
+% Small penalty on slack variable to avoid warning about unused slack
+if ~isempty(e) && any(e ~= 0)
+    J = J + 1e3 * sum(e.^2);  % Penalize constraint violations
+end
+
 %% Extract reference trajectory
-% data.References should be [12 x (p+1)]:
-%   Rows 1-3: p_ref (position)
-%   Rows 4-12: R_ref vectorized (3x3 rotation matrix as 9x1)
-ref = data.References;
+% data.References is passed by nlmpc as [(p+1) x 12]:
+%   Columns 1-3: p_ref (position)
+%   Columns 4-12: R_ref vectorized (3x3 rotation matrix as 9x1)
+% But we need to access it row-wise: ref(k, :) for timestep k
+ref = data.References;  % [(p+1) x 12]
 
 %% Stage costs (over horizon)
 for k = 1:p
@@ -66,9 +73,9 @@ for k = 1:p
         continue;
     end
     
-    % Extract reference
-    p_ref = ref(1:3, k);
-    R_ref = reshape(ref(4:12, k), [3, 3]);
+    % Extract reference for timestep k (row k of ref matrix)
+    p_ref = ref(k, 1:3)';  % Column vector [3x1]
+    R_ref = reshape(ref(k, 4:12), [3, 3]);  % Reshape to [3x3]
     
     % Position error
     e_pos = p_ee - p_ref;
@@ -78,15 +85,23 @@ for k = 1:p
     R_error = R_ee - R_ref;
     J_rot = weights.orientation * sum(R_error(:).^2);
     
-    % Input effort
+    % Input effort (u = [v, omega, q_dot_arm(6)])
     u_k = U(:, k);
-    J_input = weights.input * (u_k' * u_k);
+    % Separate weights for base and arm inputs
+    J_input_v = weights.input_v * u_k(1)^2;
+    J_input_omega = weights.input_omega * u_k(2)^2;
+    J_input_arm = weights.input_arm * sum(u_k(3:8).^2);
+    J_input = J_input_v + J_input_omega + J_input_arm;
     
     % Rate cost (smoothness)
     if k > 1
         u_prev = U(:, k-1);
         du_k = u_k - u_prev;
-        J_rate = weights.rate * (du_k' * du_k);
+        % Separate rate weights for base and arm
+        J_rate_v = weights.rate_v * du_k(1)^2;
+        J_rate_omega = weights.rate_omega * du_k(2)^2;
+        J_rate_arm = weights.rate_arm * sum(du_k(3:8).^2);
+        J_rate = J_rate_v + J_rate_omega + J_rate_arm;
     else
         J_rate = 0;
     end
@@ -104,15 +119,15 @@ try
     p_ee_N = T_ee_N(1:3, 4);
     R_ee_N = T_ee_N(1:3, 1:3);
     
-    p_ref_N = ref(1:3, p+1);
-    R_ref_N = reshape(ref(4:12, p+1), [3, 3]);
+    p_ref_N = ref(p+1, 1:3)';  % Terminal reference position [3x1]
+    R_ref_N = reshape(ref(p+1, 4:12), [3, 3]);  % Terminal reference orientation [3x3]
     
     e_pos_N = p_ee_N - p_ref_N;
     R_error_N = R_ee_N - R_ref_N;
     
-    % Terminal cost (5x weight)
-    J_terminal = 5.0 * weights.position * (e_pos_N' * e_pos_N) + ...
-                 5.0 * weights.orientation * sum(R_error_N(:).^2);
+    % Terminal cost (use terminal weight multiplier from config)
+    J_terminal = weights.terminal * weights.position * (e_pos_N' * e_pos_N) + ...
+                 weights.terminal * weights.orientation * sum(R_error_N(:).^2);
     
     J = J + J_terminal;
 catch

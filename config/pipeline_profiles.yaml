@@ -282,17 +282,17 @@ profiles:
           
           # Constraints
           constraints:
-            # Base constraints
-            v_max: 0.5                  # m/s (linear velocity limit)
-            v_min: -0.2                 # m/s (allow limited reverse)
-            omega_max: 0.8              # rad/s (angular velocity limit)
-            omega_min: -0.8             # rad/s
-            wheel_max: 0.6              # m/s (individual wheel speed limit)
+            # Base constraints (updated to engineering-verified limits)
+            v_max: 1.0                  # m/s (linear velocity limit, verified safe)
+            v_min: -1.0                 # m/s (allow reverse at same limit)
+            omega_max: 2.0              # rad/s (angular velocity limit, within firmware)
+            omega_min: -2.0             # rad/s
+            wheel_max: 3.0              # m/s (individual wheel speed limit, conservative vs 3.5 m/s firmware)
             track_width: 0.574          # m (must match chassis.track)
             
             # Arm joint velocity constraints (rad/s)
-            q_dot_arm_min: -0.5         # rad/s (conservative for all joints)
-            q_dot_arm_max: 0.5          # rad/s
+            q_dot_arm_min: -2.0         # rad/s (updated to 2 rad/s per engineering spec)
+            q_dot_arm_max: 2.0          # rad/s
             
             # Arm joint position limits (rad, from URDF)
             # Order: [shoulder_pan, shoulder_lift, elbow, wrist_1, wrist_2, wrist_3]

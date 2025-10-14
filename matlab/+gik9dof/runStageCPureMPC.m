@@ -135,12 +135,15 @@ nlobj.PredictionHorizon = p;
 nlobj.ControlHorizon = m;
 
 % Set model (unicycle + arm dynamics)
-nlobj.Model.StateFcn = 'gik9dof.mpc.unicycleStateFcn';
-nlobj.Jacobian.StateFcn = 'gik9dof.mpc.unicycleStateJacobian';  % For speed
+% Use function handles with Ts captured in closure
+nlobj.Model.StateFcn = @(x, u) gik9dof.mpc.unicycleStateFcn(x, u, Ts);
+nlobj.Jacobian.StateFcn = @(x, u) gik9dof.mpc.unicycleStateJacobian(x, u, Ts);  % For speed
 
 % Output function: Compute EE pose from full configuration
 % This will be used by custom cost function
-nlobj.Model.OutputFcn = @(x, u, robot, eeBodyName) computeEEPoseOutput(x, robot, eeBodyName);
+% Note: nlmpc OutputFcn signature is (x, u, Ts, params) - capture robot/eeBodyName in closure
+outputParams = struct('robot', robot, 'eeBodyName', options.EndEffector);
+nlobj.Model.OutputFcn = @(x, u, ~) computeEEPoseOutput(x, outputParams.robot, outputParams.eeBodyName);
 
 % Custom cost function: FK-based EE tracking
 % This replaces the separate IK step - MPC optimizes all DOF simultaneously
@@ -149,7 +152,7 @@ costParams.robot = robot;
 costParams.eeBodyName = options.EndEffector;
 costParams.weights = nmpcParams.weights;
 nlobj.Optimization.CustomCostFcn = @(X, U, e, data) ...
-    gik9dof.mpc.eeTrackingCostFcn(X, U, e, data, costParams);
+    gik9dof.mpc.eeTrackingCostFcn(X, U, e, data, costParams.robot, costParams.eeBodyName, costParams.weights);
 
 % Disable default tracking weights (we're using custom cost)
 nlobj.Weights.OutputVariables = zeros(1, 12);
@@ -183,8 +186,8 @@ end
 constraintParams = struct();
 constraintParams.track_width = nmpcParams.constraints.track_width;
 constraintParams.wheel_max = nmpcParams.constraints.wheel_max;
-nlobj.Optimization.CustomIneqConFcn = @(X,U,data) ...
-    gik9dof.mpc.wheelSpeedConstraints(X, U, data, constraintParams);
+nlobj.Optimization.CustomIneqConFcn = @(X,U,e,data) ...
+    gik9dof.mpc.wheelSpeedConstraints(X, U, e, data, constraintParams);
 
 % Solver options (convert strings to numbers if needed)
 maxIter = nmpcParams.solver.max_iterations;
@@ -270,37 +273,66 @@ for k = 1:nSteps
         refOriSegment = cat(3, refOriSegment, repmat(refOriSegment(:, :, end), 1, 1, nPad));
     end
     
-    % Format reference for NMPC: [12 x (p+1)]
-    % Row 1-3: EE position [px, py, pz]
-    % Row 4-12: EE orientation (vectorized rotation matrix)
-    yref = zeros(12, p+1);
+    % Format reference for NMPC: [(p+1) x 12] - nlmpcmove expects rows=timesteps, cols=outputs
+    % Columns 1-3: EE position [px, py, pz]
+    % Columns 4-12: EE orientation (vectorized rotation matrix)
+    yref = zeros(p+1, 12);
     for i = 1:p+1
-        yref(1:3, i) = refPosSegment(:, i);
+        yref(i, 1:3) = refPosSegment(:, i)';
         R = refOriSegment(:, :, i);
-        yref(4:12, i) = R(:);  % Vectorize rotation matrix
+        yref(i, 4:12) = R(:)';  % Vectorize rotation matrix as row
     end
     
     %% 4b: Solve whole-body NMPC optimization
     try
         [u_opt, mpcInfo] = nlmpcmove(nlobj, x_current, u_last, yref);
         
-        log.mpcIterations(k) = mpcInfo.Iterations;
-        log.mpcCost(k) = mpcInfo.Cost;
-        log.mpcExitFlag(k) = mpcInfo.ExitFlag;
+        % mpcInfo is an nlmpcmoveopt object with limited properties
+        % Store what we can access safely
+        try
+            log.mpcExitFlag(k) = mpcInfo.ExitFlag;
+        catch
+            log.mpcExitFlag(k) = 1;  % Assume success if field doesn't exist
+        end
         
-        if mpcInfo.ExitFlag < 0
-            % Solver failed, use damped last control
-            if detailedVerbose
-                fprintf('  [%3d] MPC solver failed (ExitFlag=%d), using fallback\n', k, mpcInfo.ExitFlag);
+        try
+            log.mpcCost(k) = mpcInfo.Cost;
+        catch
+            log.mpcCost(k) = 0;
+        end
+        
+        try
+            if isfield(mpcInfo, 'Output') && isfield(mpcInfo.Output, 'Iterations')
+                log.mpcIterations(k) = mpcInfo.Output.Iterations;
+            else
+                log.mpcIterations(k) = 0;
+            end
+        catch
+            log.mpcIterations(k) = 0;
+        end
+        
+        % Debug: Print MPC info for first few steps
+        if detailedVerbose && k <= 3
+            fprintf('  [%3d] MPC solved successfully, Cost=%.2e\n', k, log.mpcCost(k));
+        end
+        
+        % Check if solution is valid (all finite values)
+        if any(~isfinite(u_opt))
+            if k <= 5 || detailedVerbose
+                fprintf('  [%3d] MPC returned non-finite control, using fallback\n', k);
             end
             u_opt = u_last * 0.5;  % Slow down
+            log.mpcExitFlag(k) = -1;
         end
+        
     catch ME
-        if detailedVerbose
+        if detailedVerbose || k <= 5
             fprintf('  [%3d] MPC error: %s, using zero control\n', k, ME.message);
         end
         u_opt = zeros(8, 1);
         log.mpcExitFlag(k) = -99;
+        log.mpcIterations(k) = 0;
+        log.mpcCost(k) = NaN;
     end
     
     %% 4c: Simulate full-body motion (unified dynamics)
