@@ -259,8 +259,8 @@ profiles:
       stage_c:
         # NMPC-specific parameters
         nmpc:
-          horizon: 20                   # Prediction horizon steps
-          control_horizon: 10           # Control horizon steps (reduces DOF)
+          horizon: 10                   # Prediction horizon steps (reduced from 20 for speed)
+          control_horizon: 5            # Control horizon steps (reduced proportionally)
           sample_time: 0.1              # s (control period, 10 Hz)
           control_rate: 10              # Hz (1/sample_time)
           

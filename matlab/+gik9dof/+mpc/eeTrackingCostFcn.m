@@ -81,9 +81,11 @@ for k = 1:p
     e_pos = p_ee - p_ref;
     J_pos = weights.position * (e_pos' * e_pos);
     
-    % Orientation error (Frobenius norm of rotation difference)
-    R_error = R_ee - R_ref;
-    J_rot = weights.orientation * sum(R_error(:).^2);
+    % Orientation error (SIMPLIFIED: use trace formula instead of Frobenius norm)
+    % ||R_ee - R_ref||²_F = 2*(3 - trace(R_ee' * R_ref))
+    % This is faster to compute and numerically better conditioned
+    trace_RRT = trace(R_ee' * R_ref);
+    J_rot = weights.orientation * 2.0 * (3.0 - trace_RRT);
     
     % Input effort (u = [v, omega, q_dot_arm(6)])
     u_k = U(:, k);
@@ -123,11 +125,12 @@ try
     R_ref_N = reshape(ref(p+1, 4:12), [3, 3]);  % Terminal reference orientation [3x3]
     
     e_pos_N = p_ee_N - p_ref_N;
-    R_error_N = R_ee_N - R_ref_N;
     
     % Terminal cost (use terminal weight multiplier from config)
+    % Use simplified orientation error (trace formula)
+    trace_RRT_N = trace(R_ee_N' * R_ref_N);
     J_terminal = weights.terminal * weights.position * (e_pos_N' * e_pos_N) + ...
-                 weights.terminal * weights.orientation * sum(R_error_N(:).^2);
+                 weights.terminal * weights.orientation * 2.0 * (3.0 - trace_RRT_N);
     
     J = J + J_terminal;
 catch

@@ -205,8 +205,8 @@
       "overrides": {
         "stage_c": {
           "nmpc": {
-            "horizon": 20,
-            "control_horizon": 10,
+            "horizon": 10,
+            "control_horizon": 5,
             "sample_time": 0.1,
             "control_rate": 10,
             "weights": {

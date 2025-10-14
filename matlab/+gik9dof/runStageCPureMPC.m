@@ -182,12 +182,15 @@ if isfield(nmpcParams.constraints, 'q_arm_min') && ...
     end
 end
 
-% Set custom wheel speed constraints
-constraintParams = struct();
-constraintParams.track_width = nmpcParams.constraints.track_width;
-constraintParams.wheel_max = nmpcParams.constraints.wheel_max;
-nlobj.Optimization.CustomIneqConFcn = @(X,U,e,data) ...
-    gik9dof.mpc.wheelSpeedConstraints(X, U, e, data, constraintParams);
+% OPTION A SIMPLIFICATION: Remove custom wheel speed constraints
+% The MV limits on v and omega implicitly constrain wheel speeds
+% Removing custom constraints significantly speeds up MPC solve
+% Custom constraints cause slack variables and slow fmincon solver
+% constraintParams = struct();
+% constraintParams.track_width = nmpcParams.constraints.track_width;
+% constraintParams.wheel_max = nmpcParams.constraints.wheel_max;
+% nlobj.Optimization.CustomIneqConFcn = @(X,U,e,data) ...
+%     gik9dof.mpc.wheelSpeedConstraints(X, U, e, data, constraintParams);
 
 % Solver options (convert strings to numbers if needed)
 maxIter = nmpcParams.solver.max_iterations;
