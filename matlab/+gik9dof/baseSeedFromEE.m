@@ -35,6 +35,11 @@ arguments
     options.SearchAngles (1,:) double = -pi:(pi/6):pi
     options.MaxIterations (1,1) double = 200
     options.Verbose (1,1) logical = false
+    % NEW: Phase 2A - Orientation+Z nominal pose generation
+    options.UseOrientationZNominal (1,1) logical = false
+    options.OrientationWeight (1,1) double = 1.0
+    options.PositionWeightXY (1,1) double = 0.1
+    options.PositionWeightZ (1,1) double = 1.0
 end
 
 nWaypoints = size(trajStruct.Poses, 3);
@@ -46,10 +51,46 @@ weights = [1 1 1 1 1 1]; % Position + orientation
 
 if options.Verbose
     fprintf('Generating base seed path from %d EE waypoints...\n', nWaypoints);
+    if options.UseOrientationZNominal
+        fprintf('  Using Phase 2A: Orientation+Z priority nominal\n');
+    else
+        fprintf('  Using standard search-based nominal\n');
+    end
 end
+
+% Track configuration for sequential IK
+q_current = q_nominal;
 
 for k = 1:nWaypoints
     T_ee_desired = trajStruct.Poses(:, :, k);
+    
+    %% PHASE 2A: Orientation+Z priority nominal (if enabled)
+    if options.UseOrientationZNominal
+        % Use weighted IK: match orientation+Z, relax X-Y
+        [q_nominal_k, basePose_k, diagInfo] = gik9dof.computeNominalPoseOrientationZ(...
+            robot, T_ee_desired, q_current, ...
+            'EndEffector', options.EndEffector, ...
+            'BaseIndices', options.BaseIndices, ...
+            'ArmIndices', options.ArmIndices, ...
+            'OrientationWeight', options.OrientationWeight, ...
+            'PositionWeightXY', options.PositionWeightXY, ...
+            'PositionWeightZ', options.PositionWeightZ, ...
+            'MaxIterations', options.MaxIterations);
+        
+        basePath(k, :) = basePose_k';
+        q_current = q_nominal_k;  % Update for next iteration
+        
+        if options.Verbose && (mod(k, 20) == 0 || ~diagInfo.success)
+            if ~diagInfo.success
+                fprintf('  [%3d] IK did not converge (xy_err=%.3f, z_err=%.3f, orient_err=%.3f)\n', ...
+                    k, diagInfo.xy_error, diagInfo.z_error, diagInfo.orient_error);
+            end
+        end
+        
+        continue;  % Skip standard search method
+    end
+    
+    %% STANDARD: Search-based nominal (Phase 1)
     
     % Extract desired EE position
     p_ee_desired = T_ee_desired(1:3, 4);
