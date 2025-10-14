@@ -22,7 +22,7 @@ mkdir(LOG_DIR);
 
 % Trajectory to evaluate
 JSON_FILE = '1_pull_world_scaled.json';
-URDF_FILE = 'mobile_manipulator_PPR_base_corrected_sltRdcd.urdf';
+URDF_FILE = '../models/mobile_manipulator_PPR_base_corrected_sltRdcd.urdf';
 
 % Evaluation weights (must sum to 1.0)
 WEIGHTS = [0.15, 0.15, 0.25, 0.20, 0.15, 0.10];  % [c1, c2, c3, c4, c5, c6]

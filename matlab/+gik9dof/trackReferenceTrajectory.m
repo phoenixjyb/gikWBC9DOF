@@ -57,7 +57,7 @@ arguments
     options.FloorDiscs (1,:) struct = struct([])
     options.BaseDistanceBody (1,1) string = "abstract_chassis_link"
     options.Mode (1,1) string {mustBeMember(options.Mode, ["holistic","staged"])} = "holistic"
-    options.ExecutionMode (1,1) string {mustBeMember(options.ExecutionMode, ["pureIk","ppForIk"])} = "ppForIk"
+    options.ExecutionMode (1,1) string {mustBeMember(options.ExecutionMode, ["pureIk","ppForIk","ppFirst"])} = "ppForIk"
     options.UseHolisticRamp (1,1) logical = false
     options.RampMaxLinearSpeed (1,1) double = 1.5
     options.RampMaxYawRate (1,1) double = 3.0
@@ -99,6 +99,11 @@ arguments
     options.StageCReverseEnabled (1,1) logical = true
     options.ChassisProfile (1,1) string = "wide_track"
     options.ChassisOverrides struct = struct()
+    % Stage C: PP-First (Method 4) specific parameters
+    options.StageCPPFirstYawCorridor (1,1) double {mustBePositive} = 15.0      % deg: yaw corridor half-width
+    options.StageCPPFirstPositionTolerance (1,1) double {mustBePositive} = 0.15  % m: position box half-width
+    options.StageCPPFirstEEErrorThreshold (1,1) double {mustBePositive} = 0.01   % m: EE error fallback threshold
+    options.StageCPPFirstApplyRefinement (1,1) logical = false                   % Apply RS+Clothoid to seed path
 end
 
 % =========================================================================
@@ -467,7 +472,11 @@ switch options.Mode
             'StageCInterpSpacing', options.StageCInterpSpacing, ...
             'StageCReverseEnabled', options.StageCReverseEnabled, ...
             'ChassisProfile', options.ChassisProfile, ...
-            'ChassisOverrides', options.ChassisOverrides);
+            'ChassisOverrides', options.ChassisOverrides, ...
+            'StageCPPFirstYawCorridor', options.StageCPPFirstYawCorridor, ...
+            'StageCPPFirstPositionTolerance', options.StageCPPFirstPositionTolerance, ...
+            'StageCPPFirstEEErrorThreshold', options.StageCPPFirstEEErrorThreshold, ...
+            'StageCPPFirstApplyRefinement', options.StageCPPFirstApplyRefinement);
         log = pipeline;
     otherwise
         error("gik9dof:trackReferenceTrajectory:UnknownMode", options.Mode);

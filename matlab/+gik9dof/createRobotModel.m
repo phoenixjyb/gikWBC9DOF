@@ -7,7 +7,7 @@ function [robot, footprint] = createRobotModel(options)
 %   robot = GIK9DOF.CREATEROBOTMODEL(options) allows configuration via name
 %   value pairs:
 %       UrdfPath   - Path to the URDF file (string, default resolves to the
-%                    repository copy of mobile_manipulator_PPR_base_corrected.urdf).
+%                    repository copy of models/mobile_manipulator_PPR_base_corrected.urdf).
 %       MeshPath   - Directory that stores STL meshes used for visuals and
 %                    collision geometry (string, default resolves to
 %                    <repo>/meshes).
@@ -37,7 +37,7 @@ function [robot, footprint] = createRobotModel(options)
 %   See also generalizedInverseKinematics, importrobot.
 
 arguments
-    options.UrdfPath (1,1) string = "mobile_manipulator_PPR_base_corrected.urdf"
+    options.UrdfPath (1,1) string = "models/mobile_manipulator_PPR_base_corrected.urdf"
     options.MeshPath (1,1) string = "meshes"
     options.DataFormat (1,1) string = "column"
     options.Gravity (1,3) double = [0 0 -9.81]

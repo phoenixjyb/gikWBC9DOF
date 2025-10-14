@@ -65,10 +65,15 @@ if options.ApplyRefinement
     
     % Apply Reeds-Shepp shortcutting
     try
-        [refinedPath, ~] = gik9dof.control.rsRefinePath(basePath, rsParams);
+        % rsRefinePath expects (path, env, rsParams, chassisParams)
+        % For path seeding, we don't have environment, so pass empty
+        env_dummy = struct('FloorDiscs', [], 'DistanceMargin', 0.05);
+        [refinedPath, ~] = gik9dof.control.rsRefinePath(basePath, env_dummy, rsParams, chassisParams);
         
         % Apply Clothoid smoothing
-        [basePath, ~] = gik9dof.control.rsClothoidRefine(refinedPath, rsParams);
+        % rsClothoidRefine expects (path, chassisParams, clothoidParams)
+        clothoidParams = struct('discretizationDistance', 0.08, 'maxNumWaypoints', 0);
+        [basePath, ~] = gik9dof.control.rsClothoidRefine(refinedPath, chassisParams, clothoidParams);
         
         if options.Verbose
             fprintf('  Refinement complete: %d waypoints after smoothing\n', size(basePath, 1));

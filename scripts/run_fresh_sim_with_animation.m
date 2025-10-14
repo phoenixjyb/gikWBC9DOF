@@ -1,7 +1,10 @@
 %% Run Fresh Simulation and Generate Animation
 % This script:
-% 1. Runs a fresh simulation with baseline tuned parameters
+% 1. Runs a fresh simulation using Method 4 (PP-First Enhanced) - Phase 2A
 % 2. Generates animation with all three fixes applied
+%
+% Updated: October 14, 2024 - Now uses ExecutionMode='ppFirst' to test
+% the consolidated enhanced implementation (Phase 2A: Orientation+Z nominal)
 %
 % All fixes included:
 % - Fix 1: Stage boundary sampling correction
@@ -82,10 +85,12 @@ try
     
     fprintf('Disabled %d floor disc obstacles\n\n', originalDiscCount);
     
-    % Run staged trajectory control directly with disabled floor discs
+    % Run staged trajectory control with Method 4 (PP-First Enhanced)
     log = gik9dof.trackReferenceTrajectory( ...
         'Mode', 'staged', ...
+        'ExecutionMode', 'ppFirst', ...
         'RateHz', 10, ...
+        'MaxIterations', 2000, ...  % Phase 2A requires more iterations for tight orientation constraints
         'Verbose', false, ...
         'EnvironmentConfig', env, ...
         'FloorDiscs', env.FloorDiscs, ...

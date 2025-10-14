@@ -9,7 +9,7 @@ addpath(genpath('matlab'));
 fprintf('=== Testing Comprehensive Evaluation Framework ===\n');
 
 JSON_FILE = '1_pull_world_scaled.json';
-URDF_FILE = 'mobile_manipulator_PPR_base_corrected_sltRdcd.urdf';
+URDF_FILE = '../models/mobile_manipulator_PPR_base_corrected_sltRdcd.urdf';
 
 % Test with 4 diverse configurations
 testConfigs = struct();
