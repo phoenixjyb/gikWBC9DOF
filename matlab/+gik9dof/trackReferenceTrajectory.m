@@ -57,7 +57,7 @@ arguments
     options.FloorDiscs (1,:) struct = struct([])
     options.BaseDistanceBody (1,1) string = "abstract_chassis_link"
     options.Mode (1,1) string {mustBeMember(options.Mode, ["holistic","staged"])} = "holistic"
-    options.ExecutionMode (1,1) string {mustBeMember(options.ExecutionMode, ["pureIk","ppForIk","ppFirst","pureMPC"])} = "ppForIk"
+    options.ExecutionMode (1,1) string {mustBeMember(options.ExecutionMode, ["pureIk","ppForIk","ppFirst","pureMPC","alternating"])} = "ppForIk"
     options.UseHolisticRamp (1,1) logical = false
     options.RampMaxLinearSpeed (1,1) double = 1.5
     options.RampMaxYawRate (1,1) double = 3.0

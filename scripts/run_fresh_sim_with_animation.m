@@ -1,12 +1,20 @@
 %% Run Fresh Simulation and Generate Animation
 % This script:
-% 1. Runs a fresh simulation with baseline tuned parameters
+% 1. Runs a fresh simulation with selectable Stage C execution mode
 % 2. Generates animation with all three fixes applied
 %
-% All fixes included:
+% EXECUTION MODES (set 'executionMode' variable below):
+%   'ppForIk'     - Method 1: Pure Pursuit + GIK (baseline, proven)
+%   'ppFirst'     - Method 4: PP-First with yaw corridor (fast, robust)
+%   'alternating' - Method 6: Alternating PP + GIK (NEW - real-time!)
+%   'pureMPC'     - Method 5: Whole-body MPC (slow, experimental)
+%
+% All animation fixes included:
 % - Fix 1: Stage boundary sampling correction
 % - Fix 2: Red dot stage-relative indexing  
 % - Fix 3: Stage C EE path from targetPositions (not full trajectory)
+%
+% Updated: Oct 15, 2025 - Added Method 6 support
 %
 % TODO: Migrate to unified config system (see UNIFIED_CONFIG_MIGRATION_COMPLETE.md)
 %   New recommended approach:
@@ -20,16 +28,27 @@
 clear; clc; close all;
 addpath(genpath('matlab'));
 
-fprintf('========================================\n');
-fprintf('  Fresh Simulation + Animation\n');
-fprintf('========================================\n');
-fprintf('Date: %s\n\n', datestr(now, 'yyyy-mm-dd HH:MM:SS'));
-
 %% Configuration
 jsonFile = '1_pull_world_scaled.json';
 timestamp = datestr(now, 'yyyymmdd_HHMMSS');
-resultsDir = sprintf('results/%s_fresh_sim_no_discs', timestamp);
-videoFile = sprintf('%s/animation_no_discs.mp4', resultsDir);
+
+% ===== EXECUTION MODE SELECTION =====
+% Choose which Stage C control method to use:
+%   'ppForIk'     - Method 1: Pure Pursuit path + GIK (baseline, proven)
+%   'ppFirst'     - Method 4: PP-First with yaw corridor (fast, robust)
+%   'alternating' - Method 6: Alternating PP + GIK (NEW - real-time capable!)
+%   'pureMPC'     - Method 5: Whole-body MPC (slow, experimental)
+executionMode = 'alternating';  % <-- CHANGE THIS TO TEST DIFFERENT METHODS
+% ====================================
+
+fprintf('========================================\n');
+fprintf('  Fresh Simulation + Animation\n');
+fprintf('  Execution Mode: %s\n', executionMode);
+fprintf('========================================\n');
+fprintf('Date: %s\n\n', datestr(now, 'yyyy-mm-dd HH:MM:SS'));
+
+resultsDir = sprintf('results/%s_fresh_sim_%s', timestamp, executionMode);
+videoFile = sprintf('%s/animation_%s.mp4', resultsDir, executionMode);
 
 % Baseline tuned parameters (from parametric study)
 config = struct();
@@ -43,6 +62,7 @@ config.AccelLimit = 0.80;
 config.HeadingKp = 1.0;
 
 fprintf('--- Configuration ---\n');
+fprintf('  Execution Mode: %s\n', executionMode);
 fprintf('  JSON: %s\n', jsonFile);
 fprintf('  Results: %s\n', resultsDir);
 fprintf('  Video: %s\n\n', videoFile);
@@ -85,6 +105,7 @@ try
     % Run staged trajectory control directly with disabled floor discs
     log = gik9dof.trackReferenceTrajectory( ...
         'Mode', 'staged', ...
+        'ExecutionMode', executionMode, ...
         'RateHz', 10, ...
         'Verbose', true, ...
         'EnvironmentConfig', env, ...
@@ -100,8 +121,8 @@ try
         'StageBMaxAngularVelocity', 2.0);
     
     % Save log manually
-    runDir = gik9dof.internal.createResultsFolder('fresh_no_discs');
-    logPath = fullfile(runDir, 'log_staged_ppForIk.mat');
+    runDir = gik9dof.internal.createResultsFolder(sprintf('fresh_%s', executionMode));
+    logPath = fullfile(runDir, sprintf('log_staged_%s.mat', executionMode));
     save(logPath, 'log', '-v7.3');
     logFile = char(logPath);
     
@@ -143,6 +164,26 @@ if isfield(log, 'stageLogs')
         fprintf('  Mean error: %.4f m\n', mean(errorNorms));
         fprintf('  Max error: %.4f m\n', max(errorNorms));
         fprintf('  RMS error: %.4f m\n\n', rms(errorNorms));
+    end
+    
+    % Method 6 specific metrics
+    if strcmp(executionMode, 'alternating') && isfield(log.stageLogs.stageC, 'solveTime')
+        fprintf('--- Method 6 Performance ---\n');
+        solveTime = log.stageLogs.stageC.solveTime;
+        fprintf('  Mean solve time: %.1f ms\n', mean(solveTime)*1000);
+        fprintf('  Max solve time: %.1f ms\n', max(solveTime)*1000);
+        fprintf('  Control rate: %.1f Hz (%.1f Hz capable)\n', 1/mean(solveTime), 1/max(solveTime));
+        
+        if isfield(log.stageLogs.stageC, 'mode')
+            modes = log.stageLogs.stageC.mode;
+            baseSteps = sum(strcmp(modes, 'base_pp'));
+            armSteps = sum(strcmp(modes, 'arm_gik'));
+            fprintf('  Base steps (PP): %d (%.1f ms avg)\n', baseSteps, ...
+                mean(solveTime(strcmp(modes, 'base_pp')))*1000);
+            fprintf('  Arm steps (GIK): %d (%.1f ms avg)\n', armSteps, ...
+                mean(solveTime(strcmp(modes, 'arm_gik')))*1000);
+        end
+        fprintf('\n');
     end
     
     % Stage C reference path

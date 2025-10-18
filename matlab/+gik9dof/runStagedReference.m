@@ -41,7 +41,7 @@ function result = runStagedReference(options)
 arguments
     options.PipelineConfig struct = struct()  % NEW: Unified configuration from loadPipelineProfile
     options.RunLabel (1,1) string = "staged_reference"
-    options.ExecutionMode (1,1) string {mustBeMember(options.ExecutionMode, ["ppForIk","pureIk","ppFirst"])} = "ppForIk"
+    options.ExecutionMode (1,1) string {mustBeMember(options.ExecutionMode, ["ppForIk","pureIk","ppFirst","alternating"])} = "ppForIk"
     options.RateHz (1,1) double {mustBePositive} = 10
     options.MaxIterations (1,1) double {mustBePositive} = 1500
     options.UseStageBHybridAStar (1,1) logical = true
